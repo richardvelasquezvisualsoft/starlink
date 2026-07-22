@@ -13,6 +13,7 @@ export default defineConfig({
   server: {
     port: 3050,
     host: '0.0.0.0',
+    allowedHosts: ['starlink.hospedajesvelasquez.com'],
     watch: {
       usePolling: true,
     },
