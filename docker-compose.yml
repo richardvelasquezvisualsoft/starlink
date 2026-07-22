@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: starlink_backend
+    restart: always
+    ports:
+      - "8050:8050"
+    environment:
+      - PORT=8050
+      - HOST=0.0.0.0
+      - DB_HOST=192.168.100.5
+      - DB_PORT=5432
+      - DB_NAME=starlink_db
+      - DB_USER=star_user
+      - DB_PASSWORD=v1su@ls0ft
+      - JWT_SECRET=q8N0f7vWkP2rS4tY8uXzM1nB5cD9eF0gH3iJ6lK2mN=
+    volumes:
+      - ./backend:/app
+    networks:
+      - red_global
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: starlink_frontend
+    restart: always
+    depends_on:
+      - backend
+    ports:
+      - "3050:3050"
+    volumes:
+      - ./frontend/src:/app/src
+      - ./frontend/vite.config.ts:/app/vite.config.ts
+      - ./frontend/index.html:/app/index.html
+    networks:
+      - red_global
+
+networks:
+  red_global:
+    external: true
