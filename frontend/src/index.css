@@ -3,11 +3,17 @@
 @tailwind utilities;
 
 @layer base {
+  html {
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
   body {
-    @apply bg-st-bg text-st-primary font-sans selection:bg-st-accent/30 selection:text-white;
+    @apply bg-st-bg text-white font-sans text-base selection:bg-st-accent/30 selection:text-white leading-relaxed;
   }
   
-  /* Custom scrollbar for mission control grid density */
+  /* Custom scrollbar for mission control density */
   ::-webkit-scrollbar {
     width: 6px;
     height: 6px;
@@ -18,7 +24,7 @@
   }
   
   ::-webkit-scrollbar-thumb {
-    background: #222222;
+    background: #262626;
     border-radius: 3px;
   }
   
@@ -28,7 +34,18 @@
 }
 
 .glassmorphism {
-  background: rgba(17, 17, 17, 0.7);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  background: rgba(17, 17, 17, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 5px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #333333;
+  border-radius: 4px;
 }

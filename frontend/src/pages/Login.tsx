@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Satellite, ShieldAlert, Check } from 'lucide-react';
+import { Satellite, ShieldAlert, Eye, EyeOff } from 'lucide-react';
 import client from '../api/client';
+import { useDemoStore } from '../store/demoStore';
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
@@ -9,12 +10,27 @@ const Login: React.FC = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
-    // If token exists, direct to dashboard
+    // If token exists, direct to correct dashboard based on saved user profile
     const token = localStorage.getItem('starlink_token');
     if (token) {
-      navigate('/dashboard');
+      const userStr = localStorage.getItem('starlink_user');
+      let isClient = false;
+      if (userStr) {
+        try {
+          const u = JSON.parse(userStr);
+          if (u.email && u.email.toLowerCase().includes('cliente')) {
+            isClient = true;
+          }
+        } catch(e) {}
+      }
+      if (isClient) {
+        navigate('/cliente/dashboard');
+      } else {
+        navigate('/reseller/dashboard');
+      }
     }
   }, [navigate]);
 
@@ -34,7 +50,18 @@ const Login: React.FC = () => {
       const profileRes = await client.get('/auth/me');
       localStorage.setItem('starlink_user', JSON.stringify(profileRes.data));
       
-      navigate('/dashboard');
+      // Auto-set the Demo Store based on the email to demonstrate scenarios easily
+      const { setRole, setTenantId } = useDemoStore.getState();
+      if (email.toLowerCase().includes('cliente')) {
+        setRole('CLIENTE');
+        setTenantId(1); // Minera Horizonte S.A.C.
+        navigate('/cliente/dashboard');
+      } else {
+        setRole('RESELLER');
+        setTenantId(null);
+        navigate('/reseller/dashboard');
+      }
+      
     } catch (err: any) {
       setError(
         err.response?.data?.detail || 
@@ -60,7 +87,7 @@ const Login: React.FC = () => {
 
         <div className="mt-8 text-center">
           <h1 className="text-2xl font-bold tracking-tight text-white font-sans uppercase">MISSION CONTROL</h1>
-          <p className="text-xs text-st-muted mt-1">Starlink Fleet Management Portal</p>
+          <p className="text-xs text-st-muted mt-1">StarMonitor Portal</p>
         </div>
 
         {error && (
@@ -85,14 +112,24 @@ const Login: React.FC = () => {
 
           <div>
             <label className="block text-xs font-bold text-st-muted uppercase tracking-wider mb-1.5">Contraseña</label>
-            <input
-              type="password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              className="w-full px-4 py-3 bg-st-bg border border-st-border rounded-lg text-white placeholder-st-muted/50 focus:outline-none focus:ring-1 focus:ring-st-accent focus:border-st-accent transition-colors"
-            />
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                className="w-full px-4 py-3 bg-st-bg border border-st-border rounded-lg text-white placeholder-st-muted/50 focus:outline-none focus:ring-1 focus:ring-st-accent focus:border-st-accent transition-colors pr-12"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-st-muted hover:text-white transition-colors p-1"
+                tabIndex={-1}
+              >
+                {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+              </button>
+            </div>
           </div>
 
           <button

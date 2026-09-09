@@ -4,7 +4,7 @@ import logging
 from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
-    PROJECT_NAME: str = "Starlink Fleet Management"
+    PROJECT_NAME: str = "StarMonitor"
     API_V1_STR: str = "/api"
     
     # DB configuration

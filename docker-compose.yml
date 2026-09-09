@@ -28,7 +28,7 @@ services:
     environment:
       - PORT=8050
       - HOST=0.0.0.0
-      - DB_HOST=db
+      - DB_HOST=192.168.100.5
       - DB_PORT=5432
       - DB_NAME=starlink_db
       - DB_USER=star_user

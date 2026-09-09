@@ -4,9 +4,6 @@ import {
   AlertTriangle,
   Activity,
   Database,
-  ArrowUpRight,
-  ArrowDownRight,
-  TrendingUp,
   Search,
   RefreshCw,
   SlidersHorizontal,
@@ -14,6 +11,7 @@ import {
   ChevronLeft,
   Navigation
 } from 'lucide-react';
+import ResellerDashboard from './ResellerDashboard';
 import {
   ResponsiveContainer,
   AreaChart, Area,
@@ -23,6 +21,7 @@ import {
   CartesianGrid, Tooltip
 } from 'recharts';
 import client from '../api/client';
+import { AccountSearchSelect } from '../components/AccountSearchSelect';
 
 interface KPIState {
   active_terminals: number;
@@ -154,13 +153,19 @@ const Dashboard: React.FC = () => {
     currentPage * itemsPerPage
   );
 
+  const isGlobal = window.location.pathname === '/reseller/dashboard';
+
+  if (isGlobal) {
+    return <ResellerDashboard />;
+  }
+
   return (
     <div className="space-y-6">
       {/* Title & Actions Row */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-white font-sans">Dashboard Analítico</h1>
-          <p className="text-xs text-st-muted mt-0.5">Visualización consolidada de telemetría, alertas y consumo de la flota.</p>
+          <p className="text-xs text-st-muted mt-0.5">Visualización consolidada de telemetría, alertas y consumo.</p>
         </div>
         <div className="flex items-center gap-2">
           <button
@@ -180,17 +185,15 @@ const Dashboard: React.FC = () => {
           <span>Filtros Rápidos</span>
         </div>
 
-        {/* Account Filter */}
-        <select
-          value={selectedAccount}
-          onChange={(e) => { setSelectedAccount(e.target.value); setCurrentPage(1); }}
-          className="bg-st-bg border border-st-border text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-st-accent focus:border-st-accent min-w-[200px]"
-        >
-          <option value="">TODAS LAS CUENTAS</option>
-          {accounts.map(acc => (
-            <option key={acc.id} value={acc.id}>{acc.nombre}</option>
-          ))}
-        </select>
+        {/* Account Filter with Search */}
+        <AccountSearchSelect
+          accounts={accounts}
+          selectedAccount={selectedAccount}
+          onSelectAccount={(accId) => {
+            setSelectedAccount(accId);
+            setCurrentPage(1);
+          }}
+        />
 
         {/* Status Filter */}
         <select
@@ -249,23 +252,25 @@ const Dashboard: React.FC = () => {
           <div className="absolute -bottom-2 -right-2 w-16 h-16 bg-st-offline/5 rounded-full blur-xl group-hover:scale-125 transition-transform" />
         </div>
 
-        {/* Avg Latency */}
-        <div className="bg-st-surface border border-st-border rounded-xl p-5 flex items-center justify-between shadow-lg relative overflow-hidden group">
-          <div className="space-y-1 z-10">
-            <p className="text-[10px] font-bold text-st-muted uppercase tracking-wider">Latencia Promedio</p>
-            <p className="text-3xl font-bold text-white font-sans">{kpis.avg_latency_ms} <span className="text-xs font-semibold text-st-muted">ms</span></p>
-            <p className="text-[9px] px-2 py-0.5 bg-st-accent/10 text-st-accent border border-st-accent/20 rounded inline-block font-semibold">
-              ESTADO DE RED GLOBAL
-            </p>
+        {/* Avg Latency (Only Contextual) */}
+        {!isGlobal && (
+          <div className="bg-st-surface border border-st-border rounded-xl p-5 flex items-center justify-between shadow-lg relative overflow-hidden group">
+            <div className="space-y-1 z-10">
+              <p className="text-[10px] font-bold text-st-muted uppercase tracking-wider">Latencia Promedio</p>
+              <p className="text-3xl font-bold text-white font-sans">{kpis.avg_latency_ms} <span className="text-xs font-semibold text-st-muted">ms</span></p>
+              <p className="text-[9px] px-2 py-0.5 bg-st-accent/10 text-st-accent border border-st-accent/20 rounded inline-block font-semibold">
+                ESTADO DE RED GLOBAL
+              </p>
+            </div>
+            <div className="w-12 h-12 rounded-lg bg-st-accent/10 text-st-accent flex items-center justify-center flex-shrink-0">
+              <Activity className="w-6 h-6 animate-pulse" />
+            </div>
+            <div className="absolute -bottom-2 -right-2 w-16 h-16 bg-st-accent/5 rounded-full blur-xl group-hover:scale-125 transition-transform" />
           </div>
-          <div className="w-12 h-12 rounded-lg bg-st-accent/10 text-st-accent flex items-center justify-center flex-shrink-0">
-            <Activity className="w-6 h-6 animate-pulse" />
-          </div>
-          <div className="absolute -bottom-2 -right-2 w-16 h-16 bg-st-accent/5 rounded-full blur-xl group-hover:scale-125 transition-transform" />
-        </div>
+        )}
 
         {/* Data Consumption */}
-        <div className="bg-st-surface border border-st-border rounded-xl p-5 flex items-center justify-between shadow-lg relative overflow-hidden group">
+        <div className={`bg-st-surface border border-st-border rounded-xl p-5 flex items-center justify-between shadow-lg relative overflow-hidden group ${isGlobal ? 'md:col-span-2' : ''}`}>
           <div className="space-y-1 z-10">
             <p className="text-[10px] font-bold text-st-muted uppercase tracking-wider">Consumo Total</p>
             <p className="text-3xl font-bold text-white font-sans">{kpis.total_data_usage_gb} <span className="text-xs font-semibold text-st-muted">GB</span></p>
@@ -281,8 +286,9 @@ const Dashboard: React.FC = () => {
       </div>
 
       {/* Main Charts & Radar Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Historical Telemetry Chart */}
+      {!isGlobal && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Historical Telemetry Chart */}
         <div className="lg:col-span-2 bg-st-surface border border-st-border rounded-xl p-5 space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
@@ -457,10 +463,12 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
       </div>
+      )}
 
       {/* Dense Data Grid (Table) */}
-      <div className="bg-st-surface border border-st-border rounded-xl p-5 space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      {!isGlobal && (
+        <div className="bg-st-surface border border-st-border rounded-xl p-5 space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h2 className="text-base font-bold text-white leading-tight">Terminales de la Flota</h2>
             <p className="text-[11px] text-st-muted font-sans">Administración de dispositivos activos y su telemetría asociada.</p>
@@ -545,8 +553,9 @@ const Dashboard: React.FC = () => {
           </div>
         )}
       </div>
-    </div>
-  );
+    )}
+  </div>
+);
 };
 
 export default Dashboard;

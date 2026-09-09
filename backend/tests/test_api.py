@@ -4,7 +4,7 @@ import sys
 BASE_URL = "http://127.0.0.1:8050/api"
 
 def run_tests():
-    print("Starting Starlink Fleet API Integration Tests...")
+    print("Starting StarMonitor API Integration Tests...")
     
     # 1. Test Login
     login_payload = {

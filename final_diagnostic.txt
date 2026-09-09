@@ -1,0 +1,17 @@
+DATABASE: starlink_db
+USER: star_user
+SCHEMA: public
+SEARCH_PATH: "$user", public
+
+to_regclass tipos_solicitud_cliente: tipos_solicitud_cliente
+to_regclass solicitudes_sla_politicas: solicitudes_sla_politicas
+to_regclass solicitudes_cliente: solicitudes_cliente
+to_regclass solicitud_cliente_historial: solicitud_cliente_historial
+to_regclass solicitud_cliente_documentos: solicitud_cliente_documentos
+to_regclass solicitud_cliente_comentarios: solicitud_cliente_comentarios
+to_regclass solicitud_cliente_sla_pausas: solicitud_cliente_sla_pausas
+to_regclass vw_solicitudes_sla_estado: vw_solicitudes_sla_estado
+
+COUNT tipos: 7
+COUNT solicitudes: 0
+COUNT vista_sla: 0

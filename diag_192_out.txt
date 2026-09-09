@@ -1,0 +1,10 @@
+VISIBILIDAD 192.168.100.5: {
+  "tipos_solicitud_cliente": true,
+  "solicitudes_sla_politicas": true,
+  "solicitudes_cliente": true,
+  "solicitud_cliente_historial": true,
+  "solicitud_cliente_documentos": true,
+  "solicitud_cliente_comentarios": true,
+  "solicitud_cliente_sla_pausas": true,
+  "vw_solicitudes_sla_estado": true
+}

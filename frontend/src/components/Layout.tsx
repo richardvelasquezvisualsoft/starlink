@@ -14,11 +14,13 @@ import {
   ChevronRight,
   Star,
   Bell,
-  User,
   Menu,
-  Satellite
+  Satellite,
+  Activity,
+  CreditCard,
+  Briefcase
 } from 'lucide-react';
-import client from '../api/client';
+import client, { API_ROOT_URL } from '../api/client';
 
 interface MenuItem {
   id: string;
@@ -33,39 +35,71 @@ interface MenuSection {
   items: MenuItem[];
 }
 
+const DEMO_TENANTS = [
+  { id: 1, name: 'Minera Horizonte S.A.C.' },
+  { id: 2, name: 'Compañía Petrolera Sur' }
+];
+
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const navigate = useNavigate();
   const location = useLocation();
+  const pathname = location.pathname;
+
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
+  const [tenantDropdownOpen, setTenantDropdownOpen] = useState(false);
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
+    'ANALÍTICA RESELLER': true,
+    'OPERACIÓN GLOBAL': true,
+    'GESTIÓN COMERCIAL': true,
+    'SERVICIOS': true,
     'REPORTES': true,
     'OPERACION': true,
-    'MANTENIMIENTO': false
+    'ORGANIZACIÓN': false
   });
   const [favorites, setFavorites] = useState<string[]>([]);
   const [criticalAlertsCount, setCriticalAlertsCount] = useState(0);
-  const [userName, setUserName] = useState('Administrador1');
-  const [userEmail, setUserEmail] = useState('admin@starlink.com');
+  const [userName, setUserName] = useState('Administrador');
+  const [userFotoUrl, setUserFotoUrl] = useState('');
 
+  // Determine Scope and Prefix
+  let scope: 'RESELLER_GLOBAL' | 'RESELLER_CONTEXT' | 'CLIENTE' = 'CLIENTE';
+  let prefix = '/cliente';
+  let activeTenantId: number | null = null;
+  
+  if (pathname.startsWith('/reseller/clientes/')) {
+    const parts = pathname.split('/');
+    if (parts.length >= 4 && !isNaN(Number(parts[3]))) {
+      scope = 'RESELLER_CONTEXT';
+      activeTenantId = Number(parts[3]);
+      prefix = `/reseller/clientes/${activeTenantId}`;
+    }
+  } else if (pathname.startsWith('/reseller')) {
+    scope = 'RESELLER_GLOBAL';
+    prefix = '/reseller';
+    activeTenantId = null;
+  }
+
+  // Load user data
   useEffect(() => {
-    // Load favorites from localStorage
-    const savedFavs = localStorage.getItem('starlink_favorites');
-    if (savedFavs) {
-      setFavorites(JSON.parse(savedFavs));
-    }
-    
-    // Load user data
-    const userJson = localStorage.getItem('starlink_user');
-    if (userJson) {
-      try {
-        const u = JSON.parse(userJson);
-        setUserName(u.nombre || 'Administrador1');
-        setUserEmail(u.email || 'admin@starlink.com');
-      } catch (e) {}
-    }
+    const loadUserData = () => {
+      const savedFavs = localStorage.getItem('starlink_favorites');
+      if (savedFavs) {
+        setFavorites(JSON.parse(savedFavs));
+      }
+      const userJson = localStorage.getItem('starlink_user');
+      if (userJson) {
+        try {
+          const u = JSON.parse(userJson);
+          setUserName(u.nombre || 'Administrador');
+          setUserFotoUrl(u.foto_url || '');
+        } catch (e) {}
+      }
+    };
 
-    // Fetch active critical alerts for the notification count
+    loadUserData();
+    window.addEventListener('storage', loadUserData);
+    
     const fetchAlerts = async () => {
       try {
         const res = await client.get('/alertas?activa=true');
@@ -73,27 +107,18 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         setCriticalAlertsCount(criticals.length);
       } catch (err) {}
     };
-
     fetchAlerts();
-    const interval = setInterval(fetchAlerts, 30000); // refresh every 30s
-    return () => clearInterval(interval);
+
+    return () => window.removeEventListener('storage', loadUserData);
   }, []);
 
   const toggleSection = (section: string) => {
-    setExpandedSections(prev => ({
-      ...prev,
-      [section]: !prev[section]
-    }));
+    setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }));
   };
 
   const toggleFavorite = (e: React.MouseEvent, itemId: string) => {
     e.stopPropagation();
-    let updated: string[];
-    if (favorites.includes(itemId)) {
-      updated = favorites.filter(id => id !== itemId);
-    } else {
-      updated = [...favorites, itemId];
-    }
+    const updated = favorites.includes(itemId) ? favorites.filter(id => id !== itemId) : [...favorites, itemId];
     setFavorites(updated);
     localStorage.setItem('starlink_favorites', JSON.stringify(updated));
   };
@@ -104,56 +129,105 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     navigate('/login');
   };
 
-  const sections: MenuSection[] = [
-    {
+  // Build Sections based on scope
+  const sections: MenuSection[] = [];
+
+  if (scope === 'RESELLER_GLOBAL') {
+    sections.push({
+      title: 'OPERACIÓN GLOBAL',
+      icon: Radio,
+      items: [
+        { id: 'g-clientes', name: 'Clientes', path: '/reseller/clientes', icon: Users },
+        { id: 'g-noc', name: 'NOC Global', path: '/reseller/noc', icon: Activity },
+        { id: 'g-solicitudes', name: 'Solicitudes de Clientes', path: '/reseller/solicitudes', icon: Briefcase },
+        { id: 'g-alertas', name: 'Alertas Globales', path: '/reseller/alertas', icon: AlertTriangle },
+        { id: 'g-operaciones', name: 'Operaciones', path: '/reseller/operaciones', icon: Settings },
+        { id: 'g-aprovisionamiento', name: 'Aprovisionamiento', path: '/reseller/aprovisionamiento', icon: Database },
+      ]
+    });
+    sections.push({
+      title: 'ANALÍTICA RESELLER',
+      icon: BarChart3,
+      items: [
+        { id: 'a-cartera', name: 'Cartera y Crecimiento', path: '/reseller/analitica/cartera', icon: Users },
+        { id: 'a-calidad', name: 'Calidad Histórica', path: '/reseller/analitica/calidad', icon: Activity },
+        { id: 'a-flota', name: 'Evolución de Flota', path: '/reseller/analitica/flota', icon: Satellite },
+        { id: 'a-costos', name: 'Costos por Cliente', path: '/reseller/analitica/costos', icon: CreditCard },
+        { id: 'a-performance', name: 'Performance de Aprovisionamiento', path: '/reseller/analitica/performance', icon: Database },
+        { id: 'a-productos', name: 'Productos / Planes', path: '/reseller/analitica/productos', icon: Briefcase },
+      ]
+    });
+    sections.push({
+      title: 'GESTIÓN COMERCIAL',
+      icon: Briefcase,
+      items: [
+        { id: 'g-consumo', name: 'Consumo Global', path: '/reseller/consumo', icon: BarChart3 },
+        { id: 'g-facturacion', name: 'Facturación Starlink', path: '/reseller/facturacion', icon: CreditCard },
+        { id: 'g-contratos', name: 'Contratos Comerciales', path: '/reseller/contratos', icon: Briefcase },
+      ]
+    });
+    sections.push({
+      title: 'ADMINISTRACIÓN',
+      icon: Settings,
+      items: [
+        { id: 'g-usuarios', name: 'Usuarios y Accesos', path: '/reseller/usuarios', icon: Users },
+        { id: 'g-seguridad', name: 'Seguridad', path: '/reseller/seguridad', icon: Database },
+      ]
+    });
+  } else {
+    sections.push({
+      title: 'SERVICIOS',
+      icon: Satellite,
+      items: [
+        { id: 'c-servicios', name: 'Servicios', path: `${prefix}/servicios`, icon: Radio },
+        { id: 'c-telemetria', name: 'Telemetría', path: `${prefix}/telemetria`, icon: Activity },
+      ]
+    });
+    sections.push({
+      title: 'OPERACION',
+      icon: AlertTriangle,
+      items: [
+        { id: 'c-alertas', name: 'Alertas', path: `${prefix}/alertas`, icon: AlertTriangle },
+        { id: 'c-geozonas', name: 'Geozonas', path: `${prefix}/geozonas`, icon: MapPin },
+      ]
+    });
+    sections.push({
       title: 'REPORTES',
       icon: BarChart3,
       items: [
-        { id: 'rep-consumo', name: 'Consumo de Datos', path: '/reports/consumption', icon: BarChart3 },
-        { id: 'rep-calidad', name: 'Calidad & Latencia', path: '/reports/telemetry', icon: Radio }
+        { id: 'c-consumo', name: 'Consumo de Datos', path: `${prefix}/consumo`, icon: BarChart3 },
+        { id: 'c-comprobantes', name: 'Comprobantes', path: `${prefix}/comprobantes`, icon: CreditCard },
+        { id: 'c-historicos', name: 'Históricos', path: `${prefix}/historicos`, icon: Database },
+        { id: 'c-contrato', name: 'Contrato', path: `${prefix}/contrato`, icon: Briefcase },
       ]
-    },
-    {
-      title: 'OPERACION',
-      icon: Radio,
+    });
+    sections.push({
+      title: 'ORGANIZACIÓN',
+      icon: Users,
       items: [
-        { id: 'op-alertas', name: 'Alertas de Flota', path: '/operation/alerts', icon: AlertTriangle },
-        { id: 'op-geoloc', name: 'Geolocalización', path: '/operation/geo', icon: MapPin }
+        { id: 'c-org', name: 'Niveles y Estructura', path: `${prefix}/organizacion`, icon: Users },
+        { id: 'c-costos', name: 'Centros de Costos', path: `${prefix}/centros-costos`, icon: Database },
       ]
-    },
-    {
-      title: 'MANTENIMIENTO',
-      icon: Settings,
-      items: [
-        { id: 'mant-cuentas', name: 'Cuentas', path: '/maintenance/accounts', icon: Database },
-        { id: 'mant-disp', name: 'Dispositivos (UT)', path: '/maintenance/devices', icon: Satellite },
-        { id: 'mant-lineas', name: 'Líneas de Servicio', path: '/maintenance/lines', icon: Radio },
-        { id: 'mant-user', name: 'Usuarios', path: '/maintenance/users', icon: Users }
-      ]
-    }
-  ];
+    });
+  }
 
-  // Helper to flat list of items for Favorites rendering
   const allItems = [
-    { id: 'dashboard', name: 'Dashboard General', path: '/dashboard', icon: LayoutDashboard },
+    { id: 'dashboard', name: scope === 'RESELLER_GLOBAL' ? 'Dashboard Global' : 'Resumen', path: `${prefix}/dashboard`, icon: LayoutDashboard },
     ...sections.flatMap(s => s.items)
   ];
-
   const activeFavItems = allItems.filter(item => favorites.includes(item.id));
+
+  const activeTenantName = DEMO_TENANTS.find(t => t.id === activeTenantId)?.name || 'Todos los clientes';
 
   return (
     <div className="flex h-screen overflow-hidden bg-st-bg text-st-primary font-sans">
-      {/* Sidebar */}
       <aside className={`flex flex-col bg-st-surface border-r border-st-border transition-all duration-300 ${isSidebarCollapsed ? 'w-20' : 'w-72'}`}>
-        {/* Sidebar Header */}
         <div className="flex items-center justify-between h-16 px-4 border-b border-st-border">
           <div className="flex items-center gap-3 overflow-hidden">
-            <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-st-accent/10 text-st-accent flex-shrink-0 animate-pulse">
-              <Satellite className="w-6 h-6" />
+            <div className="flex items-center justify-center w-10 h-10 rounded-lg overflow-hidden flex-shrink-0 border border-st-border shadow-[0_0_10px_rgba(0,255,255,0.3)]">
+              <img src="/logo.jpg" alt="Logo" className="w-full h-full object-cover" />
             </div>
-            {!isSidebarCollapsed && (
-              <span className="text-lg font-bold tracking-wider text-white whitespace-nowrap">STARLINK FLEET</span>
-            )}
+            {!isSidebarCollapsed && <span className="text-lg font-bold tracking-wider text-white whitespace-nowrap">STARMONITOR</span>}
           </div>
           {!isSidebarCollapsed && (
             <button onClick={() => setIsSidebarCollapsed(true)} className="p-1 rounded text-st-muted hover:text-white hover:bg-white/5">
@@ -162,7 +236,6 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
           )}
         </div>
 
-        {/* Sidebar Menu Scrollable */}
         <div className="flex-1 overflow-y-auto py-4 px-2 space-y-4">
           {isSidebarCollapsed && (
             <button onClick={() => setIsSidebarCollapsed(false)} className="mx-auto block p-2 rounded text-st-muted hover:text-white hover:bg-white/5 mb-4">
@@ -170,40 +243,28 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             </button>
           )}
 
-          {/* Favoritos Group */}
           {activeFavItems.length > 0 && !isSidebarCollapsed && (
             <div className="space-y-1">
               <p className="px-3 text-[10px] font-bold text-st-muted uppercase tracking-widest flex items-center gap-1.5">
                 <Star className="w-3 h-3 text-amber-500 fill-amber-500" /> FAVORITOS
               </p>
               {activeFavItems.map(item => (
-                <div
-                  key={`fav-${item.id}`}
-                  onClick={() => navigate(item.path)}
-                  className={`group flex items-center justify-between px-3 py-2 rounded-lg cursor-pointer transition-colors ${location.pathname === item.path ? 'bg-white/10 text-white font-semibold' : 'text-st-muted hover:bg-white/5 hover:text-white'}`}
-                >
+                <div key={`fav-${item.id}`} onClick={() => navigate(item.path)} className={`group flex items-center justify-between px-3 py-2 rounded-lg cursor-pointer transition-colors ${location.pathname === item.path ? 'bg-white/10 text-white font-semibold' : 'text-st-muted hover:bg-white/5 hover:text-white'}`}>
                   <div className="flex items-center gap-2.5">
                     <item.icon className="w-4 h-4" />
                     <span className="text-sm">{item.name}</span>
                   </div>
-                  <Star
-                    onClick={(e) => toggleFavorite(e, item.id)}
-                    className="w-3.5 h-3.5 text-amber-500 fill-amber-500 hover:scale-125 transition-transform"
-                  />
+                  <Star onClick={(e) => toggleFavorite(e, item.id)} className="w-3.5 h-3.5 text-amber-500 fill-amber-500 hover:scale-125 transition-transform" />
                 </div>
               ))}
             </div>
           )}
 
-          {/* Main Dashboard Link */}
           <div className="space-y-1">
-            <div
-              onClick={() => navigate('/dashboard')}
-              className={`group flex items-center justify-between px-3 py-2 rounded-lg cursor-pointer transition-colors ${location.pathname === '/dashboard' ? 'bg-[#D97706]/20 border border-[#D97706]/40 text-white font-semibold' : 'text-st-muted hover:bg-white/5 hover:text-white'}`}
-            >
+            <div onClick={() => navigate(`${prefix}/dashboard`)} className={`group flex items-center justify-between px-3 py-2 rounded-lg cursor-pointer transition-colors ${location.pathname === `${prefix}/dashboard` ? 'bg-[#D97706]/20 border border-[#D97706]/40 text-white font-semibold' : 'text-st-muted hover:bg-white/5 hover:text-white'}`}>
               <div className="flex items-center gap-2.5">
                 <LayoutDashboard className="w-4 h-4 text-[#D97706]" />
-                {!isSidebarCollapsed && <span className="text-sm">Dashboard General</span>}
+                {!isSidebarCollapsed && <span className="text-sm">{scope === 'RESELLER_GLOBAL' ? 'Dashboard Global' : 'Resumen'}</span>}
               </div>
               {!isSidebarCollapsed && (
                 <button onClick={(e) => toggleFavorite(e, 'dashboard')} className="opacity-0 group-hover:opacity-100 transition-opacity">
@@ -213,33 +274,22 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             </div>
           </div>
 
-          {/* Sections Accordion */}
           {sections.map(sec => {
             const isExpanded = expandedSections[sec.title];
             return (
               <div key={sec.title} className="space-y-1">
                 {!isSidebarCollapsed ? (
-                  <button
-                    onClick={() => toggleSection(sec.title)}
-                    className="w-full flex items-center justify-between px-3 py-1.5 text-[10px] font-bold text-st-muted hover:text-white uppercase tracking-widest"
-                  >
-                    <span className="flex items-center gap-1.5">
-                      <sec.icon className="w-3.5 h-3.5" />
+                  <button onClick={() => toggleSection(sec.title)} className="w-full flex items-center justify-between px-3 py-1.5 text-base font-bold text-st-muted hover:text-white uppercase tracking-widest">
+                    <span className="flex items-center gap-2">
+                      <sec.icon className="w-5 h-5" />
                       {sec.title}
                     </span>
-                    {isExpanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+                    {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
                   </button>
-                ) : (
-                  <div className="w-full h-px bg-st-border my-2" />
-                )}
+                ) : <div className="w-full h-px bg-st-border my-2" />}
 
-                {/* Section Items */}
                 {(isExpanded || isSidebarCollapsed) && sec.items.map(item => (
-                  <div
-                    key={item.id}
-                    onClick={() => navigate(item.path)}
-                    className={`group flex items-center justify-between px-3 py-2 rounded-lg cursor-pointer transition-colors ${location.pathname === item.path ? 'bg-white/10 text-white font-semibold' : 'text-st-muted hover:bg-white/5 hover:text-white'}`}
-                  >
+                  <div key={item.id} onClick={() => navigate(item.path)} className={`group flex items-center justify-between px-3 py-2 rounded-lg cursor-pointer transition-colors ${!isSidebarCollapsed ? 'ml-8' : ''} ${location.pathname === item.path ? 'bg-white/10 text-white font-semibold' : 'text-st-muted hover:bg-white/5 hover:text-white'}`}>
                     <div className="flex items-center gap-2.5">
                       <item.icon className={`w-4 h-4 ${location.pathname === item.path ? 'text-st-accent' : 'text-st-muted group-hover:text-white'}`} />
                       {!isSidebarCollapsed && <span className="text-sm">{item.name}</span>}
@@ -255,37 +305,71 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             );
           })}
         </div>
-
-        {/* Sidebar Footer - Cerrar Sesion */}
         <div className="p-3 border-t border-st-border">
-          <button
-            onClick={handleLogout}
-            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[#EF4444] hover:bg-red-500/10 transition-colors cursor-pointer text-left"
-          >
+          <button onClick={handleLogout} className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[#EF4444] hover:bg-red-500/10 transition-colors cursor-pointer text-left">
             <LogOut className="w-4 h-4 flex-shrink-0" />
             {!isSidebarCollapsed && <span className="text-sm font-semibold">Cerrar Sesión</span>}
           </button>
         </div>
       </aside>
 
-      {/* Main Content Pane */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Header */}
         <header className="h-16 flex items-center justify-between px-6 bg-st-surface border-b border-st-border">
-          {/* Left: Collapse Toggle (on collapsed sidebar only) */}
           <div className="flex items-center gap-4">
             {isSidebarCollapsed && (
               <button onClick={() => setIsSidebarCollapsed(false)} className="p-1 rounded text-st-muted hover:text-white hover:bg-white/5">
                 <Menu className="w-5 h-5" />
               </button>
             )}
-            <span className="text-xs font-semibold text-st-muted select-none">SYSTEM STATUS: <span className="text-st-online">ONLINE</span></span>
           </div>
 
-          {/* Right: Notifications & Profile */}
+          <div className="flex-1 flex justify-center">
+            {scope === 'RESELLER_CONTEXT' && (
+              <div className="relative">
+                <button
+                  onClick={() => setTenantDropdownOpen(!tenantDropdownOpen)}
+                  className="flex items-center gap-2 px-4 py-1.5 bg-st-bg border border-st-border rounded-lg hover:border-st-accent/50 transition-colors"
+                >
+                  <span className="text-xs font-bold text-st-muted uppercase">Cliente:</span>
+                  <span className="text-sm font-bold text-white">{activeTenantName}</span>
+                  <ChevronDown className="w-4 h-4 text-st-muted" />
+                </button>
+
+                {tenantDropdownOpen && (
+                  <>
+                    <div className="fixed inset-0 z-10" onClick={() => setTenantDropdownOpen(false)} />
+                    <div className="absolute top-full left-0 mt-2 w-64 rounded-lg bg-st-surface border border-st-border shadow-2xl py-1 z-20">
+                      <button
+                        onClick={() => {
+                          setTenantDropdownOpen(false);
+                          navigate('/reseller/dashboard');
+                        }}
+                        className={`w-full text-left px-4 py-2 text-sm transition-colors ${activeTenantId === null ? 'bg-white/10 text-white font-bold' : 'text-st-muted hover:text-white hover:bg-white/5'}`}
+                      >
+                        [ Todos los clientes ]
+                      </button>
+                      <div className="h-px bg-st-border my-1" />
+                      {DEMO_TENANTS.map(t => (
+                        <button
+                          key={t.id}
+                          onClick={() => {
+                            setTenantDropdownOpen(false);
+                            navigate(`/reseller/clientes/${t.id}/dashboard`);
+                          }}
+                          className={`w-full text-left px-4 py-2 text-sm transition-colors ${activeTenantId === t.id ? 'bg-white/10 text-white font-bold' : 'text-st-muted hover:text-white hover:bg-white/5'}`}
+                        >
+                          {t.name}
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+
           <div className="flex items-center gap-5">
-            {/* Notification Bell */}
-            <div className="relative cursor-pointer p-1 rounded-full text-st-muted hover:text-white hover:bg-white/5" onClick={() => navigate('/operation/alerts')}>
+            <div className="relative cursor-pointer p-1 rounded-full text-st-muted hover:text-white hover:bg-white/5" onClick={() => navigate(`${prefix}/alertas`)}>
               <Bell className="w-5 h-5" />
               {criticalAlertsCount > 0 && (
                 <span className="absolute -top-0.5 -right-0.5 flex h-2 w-2">
@@ -295,43 +379,37 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
               )}
             </div>
 
-            {/* Profile Dropdown */}
             <div className="relative">
-              <button
-                onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
-                className="flex items-center gap-2.5 p-1 rounded-lg hover:bg-white/5 text-left focus:outline-none"
-              >
-                <div className="w-8 h-8 rounded-full bg-st-accent/20 border border-st-accent/40 flex items-center justify-center text-st-accent font-bold text-sm">
-                  {userName.charAt(0)}
+              <button onClick={() => setProfileDropdownOpen(!profileDropdownOpen)} className="flex items-center gap-3 p-1.5 rounded-lg hover:bg-white/5 text-left focus:outline-none transition-colors">
+                <div className="w-10 h-10 rounded-full bg-white border border-st-border flex items-center justify-center overflow-hidden">
+                  {userFotoUrl ? (
+                    <img src={`${API_ROOT_URL}${userFotoUrl}`} alt="User" className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full bg-st-bg text-st-primary font-bold flex items-center justify-center text-lg">
+                      {userName.charAt(0)}
+                    </div>
+                  )}
                 </div>
                 <div className="hidden md:block">
-                  <p className="text-sm font-bold text-white leading-tight">{userName}</p>
-                  <p className="text-xs text-st-muted leading-tight">Administrador</p>
+                  <p className="text-base font-bold text-white leading-tight">{userName}</p>
+                  <p className="text-sm text-st-muted leading-tight">{scope === 'CLIENTE' ? 'Cliente' : 'Administrador'}</p>
                 </div>
-                <ChevronDown className="w-4 h-4 text-st-muted" />
+                <ChevronDown className="w-4 h-4 text-white ml-2" />
               </button>
 
               {profileDropdownOpen && (
                 <>
                   <div className="fixed inset-0 z-10" onClick={() => setProfileDropdownOpen(false)} />
-                  <div className="absolute right-0 mt-2 w-52 rounded-lg bg-st-surface border border-st-border shadow-2xl py-1 z-20">
-                    <div className="px-4 py-2 border-b border-st-border">
-                      <p className="text-xs text-st-muted">Usuario</p>
-                      <p className="text-sm font-semibold text-white truncate">{userName}</p>
-                      <p className="text-xs text-st-muted truncate">{userEmail}</p>
-                    </div>
-                    <button className="w-full text-left px-4 py-2 text-sm text-st-muted hover:text-white hover:bg-white/5 transition-colors">
+                  <div className="absolute right-0 mt-2 w-56 rounded-xl bg-white border border-gray-200 shadow-2xl py-2 z-20">
+                    <button onClick={() => { setProfileDropdownOpen(false); navigate(`${prefix}/perfil`); }} className="w-full text-left px-5 py-2.5 text-[15px] text-gray-700 hover:bg-gray-50 transition-colors">
                       Mi Perfil
                     </button>
-                    <button className="w-full text-left px-4 py-2 text-sm text-st-muted hover:text-white hover:bg-white/5 transition-colors">
+                    <button onClick={() => { setProfileDropdownOpen(false); navigate(`${prefix}/perfil/password`); }} className="w-full text-left px-5 py-2.5 text-[15px] text-gray-700 hover:bg-gray-50 transition-colors">
                       Cambiar contraseña
                     </button>
-                    <div className="h-px bg-st-border my-1" />
-                    <button
-                      onClick={handleLogout}
-                      className="w-full text-left px-4 py-2 text-sm text-[#EF4444] hover:bg-red-500/10 transition-colors font-semibold"
-                    >
-                      Cerrar Sesión
+                    <div className="h-px bg-gray-200 my-2" />
+                    <button onClick={() => { setProfileDropdownOpen(false); handleLogout(); }} className="w-full text-left px-5 py-2.5 text-[15px] text-[#D32F2F] hover:bg-red-50 transition-colors flex items-center gap-2">
+                      <LogOut className="w-4 h-4" /> Cerrar Sesión
                     </button>
                   </div>
                 </>
@@ -340,7 +418,6 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
           </div>
         </header>
 
-        {/* Content Body Scrollable */}
         <main className="flex-1 overflow-y-auto bg-st-bg p-6">
           {children}
         </main>

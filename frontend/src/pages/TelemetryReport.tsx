@@ -6,8 +6,7 @@ import {
   AlertTriangle,
   Activity,
   Cpu,
-  Wifi,
-  Filter
+  Wifi
 } from 'lucide-react';
 import {
   AreaChart,
@@ -23,6 +22,7 @@ import {
   ResponsiveContainer
 } from 'recharts';
 import client from '../api/client';
+import { AccountSearchSelect } from '../components/AccountSearchSelect';
 
 interface TelemetryLineItem {
   id: number;
@@ -48,6 +48,12 @@ export const TelemetryReport: React.FC = () => {
   const [chartType, setChartType] = useState<'area' | 'bar' | 'line'>('area');
   const [lines, setLines] = useState<TelemetryLineItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  
+  // Year and Month Filters
+  const currentYear = new Date().getFullYear();
+  const currentMonth = new Date().getMonth() + 1;
+  const [selectedYear, setSelectedYear] = useState<number>(currentYear);
+  const [selectedMonth, setSelectedMonth] = useState<number>(currentMonth);
 
   // Pagination states
   const [currentPage, setCurrentPage] = useState<number>(1);
@@ -64,6 +70,8 @@ export const TelemetryReport: React.FC = () => {
         // 2. Fetch chart data
         const kpiParams: any = {};
         if (selectedAccount) kpiParams.cuenta_id = selectedAccount;
+        if (selectedYear) kpiParams.year = selectedYear;
+        if (selectedMonth) kpiParams.month = selectedMonth;
         const chartRes = await client.get('/dashboard/chart', { params: kpiParams });
         setChartData(chartRes.data);
 
@@ -75,11 +83,11 @@ export const TelemetryReport: React.FC = () => {
           const geo = geoRes.data.find((g: any) => g.dispositivo_id === l.dispositivo_id);
           const state = geo?.estado || 'online';
 
-          // Stable mock telemetry metrics using a stable hash of the line ID
-          const latencySeed = 30 + (l.id * 11) % 45; // 30ms to 75ms
-          const lossSeed = (l.id * 3) % 100 > 95 ? ((l.id * 17) % 5) / 10 : 0.0; // 95% have 0%, others have 0.1% to 0.4%
-          const signalSeed = 92 + (l.id * 7) % 8; // 92% to 99%
-          const obstructionSeed = (l.id * 19) % 100 > 90 ? ((l.id * 13) % 20) / 1000 : 0.0; // 90% have 0%, others have 0.1% to 1.9%
+          const latency = geo?.latency_ms || 0;
+          const loss = geo?.packet_loss_pct || 0.0;
+          const signal = geo?.signal_quality_pct || 0;
+          const obstruction = geo?.obstruction_pct || 0.0;
+          const last_reading = geo?.last_reading || (new Date().toISOString().split('T')[0] + ' 12:00');
 
           return {
             id: l.id,
@@ -89,11 +97,11 @@ export const TelemetryReport: React.FC = () => {
             device_id: l.dispositivo?.device_id || 'N/A',
             cuenta_nombre: l.cuenta?.nombre || 'Sin cuenta',
             estado: state,
-            latency_ms: state.toLowerCase() === 'online' ? latencySeed : 0,
-            packet_loss_pct: state.toLowerCase() === 'online' ? lossSeed : 100.0,
-            signal_quality_pct: state.toLowerCase() === 'online' ? signalSeed : 0,
-            obstruction_pct: state.toLowerCase() === 'online' ? obstructionSeed : 0.0,
-            last_reading: new Date().toISOString().split('T')[0] + ' 12:00'
+            latency_ms: state.toLowerCase() === 'online' ? latency : 0,
+            packet_loss_pct: state.toLowerCase() === 'online' ? loss : 100.0,
+            signal_quality_pct: state.toLowerCase() === 'online' ? signal : 0,
+            obstruction_pct: state.toLowerCase() === 'online' ? obstruction : 0.0,
+            last_reading: last_reading
           };
         });
 
@@ -115,7 +123,7 @@ export const TelemetryReport: React.FC = () => {
     };
 
     fetchInitialData();
-  }, [selectedAccount]);
+  }, [selectedAccount, selectedYear, selectedMonth]);
 
   // Apply filters
   const filteredLines = lines.filter((l) => {
@@ -168,18 +176,39 @@ export const TelemetryReport: React.FC = () => {
 
         {/* Toolbar controls */}
         <div className="flex flex-wrap items-center gap-3">
-          {/* Account Filter */}
+          {/* Account Filter with Search */}
+          <AccountSearchSelect
+            accounts={accounts}
+            selectedAccount={selectedAccount}
+            onSelectAccount={(accId) => {
+              setSelectedAccount(accId);
+              setCurrentPage(1);
+            }}
+          />
+          
+          {/* Year Filter */}
           <div className="flex items-center gap-2 bg-st-surface border border-st-border px-3 py-1.5 rounded-lg text-xs">
-            <Filter className="w-4 h-4 text-st-muted" />
             <select
-              value={selectedAccount}
-              onChange={(e) => { setSelectedAccount(e.target.value); setCurrentPage(1); }}
+              value={selectedYear}
+              onChange={(e) => { setSelectedYear(parseInt(e.target.value)); setCurrentPage(1); }}
               className="bg-transparent text-white font-semibold focus:outline-none cursor-pointer"
             >
-              <option value="" className="bg-st-surface text-white">Todas las Cuentas</option>
-              {accounts.map((acc) => (
-                <option key={acc.id} value={acc.id.toString()} className="bg-st-surface text-white">
-                  {acc.nombre}
+              {[currentYear, currentYear - 1, currentYear - 2].map(year => (
+                <option key={year} value={year} className="bg-st-surface text-white">{year}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Month Filter */}
+          <div className="flex items-center gap-2 bg-st-surface border border-st-border px-3 py-1.5 rounded-lg text-xs">
+            <select
+              value={selectedMonth}
+              onChange={(e) => { setSelectedMonth(parseInt(e.target.value)); setCurrentPage(1); }}
+              className="bg-transparent text-white font-semibold focus:outline-none cursor-pointer"
+            >
+              {[...Array(12)].map((_, i) => (
+                <option key={i+1} value={i+1} className="bg-st-surface text-white">
+                  {new Date(2000, i, 1).toLocaleString('es-ES', { month: 'long' }).toUpperCase()}
                 </option>
               ))}
             </select>

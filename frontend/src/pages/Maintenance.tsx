@@ -326,12 +326,17 @@ const Maintenance: React.FC = () => {
               ) : (
                 filteredDispositivos.map(item => (
                   <tr key={item.id} className="hover:bg-white/[0.01] transition-colors">
-                    <td className="py-3 px-4 font-mono font-bold text-st-accent select-all">{item.device_id}</td>
+                    <td className="py-3 px-4 font-mono font-bold text-st-accent select-all">
+                      <span onClick={() => navigate(`/maintenance/devices/${item.id}`)} className="cursor-pointer hover:underline">
+                        {item.device_id}
+                      </span>
+                    </td>
                     <td className="py-3 px-4 text-white font-semibold">{item.nombre || 'N/A'}</td>
                     <td className="py-3 px-4 text-st-muted">{item.kit_starlink || 'N/A'}</td>
                     <td className="py-3 px-4 text-right">
                       <div className="flex justify-end gap-3 text-st-muted">
-                        <button onClick={() => handleOpenEdit(item)} className="hover:text-st-accent transition-colors"><Edit2 className="w-4 h-4" /></button>
+                        <button onClick={() => navigate(`/maintenance/devices/${item.id}`)} className="hover:text-white transition-colors" title="Ver Ficha"><Search className="w-4 h-4" /></button>
+                        <button onClick={() => handleOpenEdit(item)} className="hover:text-st-accent transition-colors" title="Editar"><Edit2 className="w-4 h-4" /></button>
                         <button onClick={() => handleDeletePrompt(item.id)} className="hover:text-[#EF4444] transition-colors"><Trash2 className="w-4 h-4" /></button>
                       </div>
                     </td>
@@ -365,7 +370,15 @@ const Maintenance: React.FC = () => {
                     <td className="py-3 px-4 font-mono font-bold text-white select-all">{item.numero_linea}</td>
                     <td className="py-3 px-4 text-white font-semibold">{item.nombre}</td>
                     <td className="py-3 px-4 text-xs font-semibold">{item.plan_contratado || 'N/A'}</td>
-                    <td className="py-3 px-4 font-mono text-st-accent">{item.dispositivo?.device_id || 'Sin terminal'}</td>
+                    <td className="py-3 px-4 font-mono text-st-accent">
+                      {item.dispositivo ? (
+                        <span onClick={() => navigate(`/maintenance/devices/${item.dispositivo.id}`)} className="cursor-pointer hover:underline">
+                          {item.dispositivo.device_id}
+                        </span>
+                      ) : (
+                        'Sin terminal'
+                      )}
+                    </td>
                     <td className="py-3 px-4 text-st-muted max-w-[120px] truncate">{item.cuenta?.nombre || 'Sin cuenta'}</td>
                     <td className="py-3 px-4 text-xs">
                       {item.permitir_excedentes_opt_in ? (
@@ -376,6 +389,9 @@ const Maintenance: React.FC = () => {
                     </td>
                     <td className="py-3 px-4 text-right">
                       <div className="flex justify-end gap-3 text-st-muted">
+                        {item.dispositivo && (
+                          <button onClick={() => navigate(`/maintenance/devices/${item.dispositivo.id}`)} className="hover:text-white transition-colors" title="Ver Ficha"><Search className="w-4 h-4" /></button>
+                        )}
                         <button onClick={() => handleOpenEdit(item)} className="hover:text-st-accent transition-colors"><Edit2 className="w-4 h-4" /></button>
                         <button onClick={() => handleDeletePrompt(item.id)} className="hover:text-[#EF4444] transition-colors"><Trash2 className="w-4 h-4" /></button>
                       </div>

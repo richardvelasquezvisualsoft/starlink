@@ -5,8 +5,7 @@ import {
   Download,
   AlertCircle,
   TrendingUp,
-  FileText,
-  Filter
+  FileText
 } from 'lucide-react';
 import {
   AreaChart,
@@ -22,6 +21,7 @@ import {
   ResponsiveContainer
 } from 'recharts';
 import client from '../api/client';
+import { AccountSearchSelect } from '../components/AccountSearchSelect';
 
 interface ConsumptionLineItem {
   id: number;
@@ -46,6 +46,12 @@ export const ConsumptionReport: React.FC = () => {
   const [chartType, setChartType] = useState<'bar' | 'area' | 'line'>('bar');
   const [lines, setLines] = useState<ConsumptionLineItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  
+  // Year and Month Filters
+  const currentYear = new Date().getFullYear();
+  const currentMonth = new Date().getMonth() + 1;
+  const [selectedYear, setSelectedYear] = useState<number>(currentYear);
+  const [selectedMonth, setSelectedMonth] = useState<number>(currentMonth);
 
   // Pagination states
   const [currentPage, setCurrentPage] = useState<number>(1);
@@ -62,6 +68,8 @@ export const ConsumptionReport: React.FC = () => {
         // 2. Fetch chart data
         const kpiParams: any = {};
         if (selectedAccount) kpiParams.cuenta_id = selectedAccount;
+        if (selectedYear) kpiParams.year = selectedYear;
+        if (selectedMonth) kpiParams.month = selectedMonth;
         const chartRes = await client.get('/dashboard/chart', { params: kpiParams });
         setChartData(chartRes.data);
 
@@ -76,9 +84,18 @@ export const ConsumptionReport: React.FC = () => {
           let consumed = 0;
           let excess = 0;
           
-          if (l.saldos && l.saldos.length > 0) {
+          // Filter saldos by selected year and month
+          let monthSaldos = l.saldos || [];
+          if (selectedYear && selectedMonth) {
+             monthSaldos = monthSaldos.filter((s: any) => {
+                const date = new Date(s.fecha_hora_lectura);
+                return date.getFullYear() === selectedYear && (date.getMonth() + 1) === selectedMonth;
+             });
+          }
+          
+          if (monthSaldos && monthSaldos.length > 0) {
             // Get latest saldo sorted by date
-            const sortedSaldos = [...l.saldos].sort((a: any, b: any) => 
+            const sortedSaldos = [...monthSaldos].sort((a: any, b: any) => 
               new Date(b.fecha_hora_lectura).getTime() - new Date(a.fecha_hora_lectura).getTime()
             );
             const latestSaldo = sortedSaldos[0];
@@ -86,15 +103,8 @@ export const ConsumptionReport: React.FC = () => {
             consumed = latestSaldo.total_consumido_gb ? parseFloat(latestSaldo.total_consumido_gb) : 0;
             excess = latestSaldo.consumo_excedente_opt_in_gb ? parseFloat(latestSaldo.consumo_excedente_opt_in_gb) : 0;
           } else {
-            // Fallback mock logic if no database saldos exist
-            if (plan.toLowerCase().includes('priority') || plan.toLowerCase().includes('prioritario')) {
-              limit = 1000;
-            } else if (plan.toLowerCase().includes('mobile') || plan.toLowerCase().includes('móvil')) {
-              limit = 50;
-            }
-            const seed = (l.id * 147.53) % (limit * 1.2);
-            consumed = parseFloat(seed.toFixed(1));
-            excess = consumed > limit ? parseFloat((consumed - limit).toFixed(1)) : 0;
+            consumed = 0;
+            excess = 0;
           }
 
           const overuseCost = excess * 0.25; // $0.25 per GB over limit
@@ -133,7 +143,7 @@ export const ConsumptionReport: React.FC = () => {
     };
 
     fetchInitialData();
-  }, [selectedAccount]);
+  }, [selectedAccount, selectedYear, selectedMonth]);
 
   // Apply search query filter
   const filteredLines = lines.filter((l) =>
@@ -157,6 +167,8 @@ export const ConsumptionReport: React.FC = () => {
   const totalCost = lines.reduce((acc, l) => acc + l.costo_adicional, 0);
   const linesOverLimit = lines.filter((l) => l.consumido_gb > l.limite_gb).length;
 
+  const isGlobal = window.location.pathname === '/reseller/consumo';
+
   return (
     <div className="space-y-6 font-quicksand">
       {/* Header and Toolbar */}
@@ -173,18 +185,39 @@ export const ConsumptionReport: React.FC = () => {
 
         {/* Toolbar controls */}
         <div className="flex flex-wrap items-center gap-3">
-          {/* Account Filter */}
+          {/* Account Filter with Search */}
+          <AccountSearchSelect
+            accounts={accounts}
+            selectedAccount={selectedAccount}
+            onSelectAccount={(accId) => {
+              setSelectedAccount(accId);
+              setCurrentPage(1);
+            }}
+          />
+          
+          {/* Year Filter */}
           <div className="flex items-center gap-2 bg-st-surface border border-st-border px-3 py-1.5 rounded-lg text-xs">
-            <Filter className="w-4 h-4 text-st-muted" />
             <select
-              value={selectedAccount}
-              onChange={(e) => { setSelectedAccount(e.target.value); setCurrentPage(1); }}
+              value={selectedYear}
+              onChange={(e) => { setSelectedYear(parseInt(e.target.value)); setCurrentPage(1); }}
               className="bg-transparent text-white font-semibold focus:outline-none cursor-pointer"
             >
-              <option value="" className="bg-st-surface text-white">Todas las Cuentas</option>
-              {accounts.map((acc) => (
-                <option key={acc.id} value={acc.id.toString()} className="bg-st-surface text-white">
-                  {acc.nombre}
+              {[currentYear, currentYear - 1, currentYear - 2].map(year => (
+                <option key={year} value={year} className="bg-st-surface text-white">{year}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Month Filter */}
+          <div className="flex items-center gap-2 bg-st-surface border border-st-border px-3 py-1.5 rounded-lg text-xs">
+            <select
+              value={selectedMonth}
+              onChange={(e) => { setSelectedMonth(parseInt(e.target.value)); setCurrentPage(1); }}
+              className="bg-transparent text-white font-semibold focus:outline-none cursor-pointer"
+            >
+              {[...Array(12)].map((_, i) => (
+                <option key={i+1} value={i+1} className="bg-st-surface text-white">
+                  {new Date(2000, i, 1).toLocaleString('es-ES', { month: 'long' }).toUpperCase()}
                 </option>
               ))}
             </select>
@@ -323,9 +356,10 @@ export const ConsumptionReport: React.FC = () => {
       </div>
 
       {/* Main Data Table */}
-      <div className="bg-st-surface border border-st-border rounded-xl p-5 space-y-4">
-        <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
-          <h2 className="text-sm font-bold text-white uppercase tracking-wider self-start sm:self-center">Detalle de Consumos por Línea</h2>
+      {!isGlobal && (
+        <div className="bg-st-surface border border-st-border rounded-xl p-5 space-y-4">
+          <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
+            <h2 className="text-sm font-bold text-white uppercase tracking-wider self-start sm:self-center">Detalle de Consumos por Línea</h2>
           {/* Search bar */}
           <div className="relative max-w-xs w-full">
             <Search className="w-4 h-4 text-st-muted absolute left-3 top-1/2 -translate-y-1/2" />
@@ -445,6 +479,7 @@ export const ConsumptionReport: React.FC = () => {
           </div>
         )}
       </div>
+      )}
     </div>
   );
 };

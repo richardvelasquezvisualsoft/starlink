@@ -182,3 +182,248 @@ class TelemetryTrendPoint(BaseModel):
     uplink_mbps: float
     latency_ms: float
     data_usage_gb: float
+
+# Organización Schemas
+class NivelOrganizacionConfigBase(BaseModel):
+    numero_nivel: int
+    nombre_nivel: str
+    nombre_nivel_plural: Optional[str] = None
+    activo: bool = True
+
+class NivelOrganizacionConfigResponse(NivelOrganizacionConfigBase):
+    tenant_id: int
+    fecha_creacion: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+class UnidadOrganizacionalBase(BaseModel):
+    numero_nivel: int
+    codigo: str
+    nombre: str
+    activo: bool = True
+    parent_id: Optional[int] = None
+
+class UnidadOrganizacionalResponse(UnidadOrganizacionalBase):
+    id: int
+    tenant_id: int
+    fecha_creacion: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+class CentroCostoBase(BaseModel):
+    codigo: str
+    nombre: str
+    descripcion: Optional[str] = None
+    moneda_referencia: Optional[str] = None
+    activo: bool = True
+
+class CentroCostoResponse(CentroCostoBase):
+    id: int
+    tenant_id: int
+    fecha_creacion: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+# Usuarios y Seguridad Schemas
+class RolPortalResponse(BaseModel):
+    id: int
+    codigo: str
+    descripcion: str
+
+    class Config:
+        from_attributes = True
+
+class UsuarioRolesResponse(BaseModel):
+    rol: RolPortalResponse
+
+    class Config:
+        from_attributes = True
+
+class TenantUsuarioResponse(BaseModel):
+    tenant_id: int
+
+    class Config:
+        from_attributes = True
+
+class UsuarioMfaResponse(BaseModel):
+    habilitado: bool
+    tipo: Optional[str] = None
+    fecha_confirmacion: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+class UsuarioSesionResponse(BaseModel):
+    id: int
+    ip_address: Optional[str] = None
+    user_agent: Optional[str] = None
+    fecha_inicio: datetime
+    ultima_actividad: datetime
+    fecha_expiracion: datetime
+    revocada: bool
+
+    class Config:
+        from_attributes = True
+
+class UsuarioBase(BaseModel):
+    nombre: str
+    email: str
+    email_recuperacion: Optional[str] = None
+    activo: bool = True
+    acceso_todos_tenants: bool = False
+
+class UsuarioCreateAdmin(UsuarioBase):
+    password: str
+    roles: List[str] # List of role codigos
+    tenant_ids: List[int] = [] # Only for restricted reseller or client
+
+class UsuarioUpdateAdmin(BaseModel):
+    nombre: Optional[str] = None
+    email: Optional[EmailStr] = None
+    email_recuperacion: Optional[str] = None
+    activo: Optional[bool] = None
+    acceso_todos_tenants: Optional[bool] = None
+    roles: Optional[List[str]] = None
+    tenant_ids: Optional[List[int]] = None
+
+class UsuarioAdminResponse(UsuarioBase):
+    id: int
+    intentos_fallidos: int
+    bloqueado_hasta: Optional[datetime] = None
+    celular: Optional[str] = None
+    sigla_corta: Optional[str] = None
+    pais: Optional[str] = None
+    zona_horaria: Optional[str] = None
+    foto_url: Optional[str] = None
+    bloqueado_manual: bool = False
+    motivo_bloqueo: Optional[str] = None
+    debe_cambiar_password: bool = False
+    fecha_creacion: Optional[datetime] = None
+    ultimo_intento_fallido_en: Optional[datetime] = None
+
+    roles: List[UsuarioRolesResponse] = []
+    tenant_usuarios: List[TenantUsuarioResponse] = []
+    mfa: Optional[UsuarioMfaResponse] = None
+
+    class Config:
+        from_attributes = True
+
+class PoliticasSeguridadBase(BaseModel):
+    longitud_minima_password: int
+    longitud_maxima_password: int
+    max_intentos_fallidos: int
+    minutos_bloqueo: int
+    duracion_token_reset_minutos: int
+    timeout_inactividad_minutos: int
+    duracion_maxima_sesion_horas: int
+    cantidad_passwords_historial: int
+    mfa_obligatorio_reseller: bool
+    mfa_obligatorio_cliente: bool
+    requerir_email_recuperacion_verificado: bool
+    validar_password_comprometido: bool
+
+class PoliticasSeguridadResponse(PoliticasSeguridadBase):
+    id: int
+    tenant_id: Optional[int] = None
+    activo: bool
+
+    class Config:
+        from_attributes = True
+
+class PoliticasSeguridadCreate(PoliticasSeguridadBase):
+    tenant_id: Optional[int] = None
+
+class PoliticasSeguridadUpdate(BaseModel):
+    longitud_minima_password: Optional[int] = None
+    longitud_maxima_password: Optional[int] = None
+    max_intentos_fallidos: Optional[int] = None
+    minutos_bloqueo: Optional[int] = None
+    duracion_token_reset_minutos: Optional[int] = None
+    timeout_inactividad_minutos: Optional[int] = None
+    duracion_maxima_sesion_horas: Optional[int] = None
+    cantidad_passwords_historial: Optional[int] = None
+    mfa_obligatorio_reseller: Optional[bool] = None
+    mfa_obligatorio_cliente: Optional[bool] = None
+    requerir_email_recuperacion_verificado: Optional[bool] = None
+    validar_password_comprometido: Optional[bool] = None
+    activo: Optional[bool] = None
+
+class AuditoriaSeguridadResponse(BaseModel):
+    id: int
+    evento: str
+    descripcion: Optional[str] = None
+    ip_origen: Optional[str] = None
+    user_agent: Optional[str] = None
+    fecha_evento: datetime
+
+    class Config:
+        from_attributes = True
+
+class UsuarioSesionDetalleResponse(UsuarioSesionResponse):
+    usuario_email: str
+    usuario_nombre: str
+    rol_principal: Optional[str] = None
+    cliente_principal: Optional[str] = None
+
+class UsuarioSeguridadEstadoResponse(BaseModel):
+    id: int
+    nombre: str
+    email: str
+    roles: List[str]
+    alcance: str
+    mfa_habilitado: bool
+    intentos_fallidos: int
+    bloqueado: bool
+    sesiones_activas: int
+    ultima_ip: Optional[str] = None
+    ultimo_login: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+class UsuarioSesionDetalleResponse(UsuarioSesionResponse):
+    usuario_email: str
+    usuario_nombre: str
+    rol_principal: Optional[str] = None
+    cliente_principal: Optional[str] = None
+
+class UsuarioSeguridadEstadoResponse(BaseModel):
+    id: int
+    nombre: str
+    email: str
+    roles: List[str]
+    alcance: str
+    mfa_habilitado: bool
+    intentos_fallidos: int
+    bloqueado: bool
+    sesiones_activas: int
+    ultima_ip: Optional[str] = None
+    ultimo_login: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+class TenantPoliticaResponse(BaseModel):
+    tenant_id: int
+    razon_social: str
+    politica: Optional[PoliticasSeguridadResponse] = None
+
+    class Config:
+        from_attributes = True
+
+class PerfilUpdate(BaseModel):
+    nombre: Optional[str] = None
+    email_recuperacion: Optional[str] = None
+    # Pendientes Reales (No existen en BD aún)
+    celular: Optional[str] = None
+    sigla_corta: Optional[str] = None
+    pais: Optional[str] = None
+    zona_horaria: Optional[str] = None
+    foto_url: Optional[str] = None
+
+class PerfilPasswordUpdate(BaseModel):
+    password_actual: str
+    nueva_password: str

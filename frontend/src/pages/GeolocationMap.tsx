@@ -6,10 +6,10 @@ import {
   MapPin,
   Compass,
   Anchor,
-  Activity,
-  Filter
+  Activity
 } from 'lucide-react';
 import client from '../api/client';
+import { AccountSearchSelect } from '../components/AccountSearchSelect';
 
 interface GeolocationItem {
   dispositivo_id: number;
@@ -22,6 +22,7 @@ interface GeolocationItem {
   tipo: 'Terrestre' | 'Marítimo';
   heading: number;
   speed: number;
+  last_reading?: string;
 }
 
 export const GeolocationMap: React.FC = () => {
@@ -150,22 +151,15 @@ export const GeolocationMap: React.FC = () => {
 
         {/* Toolbar controls */}
         <div className="flex flex-wrap items-center gap-3">
-          {/* Account Filter */}
-          <div className="flex items-center gap-2 bg-st-surface border border-st-border px-3 py-1.5 rounded-lg text-xs">
-            <Filter className="w-4 h-4 text-st-muted" />
-            <select
-              value={selectedAccount}
-              onChange={(e) => { setSelectedAccount(e.target.value); setCurrentPage(1); }}
-              className="bg-transparent text-white font-semibold focus:outline-none cursor-pointer"
-            >
-              <option value="" className="bg-st-surface text-white">Todas las Cuentas</option>
-              {accounts.map((acc) => (
-                <option key={acc.id} value={acc.id.toString()} className="bg-st-surface text-white">
-                  {acc.nombre}
-                </option>
-              ))}
-            </select>
-          </div>
+          {/* Account Filter with Search */}
+          <AccountSearchSelect
+            accounts={accounts}
+            selectedAccount={selectedAccount}
+            onSelectAccount={(accId) => {
+              setSelectedAccount(accId);
+              setCurrentPage(1);
+            }}
+          />
 
           <button
             onClick={() => window.print()}

@@ -1,0 +1,19 @@
+=== RUNTIME BACKEND ===
+Host: db
+Puerto: 5432
+Database: starlink_db
+Usuario: star_user
+Schema: public
+Search path: "$user", public
+Origen de DATABASE_URL/config: Env Variables (docker-compose)
+Docker/local: Docker (starlink_backend container)
+
+=== VISIBILIDAD ===
+tipos_solicitud_cliente: False
+solicitudes_sla_politicas: False
+solicitudes_cliente: False
+solicitud_cliente_historial: False
+solicitud_cliente_documentos: False
+solicitud_cliente_comentarios: False
+solicitud_cliente_sla_pausas: False
+vw_solicitudes_sla_estado: False
