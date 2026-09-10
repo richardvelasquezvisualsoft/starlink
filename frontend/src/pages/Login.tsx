@@ -17,19 +17,20 @@ const Login: React.FC = () => {
     const token = localStorage.getItem('starlink_token');
     if (token) {
       const userStr = localStorage.getItem('starlink_user');
-      let isClient = false;
+
       if (userStr) {
         try {
           const u = JSON.parse(userStr);
-          if (u.email && u.email.toLowerCase().includes('cliente')) {
-            isClient = true;
+          const codes: string[] = Array.isArray(u.role_codes) ? u.role_codes : [u.role_codes];
+          const hasClientRole = codes.some(c => String(c).trim().toUpperCase() === 'CLIENTE');
+          const hasResellerRole = codes.some(c => String(c).trim().toUpperCase() === 'RESELLER');
+          
+          if (hasClientRole) {
+            navigate('/cliente/dashboard');
+          } else if (hasResellerRole) {
+            navigate('/reseller/dashboard');
           }
         } catch(e) {}
-      }
-      if (isClient) {
-        navigate('/cliente/dashboard');
-      } else {
-        navigate('/reseller/dashboard');
       }
     }
   }, [navigate]);
@@ -48,23 +49,38 @@ const Login: React.FC = () => {
       
       // Fetch user profile info
       const profileRes = await client.get('/auth/me');
+      console.log('[DEBUG /auth/me profile]:', profileRes.data);
+      
       localStorage.setItem('starlink_user', JSON.stringify(profileRes.data));
       
-      // Auto-set the Demo Store based on the email to demonstrate scenarios easily
+      // Auto-set the Demo Store based on the role
       const { setRole, setTenantId } = useDemoStore.getState();
-      if (email.toLowerCase().includes('cliente')) {
+      const rawCodes = profileRes.data.role_codes || [];
+      const codes: string[] = Array.isArray(rawCodes) ? rawCodes : [rawCodes];
+      console.log('[DEBUG role_codes extracted]:', codes);
+
+      const hasClientRole = codes.some(c => String(c).trim().toUpperCase() === 'CLIENTE');
+      const hasResellerRole = codes.some(c => String(c).trim().toUpperCase() === 'RESELLER');
+
+      console.log('[DEBUG role match result]:', { hasClientRole, hasResellerRole, codes });
+
+      if (hasClientRole) {
         setRole('CLIENTE');
         setTenantId(1); // Minera Horizonte S.A.C.
         navigate('/cliente/dashboard');
-      } else {
+      } else if (hasResellerRole) {
         setRole('RESELLER');
         setTenantId(null);
         navigate('/reseller/dashboard');
+      } else {
+        const receivedRoles = codes.join(', ');
+        throw new Error(`No tienes un rol válido asignado (Roles recibidos: [${receivedRoles || 'ninguno'}]). Por favor, contacta al administrador.`);
       }
       
     } catch (err: any) {
       setError(
         err.response?.data?.detail || 
+        err.message ||
         'Error de conexión. Verifica tus credenciales e intenta nuevamente.'
       );
     } finally {
@@ -86,7 +102,7 @@ const Login: React.FC = () => {
         </div>
 
         <div className="mt-8 text-center">
-          <h1 className="text-2xl font-bold tracking-tight text-white font-sans uppercase">MISSION CONTROL</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-white font-sans uppercase">STAR MONITOR</h1>
           <p className="text-xs text-st-muted mt-1">StarMonitor Portal</p>
         </div>
 
@@ -147,8 +163,7 @@ const Login: React.FC = () => {
 
         <div className="mt-8 border-t border-st-border pt-4 text-center">
           <p className="text-[10px] text-st-muted">
-            Acceso restringido a personal autorizado. Credenciales demo por defecto: <br />
-            <strong className="text-white">admin@starlink.com</strong> / <strong className="text-white">admin123</strong>
+            Acceso restringido a personal autorizado.
           </p>
         </div>
       </div>

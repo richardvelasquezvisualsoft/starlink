@@ -1,20 +1,25 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import client from '../../api/client';
-import { Calendar, Filter, Plus, Search, RefreshCw, Briefcase, FileText, CheckCircle, Clock, AlertTriangle, XCircle, AlertCircle, PlayCircle, StopCircle, User } from 'lucide-react';
+import { Filter, Plus, Search, RefreshCw, Briefcase, CheckCircle, AlertTriangle, XCircle, StopCircle, User } from 'lucide-react';
 import AlertPopup from '../../components/AlertPopup';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
 import ConfiguracionSLA from './ConfiguracionSLA';
 import SolicitudDetail from './SolicitudDetail';
+import NuevaSolicitudModal from './NuevaSolicitudModal';
 
 export default function Solicitudes() {
+  const location = useLocation();
+  const isCliente = location.pathname.startsWith('/cliente');
+
   const [activeTab, setActiveTab] = useState<'SOLICITUDES' | 'CONFIG_SLA'>('SOLICITUDES');
   const [selectedSolicitudId, setSelectedSolicitudId] = useState<number | null>(null);
   
   const [solicitudes, setSolicitudes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [alert, setAlert] = useState<{isOpen: boolean, title: string, message: string, type: "info" | "warning" | "error" | "success"}>({
+  const [alert, setAlert] = useState<{isOpen: boolean, title: string, message: string, type: "info" | "error" | "success"}>({
     isOpen: false, title: "", message: "", type: "info"
   });
   
@@ -23,6 +28,9 @@ export default function Solicitudes() {
   const [filterPrioridad, setFilterPrioridad] = useState<string>("TODOS");
   const [filterSemaforo, setFilterSemaforo] = useState<string>("TODOS");
   const [filterSearch, setFilterSearch] = useState<string>("");
+
+  // Create Solicitud Modal state
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   useEffect(() => {
     if (activeTab === 'SOLICITUDES' && !selectedSolicitudId) {
@@ -46,6 +54,10 @@ export default function Solicitudes() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleOpenCreateModal = () => {
+    setIsCreateModalOpen(true);
   };
 
   if (selectedSolicitudId) {
@@ -104,37 +116,45 @@ export default function Solicitudes() {
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <AlertPopup 
         isOpen={alert.isOpen} 
-        title={alert.title} 
         message={alert.message} 
         type={alert.type} 
         onClose={() => setAlert(prev => ({...prev, isOpen: false}))} 
       />
 
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-white font-sans uppercase">Solicitudes de Clientes</h1>
-          <p className="text-xs text-st-muted mt-0.5">Gestión de solicitudes, tiempos de atención y seguimiento por cliente.</p>
+          <h1 className="text-2xl font-bold tracking-tight text-white font-sans uppercase">SOLICITUDES</h1>
+          <p className="text-xs text-st-muted mt-0.5">Gestión de solicitudes, tiempos de atención y seguimiento.</p>
         </div>
+        <button
+          onClick={handleOpenCreateModal}
+          className="flex items-center gap-2 px-4 py-2.5 bg-st-accent text-white font-bold text-xs uppercase tracking-wider rounded-xl hover:bg-st-accent/80 transition-all shadow-lg shadow-st-accent/20 cursor-pointer self-start md:self-auto"
+        >
+          <Plus className="w-4 h-4" />
+          Crear Solicitud
+        </button>
       </div>
 
-      <div className="flex space-x-1 border-b border-st-border">
-        <button
-          onClick={() => setActiveTab('SOLICITUDES')}
-          className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 ${
-            activeTab === 'SOLICITUDES' ? 'border-st-accent text-white' : 'border-transparent text-st-muted hover:text-white hover:border-white/20'
-          }`}
-        >
-          Solicitudes
-        </button>
-        <button
-          onClick={() => setActiveTab('CONFIG_SLA')}
-          className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 ${
-            activeTab === 'CONFIG_SLA' ? 'border-st-accent text-white' : 'border-transparent text-st-muted hover:text-white hover:border-white/20'
-          }`}
-        >
-          Configuración SLA
-        </button>
-      </div>
+      {!isCliente && (
+        <div className="flex space-x-1 border-b border-st-border">
+          <button
+            onClick={() => setActiveTab('SOLICITUDES')}
+            className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 ${
+              activeTab === 'SOLICITUDES' ? 'border-st-accent text-white' : 'border-transparent text-st-muted hover:text-white hover:border-white/20'
+            }`}
+          >
+            Solicitudes
+          </button>
+          <button
+            onClick={() => setActiveTab('CONFIG_SLA')}
+            className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 ${
+              activeTab === 'CONFIG_SLA' ? 'border-st-accent text-white' : 'border-transparent text-st-muted hover:text-white hover:border-white/20'
+            }`}
+          >
+            Configuración SLA
+          </button>
+        </div>
+      )}
 
       {activeTab === 'SOLICITUDES' && (
         <div className="space-y-4">
@@ -201,13 +221,14 @@ export default function Solicitudes() {
               onChange={(e) => setFilterEstado(e.target.value)}
               className="px-3 py-1.5 bg-black/20 border border-st-border rounded-lg text-sm text-white focus:outline-none focus:border-st-accent transition-colors"
             >
-              <option value="TODOS">Todos los Estados</option>
-              <option value="PENDIENTE">PENDIENTE</option>
-              <option value="EN_REVISION">EN REVISION</option>
-              <option value="REQUIERE_INFORMACION">REQUIERE INFORMACION</option>
-              <option value="APROBADA">APROBADA</option>
-              <option value="EN_PROCESO">EN PROCESO</option>
-              <option value="ATENDIDA">ATENDIDA</option>
+              <option value="TODOS" className="bg-st-surface">Todos los Estados</option>
+              <option value="PENDIENTE" className="bg-st-surface">PENDIENTE</option>
+              <option value="EN_REVISION" className="bg-st-surface">EN REVISIÓN</option>
+              <option value="REQUIERE_INFORMACION" className="bg-st-surface">REQUIERE INFO</option>
+              <option value="APROBADA" className="bg-st-surface">APROBADA</option>
+              <option value="EN_PROCESO" className="bg-st-surface">EN PROCESO</option>
+              <option value="ATENDIDA" className="bg-st-surface">ATENDIDA</option>
+              <option value="RECHAZADA" className="bg-st-surface">RECHAZADA</option>
             </select>
 
             <select
@@ -215,11 +236,11 @@ export default function Solicitudes() {
               onChange={(e) => setFilterPrioridad(e.target.value)}
               className="px-3 py-1.5 bg-black/20 border border-st-border rounded-lg text-sm text-white focus:outline-none focus:border-st-accent transition-colors"
             >
-              <option value="TODOS">Todas las Prioridades</option>
-              <option value="BAJA">BAJA</option>
-              <option value="NORMAL">NORMAL</option>
-              <option value="ALTA">ALTA</option>
-              <option value="URGENTE">URGENTE</option>
+              <option value="TODOS" className="bg-st-surface">Todas las Prioridades</option>
+              <option value="BAJA" className="bg-st-surface">BAJA</option>
+              <option value="NORMAL" className="bg-st-surface">NORMAL</option>
+              <option value="ALTA" className="bg-st-surface">ALTA</option>
+              <option value="URGENTE" className="bg-st-surface">URGENTE</option>
             </select>
 
             <select
@@ -227,76 +248,75 @@ export default function Solicitudes() {
               onChange={(e) => setFilterSemaforo(e.target.value)}
               className="px-3 py-1.5 bg-black/20 border border-st-border rounded-lg text-sm text-white focus:outline-none focus:border-st-accent transition-colors"
             >
-              <option value="TODOS">Cualquier SLA</option>
-              <option value="VERDE">Dentro de plazo</option>
-              <option value="AMARILLO">Próxima a vencer</option>
-              <option value="ROJO">Vencida</option>
-              <option value="AZUL">Pausada</option>
+              <option value="TODOS" className="bg-st-surface">Cualquier SLA</option>
+              <option value="VERDE" className="bg-st-surface">SLA EN PLAZO (Verde)</option>
+              <option value="AMARILLO" className="bg-st-surface">SLA PRÓXIMO (Amarillo)</option>
+              <option value="ROJO" className="bg-st-surface">SLA VENCIDO (Rojo)</option>
+              <option value="AZUL" className="bg-st-surface">SLA PAUSADO (Azul)</option>
             </select>
 
             <button
               onClick={fetchSolicitudes}
-              className="ml-auto flex items-center gap-2 px-3 py-1.5 bg-white/5 border border-st-border rounded-lg text-sm text-white hover:bg-white/10 transition-all"
+              className="ml-auto flex items-center gap-2 px-3 py-1.5 bg-st-surface border border-st-border text-white text-xs font-semibold rounded-lg hover:bg-white/5 transition-all cursor-pointer"
             >
-              <RefreshCw className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Refrescar</span>
+              <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+              Refrescar
             </button>
           </div>
 
           {/* Table */}
-          <div className="bg-st-surface border border-st-border rounded-xl shadow-lg overflow-hidden">
+          <div className="bg-st-surface border border-st-border rounded-xl overflow-hidden shadow-lg">
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="bg-black/20 border-b border-st-border">
-                    <th className="p-4 text-[10px] font-bold text-st-muted uppercase tracking-wider">Código</th>
-                    <th className="p-4 text-[10px] font-bold text-st-muted uppercase tracking-wider">Fecha</th>
-                    <th className="p-4 text-[10px] font-bold text-st-muted uppercase tracking-wider">Tipo / Prioridad</th>
-                    <th className="p-4 text-[10px] font-bold text-st-muted uppercase tracking-wider">SLA</th>
-                    <th className="p-4 text-[10px] font-bold text-st-muted uppercase tracking-wider">Estado</th>
-                    <th className="p-4 text-[10px] font-bold text-st-muted uppercase tracking-wider">Responsable</th>
-                    <th className="p-4 text-[10px] font-bold text-st-muted uppercase tracking-wider text-right">Acciones</th>
+                  <tr className="border-b border-st-border bg-black/20 text-[10px] font-bold text-st-muted uppercase tracking-wider">
+                    <th className="p-4">Código</th>
+                    <th className="p-4">Fecha</th>
+                    <th className="p-4">Tipo / Prioridad</th>
+                    <th className="p-4">SLA</th>
+                    <th className="p-4">Estado</th>
+                    <th className="p-4">Responsable</th>
+                    <th className="p-4 text-right">Acciones</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-st-border/50 text-sm">
+                <tbody className="divide-y divide-st-border/50">
                   {loading ? (
                     <tr>
-                      <td colSpan={7} className="p-8 text-center text-st-muted">
-                        <div className="flex flex-col items-center justify-center space-y-3">
-                          <RefreshCw className="w-6 h-6 animate-spin text-st-accent" />
-                          <span className="text-sm">Cargando solicitudes...</span>
-                        </div>
+                      <td colSpan={7} className="p-8 text-center text-st-muted text-sm">
+                        <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-st-accent" />
+                        Cargando solicitudes...
                       </td>
                     </tr>
                   ) : filteredSolicitudes.length === 0 ? (
                     <tr>
-                      <td colSpan={7} className="p-8 text-center text-st-muted">
-                        <div className="flex flex-col items-center justify-center space-y-2">
-                          <Filter className="w-8 h-8 opacity-20 mb-2" />
-                          <p>No hay solicitudes que coincidan con los filtros</p>
-                        </div>
+                      <td colSpan={7} className="p-8 text-center text-st-muted text-sm">
+                        <Filter className="w-6 h-6 mx-auto mb-2 text-st-muted opacity-50" />
+                        No hay solicitudes que coincidan con los filtros
                       </td>
                     </tr>
                   ) : (
                     filteredSolicitudes.map((s) => (
-                      <tr key={s.id} className="hover:bg-white/[0.02] transition-colors group">
-                        <td className="p-4 font-mono text-xs text-white">
-                          {s.codigo_solicitud}
+                      <tr key={s.id} className="hover:bg-white/[0.02] transition-colors">
+                        <td className="p-4">
+                          <div className="font-bold text-white text-sm font-mono">{s.codigo_solicitud}</div>
+                          <div className="text-[10px] text-st-muted">{s.motivo || 'Sin motivo especificado'}</div>
+                        </td>
+                        <td className="p-4 text-xs text-st-muted font-mono">
+                          {s.fecha_solicitud ? format(new Date(s.fecha_solicitud), 'dd/MM/yyyy HH:mm', { locale: es }) : '-'}
                         </td>
                         <td className="p-4">
-                          <div className="flex flex-col">
-                            <span className="text-white">{format(new Date(s.fecha_solicitud), "dd MMM yyyy", { locale: es })}</span>
-                            <span className="text-xs text-st-muted">{format(new Date(s.fecha_solicitud), "HH:mm")}</span>
-                          </div>
+                          <div className="text-xs font-semibold text-white">{s.tipo_solicitud_nombre || 'General'}</div>
+                          <span className={`inline-block text-[9px] font-bold px-1.5 py-0.5 rounded mt-0.5 ${
+                            s.prioridad === 'URGENTE' || s.prioridad === 'CRITICA' ? 'bg-red-500/20 text-red-400 border border-red-500/30' :
+                            s.prioridad === 'ALTA' ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30' :
+                            s.prioridad === 'NORMAL' ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' :
+                            'bg-gray-500/20 text-gray-400 border border-gray-500/30'
+                          }`}>
+                            {s.prioridad}
+                          </span>
                         </td>
                         <td className="p-4">
-                          <div className="flex flex-col gap-1 items-start">
-                            <span className="text-white font-medium">{s.tipo_solicitud_nombre}</span>
-                            <span className="text-[10px] font-bold text-st-muted bg-black/30 px-1.5 py-0.5 rounded">{s.prioridad}</span>
-                          </div>
-                        </td>
-                        <td className="p-4">
-                          <div className="flex flex-col gap-1 items-start">
+                          <div className="flex flex-col gap-0.5">
                             {getSemaforoIcon(s.sla_semaforo)}
                             {s.sla_minutos_restantes !== null && (
                               <span className="text-[10px] text-st-muted">Restan {Math.round(s.sla_minutos_restantes / 60)}h</span>
@@ -342,9 +362,19 @@ export default function Solicitudes() {
         </div>
       )}
 
-      {activeTab === 'CONFIG_SLA' && (
+      {activeTab === 'CONFIG_SLA' && !isCliente && (
         <ConfiguracionSLA />
       )}
+
+      {/* Modal Crear Solicitud */}
+      <NuevaSolicitudModal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        onSuccess={(createdId) => {
+          setSelectedSolicitudId(createdId);
+          fetchSolicitudes();
+        }}
+      />
     </div>
   );
 }

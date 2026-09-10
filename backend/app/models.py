@@ -6,8 +6,7 @@ from sqlalchemy import BigInteger, Boolean, CHAR, CheckConstraint, Column, Date,
 from sqlalchemy.dialects.postgresql import ARRAY, INET, JSONB
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
-class Base(DeclarativeBase):
-    pass
+from app.core.database import Base
 
 
 class CatalogoOperacionRemota(Base):
@@ -70,6 +69,12 @@ class Usuario(Base):
     bloqueado_manual: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text('false'))
     motivo_bloqueo: Mapped[Optional[str]] = mapped_column(String(200))
     debe_cambiar_password: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text('false'))
+    email_recuperacion: Mapped[Optional[str]] = mapped_column(String(200))
+    celular: Mapped[Optional[str]] = mapped_column(String(50))
+    sigla_corta: Mapped[Optional[str]] = mapped_column(String(20))
+    pais: Mapped[Optional[str]] = mapped_column(String(100))
+    zona_horaria: Mapped[Optional[str]] = mapped_column(String(100))
+    foto_url: Mapped[Optional[str]] = mapped_column(String(500))
     fecha_creacion: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime)
     fecha_modificacion: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime)
     creado_por: Mapped[Optional[int]] = mapped_column(Integer)
@@ -145,10 +150,8 @@ class UsuarioRoles(Base):
     usuario_id: Mapped[int] = mapped_column(Integer, ForeignKey('usuarios.id'), nullable=False)
     rol_id: Mapped[int] = mapped_column(Integer, ForeignKey('roles_portal.id'), nullable=False)
     activo: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text('true'))
-    fecha_desde: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime)
-    fecha_hasta: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime)
+    fecha_asignacion: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime)
     asignado_por: Mapped[Optional[int]] = mapped_column(Integer)
-    observacion: Mapped[Optional[str]] = mapped_column(String)
 
     usuario: Mapped['Usuario'] = relationship('Usuario', back_populates='roles')
     rol: Mapped['RolesPortal'] = relationship('RolesPortal', back_populates='usuario_roles')
@@ -168,14 +171,14 @@ class PoliticasSeguridad(Base):
     longitud_maxima_password: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text('128'))
     max_intentos_fallidos: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text('5'))
     minutos_bloqueo: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text('15'))
-    duracion_token_reset_minutos: Mapped[int] = mapped_column('minutos_validez_token_reset', Integer, nullable=False, server_default=text('60'))
-    timeout_inactividad_minutos: Mapped[int] = mapped_column('minutos_inactividad_sesion', Integer, nullable=False, server_default=text('30'))
-    duracion_maxima_sesion_horas: Mapped[int] = mapped_column('minutos_maximos_sesion', Integer, nullable=False, server_default=text('1440'))
-    cantidad_passwords_historial: Mapped[int] = mapped_column('historial_passwords', Integer, nullable=False, server_default=text('5'))
-    mfa_obligatorio_reseller: Mapped[bool] = mapped_column('requerir_mfa_reseller', Boolean, nullable=False, server_default=text('false'))
-    mfa_obligatorio_cliente: Mapped[bool] = mapped_column('requerir_mfa_cliente', Boolean, nullable=False, server_default=text('false'))
-    requerir_email_recuperacion_verificado: Mapped[bool] = mapped_column('requerir_email_recuperacion_verificado', Boolean, nullable=False, server_default=text('false'))
-    validar_password_comprometido: Mapped[bool] = mapped_column('validar_password_comprometido', Boolean, nullable=False, server_default=text('false'))
+    duracion_token_reset_minutos: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text('60'))
+    timeout_inactividad_minutos: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text('30'))
+    duracion_maxima_sesion_horas: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text('1440'))
+    cantidad_passwords_historial: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text('5'))
+    mfa_obligatorio_reseller: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text('false'))
+    mfa_obligatorio_cliente: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text('false'))
+    requerir_email_recuperacion_verificado: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text('false'))
+    validar_password_comprometido: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text('false'))
     activo: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text('true'))
     creado_por: Mapped[Optional[int]] = mapped_column(Integer)
     modificado_por: Mapped[Optional[int]] = mapped_column(Integer)
@@ -236,16 +239,16 @@ class UsuarioSesiones(Base):
 class UsuarioMfa(Base):
     __tablename__ = 'usuario_mfa'
     __table_args__ = (
-        PrimaryKeyConstraint('usuario_id', name='usuario_mfa_pkey'),
+        PrimaryKeyConstraint('id', name='usuario_mfa_pkey'),
     )
 
-    usuario_id: Mapped[int] = mapped_column(Integer, ForeignKey('usuarios.id'), primary_key=True, nullable=False)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    usuario_id: Mapped[int] = mapped_column(Integer, ForeignKey('usuarios.id'), nullable=False)
     habilitado: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text('false'))
     tipo: Mapped[Optional[str]] = mapped_column(String(50))
     secret_ciphertext: Mapped[Optional[str]] = mapped_column(String)
-    recovery_codes_ciphertext: Mapped[Optional[str]] = mapped_column('recovery_codes_hash', String)
-    fecha_confirmacion: Mapped[Optional[datetime.datetime]] = mapped_column('confirmado_en', DateTime)
-    fecha_modificacion: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime)
+    recovery_codes_ciphertext: Mapped[Optional[str]] = mapped_column(String)
+    fecha_confirmacion: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime)
 
     usuario: Mapped['Usuario'] = relationship('Usuario', back_populates='mfa')
 
@@ -2082,7 +2085,20 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 
-from app.core.database import Base
+class AprovisionamientoCliente(Base):
+    __tablename__ = "aprovisionamientos_cliente"
+
+    id = Column(BigInteger, primary_key=True, index=True)
+    codigo = Column(String, unique=True, nullable=False)
+    tenant_id = Column(BigInteger, ForeignKey("tenants.id"), nullable=False)
+    cuenta_id = Column(Integer, ForeignKey("cuentas.id"))
+    contrato_id = Column(BigInteger)
+    dispositivo_id = Column(Integer, ForeignKey("dispositivos.id"))
+    estado = Column(String, nullable=False, default="PENDIENTE")
+    solicitado_por = Column(Integer, ForeignKey("usuarios.id"))
+    fecha_inicio = Column(DateTime, server_default=func.now())
+    fecha_fin = Column(DateTime)
+    mensaje_error = Column(Text)
 
 class TipoSolicitudCliente(Base):
     __tablename__ = "tipos_solicitud_cliente"
@@ -2147,7 +2163,7 @@ class SolicitudCliente(Base):
     tipo_solicitud_id = Column(BigInteger, ForeignKey("tipos_solicitud_cliente.id"), nullable=False)
     linea_servicio_id = Column(Integer, ForeignKey("lineas_servicio.id"))
     dispositivo_id = Column(Integer, ForeignKey("dispositivos.id"))
-    aprovisionamiento_id = Column(BigInteger, ForeignKey("aprovisionamientos_cliente.id"))
+    aprovisionamiento_id = Column(BigInteger)
     estado = Column(String, nullable=False, default="PENDIENTE")
     prioridad = Column(String, nullable=False, default="NORMAL")
     canal_origen = Column(String, nullable=False, default="PORTAL_CLIENTE")
@@ -2184,6 +2200,12 @@ class SolicitudCliente(Base):
     fecha_modificacion = Column(DateTime, server_default=func.now(), onupdate=func.now(), nullable=False)
     creado_por = Column(Integer)
     modificado_por = Column(Integer)
+
+    tipo_solicitud = relationship("TipoSolicitudCliente")
+    linea_servicio = relationship("LineaServicio")
+    dispositivo = relationship("Dispositivo")
+    solicitado_por = relationship("Usuario", foreign_keys=[solicitado_por_usuario_id])
+    asignado_a = relationship("Usuario", foreign_keys=[asignado_a_usuario_id])
 
 class VwSolicitudSlaEstado(Base):
     __tablename__ = "vw_solicitudes_sla_estado"
@@ -2273,3 +2295,27 @@ class SolicitudClienteSlaPausa(Base):
     finalizada_por_usuario_id = Column(Integer, ForeignKey("usuarios.id"))
 
     solicitud = relationship("SolicitudCliente")
+
+
+class TenantConfiguracionGlobal(Base):
+    __tablename__ = 'tenant_configuracion_global'
+    __table_args__ = (
+        ForeignKeyConstraint(['tenant_id'], ['tenants.id'], name='tenant_configuracion_global_tenant_id_fkey'),
+        PrimaryKeyConstraint('id', name='tenant_configuracion_global_pkey'),
+        UniqueConstraint('tenant_id', name='tenant_configuracion_global_tenant_id_key')
+    )
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    tenant_id: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    nombre_corto: Mapped[Optional[str]] = mapped_column(String(50))
+    color_primario: Mapped[Optional[str]] = mapped_column(String(10))
+    color_secundario: Mapped[Optional[str]] = mapped_column(String(10))
+    logo_url: Mapped[Optional[str]] = mapped_column(String(500))
+    logo_nombre: Mapped[Optional[str]] = mapped_column(String(255))
+    logo_sha256: Mapped[Optional[str]] = mapped_column(String(64))
+    logo_mime_type: Mapped[Optional[str]] = mapped_column(String(100))
+    logo_tamano_bytes: Mapped[Optional[int]] = mapped_column(BigInteger)
+    metadata_: Mapped[dict] = mapped_column('metadata', JSONB, nullable=False, server_default=text("'{}'::jsonb"))
+    fecha_modificacion: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime, server_default=text('CURRENT_TIMESTAMP'))
+    modificado_por: Mapped[Optional[int]] = mapped_column(Integer)
+

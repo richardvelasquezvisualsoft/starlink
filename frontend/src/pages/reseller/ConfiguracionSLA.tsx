@@ -1,13 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import client from '../../api/client';
-import { Calendar, Plus, Save, Clock, Trash2 } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
 export default function ConfiguracionSLA() {
   const [politicas, setPoliticas] = useState<any[]>([]);
   const [diasNoLaborables, setDiasNoLaborables] = useState<any[]>([]);
-  const [tiposSolicitud, setTiposSolicitud] = useState<any[]>([]);
+  const [_tiposSolicitud, setTiposSolicitud] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

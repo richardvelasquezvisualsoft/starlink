@@ -9,7 +9,7 @@ from app.scripts.seed import run_seed
 
 # Initialize Database tables
 import app.models
-Base.metadata.create_all(bind=engine)
+# Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -20,12 +20,11 @@ app = FastAPI(
 from fastapi.staticfiles import StaticFiles
 import os
 
-# Create uploads dir if it doesn't exist
-if not os.path.exists("uploads"):
-    os.makedirs("uploads")
+# Ensure upload storage directory exists using absolute path
+os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
 
 # Serve uploaded files under /api so it gets proxied correctly
-app.mount(f"{settings.API_V1_STR}/uploads", StaticFiles(directory="uploads"), name="uploads")
+app.mount(f"{settings.API_V1_STR}/uploads", StaticFiles(directory=settings.UPLOAD_DIR), name="uploads")
 
 # Custom Middleware to add Security Headers
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):

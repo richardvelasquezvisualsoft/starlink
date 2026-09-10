@@ -72,7 +72,8 @@ interface AlertResumen {
   alertas_activas: number;
   criticas_altas: number;
   sin_reconocer: number;
-  clientes_afectados: number;
+  clientes_afectados?: number;
+  servicios_afectados?: number;
   abiertas_sobre_umbral: number;
   umbral_antiguedad_horas: number;
 }
@@ -108,14 +109,17 @@ interface ClientFilterItem {
 
 const Alerts: React.FC = () => {
   const navigate = useNavigate();
+  const isClientView = window.location.pathname.startsWith('/cliente');
 
   // State
   const [activeTab, setActiveTab] = useState<'activas' | 'historicas' | 'recurrentes'>('activas');
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [resumen, setResumen] = useState<AlertResumen>({
     alertas_activas: 0,
     criticas_altas: 0,
     sin_reconocer: 0,
     clientes_afectados: 0,
+    servicios_afectados: 0,
     abiertas_sobre_umbral: 0,
     umbral_antiguedad_horas: 24
   });
@@ -162,17 +166,22 @@ const Alerts: React.FC = () => {
   // Fetch Catalogs and Clients
   const fetchMetadata = async () => {
     try {
-      const [catRes, cliRes] = await Promise.all([
-        client.get('/reseller/alertas/catalogo'),
-        client.get('/reseller/clientes')
-      ]);
-      setCatalogItems(catRes.data || []);
-      if (cliRes.data && Array.isArray(cliRes.data)) {
-        const list = cliRes.data.map((c: any) => ({
-          tenant_id: c.tenant_id,
-          cliente: c.cliente
-        }));
-        setClientOptions(list);
+      if (isClientView) {
+        const catRes = await client.get('/reseller/alertas/catalogo');
+        setCatalogItems(catRes.data || []);
+      } else {
+        const [catRes, cliRes] = await Promise.all([
+          client.get('/reseller/alertas/catalogo'),
+          client.get('/reseller/clientes')
+        ]);
+        setCatalogItems(catRes.data || []);
+        if (cliRes.data && Array.isArray(cliRes.data)) {
+          const list = cliRes.data.map((c: any) => ({
+            tenant_id: c.tenant_id,
+            cliente: c.cliente
+          }));
+          setClientOptions(list);
+        }
       }
     } catch (err) {
       console.error('Error fetching metadata:', err);
@@ -182,6 +191,7 @@ const Alerts: React.FC = () => {
   // Fetch Main Alerts List
   const fetchAlerts = async () => {
     setIsLoading(true);
+    setFetchError(null);
     try {
       if (activeTab === 'recurrentes') {
         const res = await client.get('/reseller/alertas/recurrentes');
@@ -197,7 +207,7 @@ const Alerts: React.FC = () => {
           sortDirection
         };
         if (searchTerm.trim()) params.q = searchTerm.trim();
-        if (selectedClient !== 'todas') params.cliente_id = Number(selectedClient);
+        if (!isClientView && selectedClient !== 'todas') params.cliente_id = Number(selectedClient);
         if (selectedSeveridad !== 'todas') params.criticidad = selectedSeveridad;
         if (selectedEstado !== 'todas') params.estado = selectedEstado;
         if (selectedReconocimiento !== 'todas') params.reconocida = selectedReconocimiento;
@@ -208,8 +218,9 @@ const Alerts: React.FC = () => {
         setTotalCount(res.data.total || 0);
         setTotalPages(res.data.totalPages || 1);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error fetching alerts list:', err);
+      setFetchError('No se pudieron cargar las alertas.');
     } finally {
       setIsLoading(false);
     }
@@ -288,7 +299,7 @@ const Alerts: React.FC = () => {
   const handleExportCSV = () => {
     if (alertsList.length === 0) return;
     const headers = [
-      'Cliente',
+      ...(isClientView ? [] : ['Cliente']),
       'Service Line',
       'Equipo',
       'Device ID',
@@ -308,7 +319,7 @@ const Alerts: React.FC = () => {
     
     alertsList.forEach(item => {
       const row = [
-        `"${(item.cliente || '').replace(/"/g, '""')}"`,
+        ...(isClientView ? [] : [`"${(item.cliente || '').replace(/"/g, '""')}"`]),
         `"${(item.numero_linea || '').replace(/"/g, '""')}"`,
         `"${(item.dispositivo_nombre || '').replace(/"/g, '""')}"`,
         `"${(item.device_id || '').replace(/"/g, '""')}"`,
@@ -330,7 +341,8 @@ const Alerts: React.FC = () => {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.setAttribute('href', url);
-    link.setAttribute('download', `alertas_globales_starmonitor_${new Date().toISOString().split('T')[0]}.csv`);
+    const prefix = isClientView ? 'alertas_mis_servicios' : 'alertas_globales';
+    link.setAttribute('download', `${prefix}_starmonitor_${new Date().toISOString().split('T')[0]}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -373,7 +385,7 @@ const Alerts: React.FC = () => {
 
   return (
     <div className="space-y-6 pb-12">
-      {/* 5. CABECERA DE ALERTAS GLOBALES */}
+      {/* 5. CABECERA DE ALERTAS */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-st-surface border border-st-border p-6 rounded-2xl shadow-lg relative overflow-hidden">
         <div className="absolute -right-12 -top-12 w-48 h-48 bg-st-offline/5 rounded-full blur-3xl pointer-events-none" />
         <div>
@@ -383,10 +395,10 @@ const Alerts: React.FC = () => {
             </div>
             <div>
               <h1 className="text-2xl font-bold tracking-tight text-white font-sans">
-                Alertas Globales
+                {isClientView ? 'ALERTAS' : 'Alertas Globales'}
               </h1>
               <p className="text-xs text-st-muted mt-0.5">
-                Gestión de alertas e incidencias de la cartera Starlink
+                {isClientView ? 'Monitoreo de alertas e incidencias de tus servicios Starlink.' : 'Gestión de alertas e incidencias de la cartera Starlink'}
               </p>
             </div>
           </div>
@@ -455,15 +467,21 @@ const Alerts: React.FC = () => {
           </div>
         </div>
 
-        {/* KPI 4 — Clientes afectados */}
+        {/* KPI 4 — Servicios Afectados / Clientes Afectados */}
         <div className="bg-st-surface border border-st-border rounded-xl p-4 flex flex-col justify-between hover:border-st-accent/40 transition-all">
           <div className="flex items-center justify-between text-st-muted">
-            <span className="text-[11px] font-semibold uppercase tracking-wider">Clientes Afectados</span>
-            <Building2 className="w-4 h-4 text-st-accent" />
+            <span className="text-[11px] font-semibold uppercase tracking-wider">
+              {isClientView ? 'Servicios Afectados' : 'Clientes Afectados'}
+            </span>
+            {isClientView ? <Satellite className="w-4 h-4 text-st-accent" /> : <Building2 className="w-4 h-4 text-st-accent" />}
           </div>
           <div className="mt-2 flex items-baseline justify-between">
-            <span className="text-2xl font-black text-white font-mono">{resumen.clientes_afectados}</span>
-            <span className="text-[10px] text-st-accent font-semibold">Tenants en cartera</span>
+            <span className="text-2xl font-black text-white font-mono">
+              {isClientView ? (resumen.servicios_afectados ?? resumen.clientes_afectados) : resumen.clientes_afectados}
+            </span>
+            <span className="text-[10px] text-st-accent font-semibold">
+              {isClientView ? 'Con alerta activa' : 'Tenants en cartera'}
+            </span>
           </div>
         </div>
 
@@ -489,7 +507,7 @@ const Alerts: React.FC = () => {
               type="text"
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
-              placeholder="Buscar por cliente, servicio, equipo o alerta..."
+              placeholder={isClientView ? "Buscar por servicio, equipo o alerta..." : "Buscar por cliente, servicio, equipo o alerta..."}
               className="w-full bg-st-bg border border-st-border rounded-xl pl-10 pr-10 py-2 text-xs text-white placeholder-st-muted focus:outline-none focus:border-st-accent transition-all"
             />
             {searchTerm && (
@@ -516,26 +534,28 @@ const Alerts: React.FC = () => {
         </form>
 
         {/* Dropdowns */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 pt-2 border-t border-st-border/50">
-          {/* Cliente */}
-          <div>
-            <label className="block text-[10px] font-bold text-st-muted uppercase mb-1">Cliente</label>
-            <select
-              value={selectedClient}
-              onChange={e => {
-                setSelectedClient(e.target.value);
-                setPage(1);
-              }}
-              className="w-full bg-st-bg border border-st-border rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-st-accent"
-            >
-              <option value="todas">Todos los clientes</option>
-              {clientOptions.map(c => (
-                <option key={c.tenant_id} value={c.tenant_id.toString()}>
-                  {c.cliente}
-                </option>
-              ))}
-            </select>
-          </div>
+        <div className={`grid grid-cols-2 sm:grid-cols-3 ${isClientView ? 'lg:grid-cols-4' : 'lg:grid-cols-5'} gap-3 pt-2 border-t border-st-border/50`}>
+          {/* Cliente (RESELLER view only) */}
+          {!isClientView && (
+            <div>
+              <label className="block text-[10px] font-bold text-st-muted uppercase mb-1">Cliente</label>
+              <select
+                value={selectedClient}
+                onChange={e => {
+                  setSelectedClient(e.target.value);
+                  setPage(1);
+                }}
+                className="w-full bg-st-bg border border-st-border rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-st-accent"
+              >
+                <option value="todas">Todos los clientes</option>
+                {clientOptions.map(c => (
+                  <option key={c.tenant_id} value={c.tenant_id.toString()}>
+                    {c.cliente}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           {/* Severidad */}
           <div>
@@ -666,6 +686,22 @@ const Alerts: React.FC = () => {
         </div>
       </div>
 
+      {/* Error UI Banner */}
+      {fetchError && (
+        <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-sm flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="w-5 h-5 text-red-400 shrink-0" />
+            <span>{fetchError}</span>
+          </div>
+          <button 
+            onClick={() => { setFetchError(null); fetchResumen(); fetchAlerts(); }} 
+            className="px-3 py-1.5 bg-red-500/20 text-white rounded-lg text-xs font-bold hover:bg-red-500/30 transition-all cursor-pointer"
+          >
+            Reintentar
+          </button>
+        </div>
+      )}
+
       {/* TAB CONTENT TABLES */}
       <div className="bg-st-surface border border-st-border rounded-xl overflow-hidden shadow-xl">
         {/* 10. TAB ACTIVAS & HISTÓRICAS */}
@@ -680,12 +716,14 @@ const Alerts: React.FC = () => {
                   >
                     Severidad {renderSortIcon('criticidad')}
                   </th>
-                  <th
-                    className="py-3 px-4 cursor-pointer hover:text-white"
-                    onClick={() => handleHeaderSort('cliente')}
-                  >
-                    Cliente {renderSortIcon('cliente')}
-                  </th>
+                  {!isClientView && (
+                    <th
+                      className="py-3 px-4 cursor-pointer hover:text-white"
+                      onClick={() => handleHeaderSort('cliente')}
+                    >
+                      Cliente {renderSortIcon('cliente')}
+                    </th>
+                  )}
                   <th className="py-3 px-4">Service Line</th>
                   <th className="py-3 px-4">Equipo / Terminal</th>
                   <th className="py-3 px-4">Alerta</th>
@@ -728,19 +766,23 @@ const Alerts: React.FC = () => {
               <tbody className="divide-y divide-st-border/50">
                 {isLoading ? (
                   <tr>
-                    <td colSpan={11} className="py-12 text-center text-st-muted">
+                    <td colSpan={isClientView ? 10 : 11} className="py-12 text-center text-st-muted">
                       <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-st-accent" />
                       Cargando bandeja de alertas...
                     </td>
                   </tr>
                 ) : alertsList.length === 0 ? (
                   <tr>
-                    <td colSpan={11} className="py-12 text-center text-st-muted">
+                    <td colSpan={isClientView ? 10 : 11} className="py-12 text-center text-st-muted">
                       {activeTab === 'activas' ? (
                         <div className="flex flex-col items-center space-y-2">
                           <CheckCircle2 className="w-10 h-10 text-st-online opacity-80" />
                           <p className="font-bold text-white text-sm">No hay alertas activas</p>
-                          <p className="text-xs">Toda la cartera se encuentra operando sin incidencias activas.</p>
+                          <p className="text-xs">
+                            {isClientView 
+                              ? 'Todos tus servicios se encuentran operando sin incidencias activas.' 
+                              : 'Toda la cartera se encuentra operando sin incidencias activas.'}
+                          </p>
                         </div>
                       ) : (
                         <div className="flex flex-col items-center space-y-2">
@@ -763,11 +805,13 @@ const Alerts: React.FC = () => {
                       {/* Severidad */}
                       <td className="py-3 px-4">{getSeverityBadge(item.criticidad)}</td>
 
-                      {/* Cliente */}
-                      <td className="py-3 px-4">
-                        <div className="font-bold text-white">{item.cliente}</div>
-                        <div className="text-[10px] text-st-muted font-mono">{item.tenant_codigo}</div>
-                      </td>
+                      {/* Cliente (RESELLER only) */}
+                      {!isClientView && (
+                        <td className="py-3 px-4">
+                          <div className="font-bold text-white">{item.cliente}</div>
+                          <div className="text-[10px] text-st-muted font-mono">{item.tenant_codigo}</div>
+                        </td>
+                      )}
 
                       {/* Service Line */}
                       <td className="py-3 px-4">
@@ -896,8 +940,8 @@ const Alerts: React.FC = () => {
             <table className="w-full text-left text-xs border-collapse">
               <thead>
                 <tr className="bg-st-bg/80 text-st-muted uppercase tracking-wider font-semibold border-b border-st-border">
-                  <th className="py-3 px-4">Cliente</th>
-                  <th className="py-3 px-4">Equipo</th>
+                  {!isClientView && <th className="py-3 px-4">Cliente</th>}
+                  <th className="py-3 px-4">Equipo / Terminal</th>
                   <th className="py-3 px-4">Código / Alerta</th>
                   <th className="py-3 px-4 text-center">Ocurrencias 24 h</th>
                   <th className="py-3 px-4 text-center">Ocurrencias 7 días</th>
@@ -910,14 +954,14 @@ const Alerts: React.FC = () => {
               <tbody className="divide-y divide-st-border/50">
                 {isLoading ? (
                   <tr>
-                    <td colSpan={9} className="py-12 text-center text-st-muted">
+                    <td colSpan={isClientView ? 8 : 9} className="py-12 text-center text-st-muted">
                       <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-st-accent" />
                       Calculando alertas recurrentes...
                     </td>
                   </tr>
                 ) : recurrentesList.length === 0 ? (
                   <tr>
-                    <td colSpan={9} className="py-12 text-center text-st-muted">
+                    <td colSpan={isClientView ? 8 : 9} className="py-12 text-center text-st-muted">
                       <div className="flex flex-col items-center space-y-2">
                         <CheckCircle2 className="w-10 h-10 text-st-online opacity-80" />
                         <p className="font-bold text-white text-sm">
@@ -929,7 +973,7 @@ const Alerts: React.FC = () => {
                 ) : (
                   recurrentesList.map((rec, idx) => (
                     <tr key={idx} className="hover:bg-white/[0.03] transition-colors">
-                      <td className="py-3 px-4 font-bold text-white">{rec.cliente}</td>
+                      {!isClientView && <td className="py-3 px-4 font-bold text-white">{rec.cliente}</td>}
                       <td className="py-3 px-4">
                         <div className="font-semibold text-white">{rec.dispositivo_nombre}</div>
                         <div className="text-[10px] text-st-muted font-mono">{rec.device_id}</div>
@@ -1064,17 +1108,21 @@ const Alerts: React.FC = () => {
               <div className="bg-st-bg/40 border border-st-border rounded-xl p-4 space-y-3">
                 <h3 className="text-xs font-bold uppercase tracking-wider text-st-muted flex items-center gap-2">
                   <Building2 className="w-4 h-4 text-st-accent" />
-                  Identificación de Cartera
+                  {isClientView ? 'Identificación del Servicio' : 'Identificación de Cartera'}
                 </h3>
                 <div className="grid grid-cols-2 gap-3 text-xs">
-                  <div>
-                    <span className="text-st-muted text-[10px] block">Cliente</span>
-                    <span className="font-bold text-white">{selectedAlert.cliente}</span>
-                  </div>
-                  <div>
-                    <span className="text-st-muted text-[10px] block">Código Tenant</span>
-                    <span className="font-mono text-white">{selectedAlert.tenant_codigo}</span>
-                  </div>
+                  {!isClientView && (
+                    <>
+                      <div>
+                        <span className="text-st-muted text-[10px] block">Cliente</span>
+                        <span className="font-bold text-white">{selectedAlert.cliente}</span>
+                      </div>
+                      <div>
+                        <span className="text-st-muted text-[10px] block">Código Tenant</span>
+                        <span className="font-mono text-white">{selectedAlert.tenant_codigo}</span>
+                      </div>
+                    </>
+                  )}
                   <div>
                     <span className="text-st-muted text-[10px] block">Service Line</span>
                     <span className="font-mono text-st-accent font-semibold">{selectedAlert.numero_linea}</span>
@@ -1246,22 +1294,24 @@ const Alerts: React.FC = () => {
                 </button>
               )}
 
-              <div className="grid grid-cols-3 gap-2">
-                <button
-                  onClick={() => {
-                    setIsDrawerOpen(false);
-                    navigate('/reseller/noc');
-                  }}
-                  className="py-2 px-3 bg-st-surface border border-st-border hover:border-st-accent/50 text-st-muted hover:text-white font-semibold text-[11px] rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5"
-                >
-                  <Activity className="w-3.5 h-3.5 text-st-accent" />
-                  <span>Ver en NOC</span>
-                </button>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {!isClientView && (
+                  <button
+                    onClick={() => {
+                      setIsDrawerOpen(false);
+                      navigate('/reseller/noc');
+                    }}
+                    className="py-2 px-3 bg-st-surface border border-st-border hover:border-st-accent/50 text-st-muted hover:text-white font-semibold text-[11px] rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                  >
+                    <Activity className="w-3.5 h-3.5 text-st-accent" />
+                    <span>Ver en NOC</span>
+                  </button>
+                )}
 
                 <button
                   onClick={() => {
                     setIsDrawerOpen(false);
-                    navigate('/reseller/telemetria');
+                    navigate(isClientView ? '/cliente/telemetria' : '/reseller/telemetria');
                   }}
                   className="py-2 px-3 bg-st-surface border border-st-border hover:border-st-accent/50 text-st-muted hover:text-white font-semibold text-[11px] rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5"
                 >
@@ -1272,7 +1322,7 @@ const Alerts: React.FC = () => {
                 <button
                   onClick={() => {
                     setIsDrawerOpen(false);
-                    navigate('/reseller/servicios');
+                    navigate(isClientView ? '/cliente/servicios' : '/reseller/servicios');
                   }}
                   className="py-2 px-3 bg-st-surface border border-st-border hover:border-st-accent/50 text-st-muted hover:text-white font-semibold text-[11px] rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5"
                 >

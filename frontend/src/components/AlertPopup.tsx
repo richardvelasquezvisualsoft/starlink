@@ -3,33 +3,35 @@ import { X, CheckCircle, AlertCircle, Info } from 'lucide-react';
 
 interface AlertPopupProps {
   isOpen: boolean;
-  type: 'success' | 'error' | 'info';
+  type: 'success' | 'error' | 'info' | 'warning';
+  title?: string;
   message: string;
   onClose: () => void;
 }
 
-const AlertPopup: React.FC<AlertPopupProps> = ({ isOpen, type, message, onClose }) => {
+const AlertPopup: React.FC<AlertPopupProps> = ({ isOpen, type, title, message, onClose }) => {
   useEffect(() => {
-    if (isOpen) {
-      const timer = setTimeout(() => {
-        onClose();
-      }, 5000);
-      return () => clearTimeout(timer);
-    }
+    if (!isOpen) return;
+    const timer = setTimeout(() => {
+      onClose();
+    }, 5000);
+    return () => clearTimeout(timer);
   }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
   const bgColors = {
-    success: 'bg-[#0f2e23] border-[#1a4a38]',
+    success: 'bg-emerald-50 border-emerald-200',
     error: 'bg-red-50 border-red-200',
-    info: 'bg-blue-50 border-blue-200'
+    info: 'bg-blue-50 border-blue-200',
+    warning: 'bg-amber-50 border-amber-200'
   };
 
   const textColors = {
-    success: 'text-white',
+    success: 'text-emerald-800',
     error: 'text-red-800',
-    info: 'text-blue-800'
+    info: 'text-blue-800',
+    warning: 'text-amber-800'
   };
 
   const Icon = type === 'success' ? CheckCircle : type === 'error' ? AlertCircle : Info;
@@ -39,6 +41,7 @@ const AlertPopup: React.FC<AlertPopupProps> = ({ isOpen, type, message, onClose 
       <div className={`flex items-start gap-4 p-4 rounded-xl border shadow-lg max-w-sm ${bgColors[type]}`}>
         <Icon className={`w-5 h-5 shrink-0 mt-0.5 ${textColors[type]}`} />
         <div className="flex-1">
+          {title && <h4 className={`text-sm font-bold ${textColors[type]}`}>{title}</h4>}
           <p className={`text-sm font-medium ${textColors[type]}`}>
             {message}
           </p>

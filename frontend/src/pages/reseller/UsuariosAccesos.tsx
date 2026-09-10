@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Shield, Lock, Search, AlertTriangle, Key, Activity, Server, FileText, UserCheck, User, Users, Unlock, Ban, RefreshCw, X } from 'lucide-react';
+import { Shield, Lock, Search, Key, UserCheck, User, Unlock, Ban, RefreshCw, X } from 'lucide-react';
 import client from '../../api/client';
 
 export default function UsuariosAccesos() {

@@ -12,10 +12,17 @@ from app.api.endpoints.auth import get_current_user
 
 router = APIRouter()
 
-def get_admin_user(current_user: Usuario = Depends(get_current_user)):
-    is_reseller = any(ur.rol.codigo == 'RESELLER' for ur in current_user.roles if ur.activo)
+def get_admin_user(current_user: Usuario = Depends(get_current_user), db: Session = Depends(get_db)):
+    roles_query = (
+        db.query(RolesPortal.codigo)
+        .join(UsuarioRoles, UsuarioRoles.rol_id == RolesPortal.id)
+        .filter(UsuarioRoles.usuario_id == current_user.id, UsuarioRoles.activo == True)
+        .all()
+    )
+    user_roles = [str(r[0]).strip().upper() for r in roles_query if r and r[0]]
+    is_reseller = any(r in ['RESELLER', 'ADMIN', 'SUPERADMIN', 'ADMINISTRADOR', 'NOC'] for r in user_roles)
     if not is_reseller:
-        raise HTTPException(status_code=403, detail="Not authorized. Must be RESELLER.")
+        raise HTTPException(status_code=403, detail="Not authorized. Must be RESELLER or ADMIN.")
     return current_user
 
 def log_audit(db: Session, evento: str, usuario_id: int, tenant_id: int = None, descripcion: str = None):

@@ -19,7 +19,7 @@ const CostCenters: React.FC = () => {
     const fetchCenters = async () => {
       try {
         const { data } = await client.get('/centros-costos');
-        setCenters(data);
+        setCenters(data || []);
       } catch (error) {
         console.error('Error fetching cost centers:', error);
       } finally {

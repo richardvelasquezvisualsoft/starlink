@@ -1603,13 +1603,16 @@ def get_reseller_alertas_resumen(
     db: Session = Depends(get_db), 
     tenant_ctx: dict = Depends(get_tenant_context)
 ):
-    ensure_reseller(tenant_ctx)
-    query = text("""
+    tenant_id_val = tenant_ctx.get("tenant_id")
+    where_clause = f"WHERE c.tenant_id = {tenant_id_val}" if tenant_id_val else ""
+    
+    query = text(f"""
         SELECT 
             COUNT(*) FILTER (WHERE COALESCE(a.activa, true) = true) AS alertas_activas,
             COUNT(*) FILTER (WHERE COALESCE(a.activa, true) = true AND lower(ca.criticidad) IN ('critical', 'critica', 'crítica', 'high', 'alta')) AS criticas_altas,
             COUNT(*) FILTER (WHERE COALESCE(a.activa, true) = true AND COALESCE(a.reconocida, false) = false) AS sin_reconocer,
             COUNT(DISTINCT COALESCE(t.id, c.id, 1)) FILTER (WHERE COALESCE(a.activa, true) = true) AS clientes_afectados,
+            COUNT(DISTINCT ls.id) FILTER (WHERE COALESCE(a.activa, true) = true) AS servicios_afectados,
             COUNT(*) FILTER (WHERE COALESCE(a.activa, true) = true AND a.fecha_hora_deteccion <= (NOW() - INTERVAL '24 hours')) AS abiertas_sobre_umbral
         FROM alertas_log a
         JOIN catalogo_alertas ca ON ca.id = a.catalogo_alerta_id
@@ -1617,6 +1620,7 @@ def get_reseller_alertas_resumen(
         LEFT JOIN lineas_servicio ls ON ls.dispositivo_id = d.id
         LEFT JOIN cuentas c ON c.id = ls.cuenta_id
         LEFT JOIN tenants t ON t.id = c.tenant_id
+        {where_clause}
     """)
     try:
         row = db.execute(query).fetchone()
@@ -1626,6 +1630,7 @@ def get_reseller_alertas_resumen(
             "criticas_altas": m.get("criticas_altas", 0),
             "sin_reconocer": m.get("sin_reconocer", 0),
             "clientes_afectados": m.get("clientes_afectados", 0),
+            "servicios_afectados": m.get("servicios_afectados", 0),
             "abiertas_sobre_umbral": m.get("abiertas_sobre_umbral", 0),
             "umbral_antiguedad_horas": 24
         }
@@ -1636,6 +1641,7 @@ def get_reseller_alertas_resumen(
             "criticas_altas": 0,
             "sin_reconocer": 0,
             "clientes_afectados": 0,
+            "servicios_afectados": 0,
             "abiertas_sobre_umbral": 0,
             "umbral_antiguedad_horas": 24
         }
@@ -1645,7 +1651,6 @@ def get_reseller_alertas_catalogo(
     db: Session = Depends(get_db),
     tenant_ctx: dict = Depends(get_tenant_context)
 ):
-    ensure_reseller(tenant_ctx)
     query = text("SELECT id, codigo_alerta, nombre, criticidad FROM catalogo_alertas ORDER BY nombre ASC")
     try:
         rows = db.execute(query).fetchall()
@@ -1671,9 +1676,12 @@ def get_reseller_alertas(
     db: Session = Depends(get_db),
     tenant_ctx: dict = Depends(get_tenant_context)
 ):
-    ensure_reseller(tenant_ctx)
+    tenant_id_val = tenant_ctx.get("tenant_id")
+    if tenant_id_val and cliente_id and int(cliente_id) != int(tenant_id_val):
+        raise HTTPException(status_code=403, detail="No está autorizado para ver alertas de otro cliente")
+    tenant_filter = f"AND c.tenant_id = {tenant_id_val}" if tenant_id_val else ""
     
-    query = text("""
+    query = text(f"""
         WITH reinc AS (
             SELECT 
                 dispositivo_id,
@@ -1723,6 +1731,7 @@ def get_reseller_alertas(
         LEFT JOIN tenants t ON t.id = c.tenant_id
         LEFT JOIN reinc r ON r.dispositivo_id = a.dispositivo_id AND r.catalogo_alerta_id = a.catalogo_alerta_id
         LEFT JOIN estado_terminal_actual eta ON eta.dispositivo_id = d.id
+        WHERE 1=1 {tenant_filter}
         ORDER BY a.fecha_hora_deteccion DESC
     """)
     
@@ -1907,8 +1916,10 @@ def get_reseller_alertas_recurrentes(
     db: Session = Depends(get_db),
     tenant_ctx: dict = Depends(get_tenant_context)
 ):
-    ensure_reseller(tenant_ctx)
-    query = text("""
+    tenant_id_val = tenant_ctx.get("tenant_id")
+    tenant_filter = f"WHERE c.tenant_id = {tenant_id_val}" if tenant_id_val else ""
+    
+    query = text(f"""
         SELECT 
             d.id AS dispositivo_id,
             d.device_id,
@@ -1930,6 +1941,7 @@ def get_reseller_alertas_recurrentes(
         LEFT JOIN lineas_servicio ls ON ls.dispositivo_id = d.id
         LEFT JOIN cuentas c ON c.id = ls.cuenta_id
         LEFT JOIN tenants t ON t.id = c.tenant_id
+        {tenant_filter}
         GROUP BY d.id, d.device_id, d.nombre, ca.id, ca.codigo_alerta, ca.nombre, ca.criticidad, t.id, t.nombre_comercial, t.razon_social, c.id, c.nombre
         HAVING COUNT(*) >= 1
         ORDER BY ocurrencias_totales DESC, MAX(a.fecha_hora_deteccion) DESC
@@ -2833,9 +2845,10 @@ def get_analytics_calidad(
     db: Session = Depends(get_db),
     tenant_ctx: dict = Depends(get_tenant_context)
 ):
-    ensure_reseller(tenant_ctx)
+    tenant_id_val = tenant_ctx.get("tenant_id")
+    tenant_filter = f"WHERE t.id = {tenant_id_val}" if tenant_id_val else ""
     try:
-        rows = db.execute(text("""
+        rows = db.execute(text(f"""
             SELECT 
                 t.id AS tenant_id,
                 COALESCE(t.nombre_comercial, t.razon_social) AS cliente,
@@ -2852,6 +2865,7 @@ def get_analytics_calidad(
             LEFT JOIN lineas_servicio ls ON ls.cuenta_id = c.id
             LEFT JOIN costo_servicio_mes csm ON csm.tenant_id = t.id
             LEFT JOIN servicio_resumen_dia srd ON srd.dispositivo_id = ls.dispositivo_id
+            {tenant_filter}
             GROUP BY t.id, t.nombre_comercial, t.razon_social, t.codigo
             ORDER BY disponibilidad_starmonitor ASC
         """)).fetchall()
@@ -3074,19 +3088,40 @@ def get_analytics_productos(
 ):
     ensure_reseller(tenant_ctx)
     try:
-        rows = db.execute(text("""
+        # RBAC Filtering
+        role = tenant_ctx.get("role") or tenant_ctx.get("rol")
+        acceso_todos = tenant_ctx.get("acceso_todos_tenants", False)
+        usuario_id = tenant_ctx.get("usuario_id")
+        
+        tenant_filter = ""
+        params = {}
+        if not acceso_todos and usuario_id is not None:
+            tenant_filter = " AND EXISTS (SELECT 1 FROM tenant_usuarios tu WHERE tu.tenant_id = c.tenant_id AND tu.usuario_id = :usr AND tu.activo = true) "
+            params["usr"] = usuario_id
+
+        query = f"""
+            WITH csm_agg AS (
+                SELECT linea_servicio_id,
+                       AVG(consumo_total_gb) as avg_consumo,
+                       AVG(costo_starlink) as avg_costo
+                FROM costo_servicio_mes
+                GROUP BY linea_servicio_id
+            )
             SELECT 
-                COALESCE(ls.plan_nombre, ls.plan_contratado, 'Priority 1TB') AS plan_nombre,
-                COUNT(ls.id) AS servicios_count,
+                COALESCE(ls.plan_contratado, 'Sin Plan') AS plan_nombre,
+                COUNT(DISTINCT ls.id) AS servicios_count,
                 COUNT(DISTINCT c.tenant_id) AS clientes_count,
-                COALESCE(AVG(csm.consumo_total_gb), 250.0) AS consumo_avg_gb,
-                COALESCE(AVG(csm.costo_starlink_referencial), 400.0) AS costo_avg
+                AVG(csm.avg_consumo) AS consumo_avg_gb,
+                AVG(csm.avg_costo) AS costo_avg
             FROM lineas_servicio ls
-            LEFT JOIN cuentas c ON c.id = ls.cuenta_id
-            LEFT JOIN costo_servicio_mes csm ON csm.tenant_id = c.tenant_id
-            GROUP BY COALESCE(ls.plan_nombre, ls.plan_contratado, 'Priority 1TB')
+            JOIN cuentas c ON c.id = ls.cuenta_id
+            LEFT JOIN csm_agg csm ON csm.linea_servicio_id = ls.id
+            WHERE ls.estado_provisionamiento = 'active'
+            {tenant_filter}
+            GROUP BY COALESCE(ls.plan_contratado, 'Sin Plan')
             ORDER BY servicios_count DESC
-        """)).fetchall()
+        """
+        rows = db.execute(text(query), params).fetchall()
     except Exception as e:
         print("Analytics productos query error:", e)
         rows = []
@@ -3097,14 +3132,20 @@ def get_analytics_productos(
     for r in rows:
         m = dict(r._mapping)
         cnt = int(m["servicios_count"] or 0)
+        if cnt == 0:
+            continue
+            
+        consumo = m["consumo_avg_gb"]
+        costo = m["costo_avg"]
+        
         productos.append({
             "plan_nombre": m["plan_nombre"],
             "servicios": cnt,
             "pct_cartera": round((cnt / max(1, total_servicios)) * 100, 1),
-            "clientes": int(m["clientes_count"] or 1),
-            "consumo_promedio_gb": round(float(m["consumo_avg_gb"] or 250.0), 1),
-            "costo_promedio_usd": round(float(m["costo_avg"] or 400.0), 2),
-            "tendencia": "CRECIENTE" if cnt > 5 else "ESTABLE"
+            "clientes": int(m["clientes_count"] or 0),
+            "consumo_promedio_gb": round(float(consumo), 1) if consumo is not None else "N/D",
+            "costo_promedio_usd": round(float(costo), 2) if costo is not None else "N/D",
+            "tendencia": "N/D"
         })
 
     return {
@@ -3431,55 +3472,3 @@ def get_reseller_contract_detail(
 
     found["lineas_asociadas"] = lines
     return found
-
-
-@router.post("/contracts")
-@router.post("/contratos")
-def create_reseller_contract(
-    payload: dict,
-    db: Session = Depends(get_db),
-    tenant_ctx: dict = Depends(get_tenant_context)
-):
-    ensure_reseller(tenant_ctx)
-    tenant_id = payload.get("tenant_id")
-    codigo = payload.get("codigo_contrato")
-    nombre = payload.get("nombre")
-    fecha_inicio = payload.get("fecha_inicio")
-    fecha_fin = payload.get("fecha_fin")
-    plazo_meses = payload.get("plazo_meses", 12)
-    moneda = payload.get("moneda_iso3", "USD")
-    monto = payload.get("monto_mensual_referencial", 0.0)
-    renovacion = payload.get("renovacion_automatica", True)
-    observaciones = payload.get("observaciones", "")
-
-    if not (tenant_id and codigo and nombre and fecha_inicio and fecha_fin):
-        raise HTTPException(status_code=400, detail="Faltan campos obligatorios para registrar el contrato")
-
-    try:
-        res = db.execute(text("""
-            INSERT INTO contratos_cliente (
-                tenant_id, codigo_contrato, nombre, fecha_inicio, fecha_fin,
-                plazo_meses, estado, renovacion_automatica, moneda_iso3,
-                monto_mensual_referencial, observaciones, fecha_creacion, fecha_modificacion
-            ) VALUES (
-                :tid, :code, :name, :f_ini, :f_fin,
-                :plazo, 'ACTIVO', :renov, :moneda,
-                :monto, :obs, NOW(), NOW()
-            ) RETURNING id;
-        """), {
-            "tid": tenant_id, "code": codigo, "name": nombre,
-            "f_ini": fecha_inicio, "f_fin": fecha_fin, "plazo": plazo_meses,
-            "renov": renovacion, "moneda": moneda, "monto": monto, "obs": observaciones
-        })
-        db.commit()
-        new_id = res.fetchone()[0]
-        return {"status": "success", "id": new_id, "message": "Contrato comercial creado exitosamente"}
-    except Exception as e:
-        db.rollback()
-        print("Error inserting into contratos_cliente:", e)
-        raise HTTPException(status_code=500, detail=f"Error al guardar contrato: {str(e)}")
-
-
-
-
-

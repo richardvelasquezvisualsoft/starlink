@@ -42,15 +42,24 @@ const BillingReport: React.FC = () => {
     }
     const fetchBillingData = async () => {
       try {
-        const url = isGlobal ? '/billing/history' : '/billing/history?tenant=active';
+        const url = `/billing/details?year=${selectedYear}&month=${selectedMonth}`;
         const res = await client.get(url);
-        setBillingData(res.data || []);
+        
+        // Map backend details to billingData format expected by the frontend
+        const mappedData = res.data.map((item: any) => ({
+          mes: `${selectedYear}-${selectedMonth}`,
+          contratado: item.mrc_usd || 250,
+          pagado: item.total_usd || 250,
+          excedentes: item.excedente_usd || 0,
+          device: item.nombre || item.device_id
+        }));
+        setBillingData(mappedData);
       } catch (error) {
         setBillingData([]);
       }
     };
     fetchBillingData();
-  }, [isGlobal]);
+  }, [isGlobal, selectedYear, selectedMonth]);
 
   // Calculate totals
   const totalContratado = billingData.reduce((acc, curr) => acc + curr.contratado, 0);
@@ -156,9 +165,23 @@ const BillingReport: React.FC = () => {
               onChange={(e) => setSelectedMonth(e.target.value)}
             >
               <option value="all" className="bg-st-surface text-white">Todos los meses</option>
-              <option value="08" className="bg-st-surface text-white">Agosto</option>
-              <option value="07" className="bg-st-surface text-white">Julio</option>
-              <option value="06" className="bg-st-surface text-white">Junio</option>
+              {[
+                { val: '01', label: 'Enero' },
+                { val: '02', label: 'Febrero' },
+                { val: '03', label: 'Marzo' },
+                { val: '04', label: 'Abril' },
+                { val: '05', label: 'Mayo' },
+                { val: '06', label: 'Junio' },
+                { val: '07', label: 'Julio' },
+                { val: '08', label: 'Agosto' },
+                { val: '09', label: 'Septiembre' },
+                { val: '10', label: 'Octubre' },
+                { val: '11', label: 'Noviembre' },
+                { val: '12', label: 'Diciembre' },
+              ].map(m => (
+                <option key={m.val} value={m.val} className="bg-st-surface text-white">{m.label}</option>
+              ))}
+
             </select>
           </div>
 

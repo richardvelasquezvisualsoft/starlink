@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Save, Camera, Trash2, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import client, { API_ROOT_URL } from '../../api/client';
-import Layout from '../../components/Layout';
+import client, { buildAvatarUrl } from '../../api/client';
 import AlertPopup from '../../components/AlertPopup';
 
 interface PerfilData {
@@ -20,6 +19,8 @@ interface PerfilData {
 const Perfil: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [imageHasError, setImageHasError] = useState(false);
+  const [avatarVersion, setAvatarVersion] = useState<number>(Date.now());
   
   const [formData, setFormData] = useState<PerfilData>({
     nombre: '',
@@ -63,7 +64,20 @@ const Perfil: React.FC = () => {
         zona_horaria: data.zona_horaria || 'Perú - Lima (UTC-05:00)',
         foto_url: data.foto_url || ''
       });
+      setImageHasError(false);
+      setAvatarVersion(Date.now());
       if (data.id) setUserId(data.id);
+
+      // Sync starlink_user in localStorage
+      const userJson = localStorage.getItem('starlink_user');
+      if (userJson) {
+        const u = JSON.parse(userJson);
+        u.foto_url = data.foto_url || '';
+        u.nombre = data.nombre || u.nombre;
+        localStorage.setItem('starlink_user', JSON.stringify(u));
+        window.dispatchEvent(new CustomEvent('user_profile_updated', { detail: u }));
+        window.dispatchEvent(new Event('storage'));
+      }
     } catch (error) {
       showAlert('error', 'Ocurrió un error al cargar la información del perfil. Por favor, intenta de nuevo.');
     }
@@ -91,8 +105,9 @@ const Perfil: React.FC = () => {
       if (userJson) {
         const u = JSON.parse(userJson);
         u.nombre = formData.nombre;
+        u.foto_url = formData.foto_url;
         localStorage.setItem('starlink_user', JSON.stringify(u));
-        // Force reload to update header
+        window.dispatchEvent(new CustomEvent('user_profile_updated', { detail: u }));
         window.dispatchEvent(new Event('storage'));
       }
     } catch (error) {
@@ -114,24 +129,29 @@ const Perfil: React.FC = () => {
       return;
     }
 
-    const formData = new FormData();
-    formData.append('file', file);
+    const uploadData = new FormData();
+    uploadData.append('file', file);
     
     try {
       // client automatically adds Authorization header
-      const res = await client.post('/perfil/foto', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
+      const res = await client.post('/perfil/foto', uploadData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
       });
       
       const newFotoUrl = res.data.foto_url;
       setFormData(prev => ({ ...prev, foto_url: newFotoUrl }));
+      setImageHasError(false);
+      setAvatarVersion(Date.now());
       
-      // Update local storage
+      // Update local storage and trigger events
       const userJson = localStorage.getItem('starlink_user');
       if (userJson) {
         const u = JSON.parse(userJson);
         u.foto_url = newFotoUrl;
         localStorage.setItem('starlink_user', JSON.stringify(u));
+        window.dispatchEvent(new CustomEvent('user_profile_updated', { detail: u }));
         window.dispatchEvent(new Event('storage'));
       }
       
@@ -140,6 +160,32 @@ const Perfil: React.FC = () => {
       showAlert('error', 'Hubo un problema al intentar subir tu foto. Asegúrate de que sea una imagen válida.');
     }
   };
+
+  const handlePhotoDelete = async () => {
+    try {
+      await client.delete('/perfil/foto');
+      setFormData(prev => ({ ...prev, foto_url: '' }));
+      setImageHasError(false);
+      setAvatarVersion(Date.now());
+      
+      const userJson = localStorage.getItem('starlink_user');
+      if (userJson) {
+        const u = JSON.parse(userJson);
+        u.foto_url = '';
+        localStorage.setItem('starlink_user', JSON.stringify(u));
+        window.dispatchEvent(new CustomEvent('user_profile_updated', { detail: u }));
+        window.dispatchEvent(new Event('storage'));
+      }
+      
+      showAlert('success', 'Foto de perfil eliminada correctamente.');
+    } catch (error) {
+      showAlert('error', 'No se pudo eliminar la foto de perfil.');
+    }
+  };
+
+  const isCliente = location.pathname.startsWith('/cliente');
+  const dashboardPath = isCliente ? '/cliente/dashboard' : '/reseller/dashboard';
+  const roleLabel = isCliente ? 'Cliente' : 'Administrador';
 
   return (
       <div className="max-w-4xl mx-auto py-6 px-4">
@@ -154,7 +200,7 @@ const Perfil: React.FC = () => {
           <div className="h-1 w-full bg-[#112a23]"></div>
           
           <button 
-            onClick={() => navigate('/reseller/dashboard')}
+            onClick={() => navigate(dashboardPath)}
             className="absolute top-4 right-4 p-2 hover:bg-gray-100 rounded-lg transition-colors z-10"
             title="Cerrar y volver al Dashboard"
           >
@@ -165,11 +211,16 @@ const Perfil: React.FC = () => {
             {/* Left Column: Photo & Info */}
             <div className="flex flex-col items-center shrink-0 w-64">
               <div className="w-40 h-40 rounded-full border-4 border-amber-500/80 mb-6 flex items-center justify-center overflow-hidden bg-gray-100">
-                {formData.foto_url ? (
-                  <img src={`${API_ROOT_URL}${formData.foto_url}`} alt="Perfil" className="w-full h-full object-cover" />
+                {formData.foto_url && !imageHasError ? (
+                  <img 
+                    src={buildAvatarUrl(formData.foto_url, avatarVersion)} 
+                    alt="Perfil" 
+                    className="w-full h-full object-cover" 
+                    onError={() => setImageHasError(true)}
+                  />
                 ) : (
                   <div className="w-full h-full bg-gray-200 text-[#112a23] font-bold flex items-center justify-center text-5xl uppercase">
-                    {formData.nombre ? formData.nombre.charAt(0) : 'R'}
+                    {formData.nombre ? formData.nombre.charAt(0) : (isCliente ? 'C' : 'R')}
                   </div>
                 )}
               </div>
@@ -188,13 +239,16 @@ const Perfil: React.FC = () => {
                   accept="image/*"
                   onChange={handlePhotoUpload}
                 />
-                <button className="flex-1 py-1.5 border border-[#EF4444]/30 rounded text-xs font-semibold text-[#EF4444] hover:bg-red-50 flex items-center justify-center gap-1.5 transition-colors">
+                <button 
+                  onClick={handlePhotoDelete}
+                  className="flex-1 py-1.5 border border-[#EF4444]/30 rounded text-xs font-semibold text-[#EF4444] hover:bg-red-50 flex items-center justify-center gap-1.5 transition-colors"
+                >
                   <Trash2 className="w-3.5 h-3.5" /> ELIMINAR FOTO
                 </button>
               </div>
 
               <div className="w-full bg-gray-50 rounded-lg p-4 border border-gray-100 text-center">
-                <p className="text-sm font-bold text-gray-800">Administrador</p>
+                <p className="text-sm font-bold text-gray-800">{roleLabel}</p>
                 <p className="text-xs text-gray-500 mt-1">ID Sistema: {userId}</p>
               </div>
             </div>

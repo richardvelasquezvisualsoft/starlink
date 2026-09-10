@@ -44,16 +44,29 @@ def get_billing_summary(
         else:
             end_date = f"{year}-{month+1:02d}-01"
 
-        raw_res = db.execute(text("""
-            SELECT 
-                COALESCE(SUM(priority_gb + standard_gb), 0) AS total_gb,
-                COUNT(DISTINCT linea_servicio_id) AS lineas_cnt
-            FROM consumo_diario
-            WHERE fecha_utc >= :start_date AND fecha_utc < :end_date
-        """), {"start_date": start_date, "end_date": end_date}).fetchone()
+        tenant_id = tenant_ctx.get("tenant_id")
+        if tenant_id:
+            raw_res = db.execute(text("""
+                SELECT 
+                    COALESCE(SUM(cd.priority_gb + cd.standard_gb), 0) AS total_gb,
+                    COUNT(DISTINCT cd.linea_servicio_id) AS lineas_cnt
+                FROM consumo_diario cd
+                JOIN lineas_servicio ls ON ls.id = cd.linea_servicio_id
+                JOIN cuentas c ON c.id = ls.cuenta_id
+                WHERE cd.fecha_utc >= :start_date AND cd.fecha_utc < :end_date
+                AND c.tenant_id = :t_id
+            """), {"start_date": start_date, "end_date": end_date, "t_id": tenant_id}).fetchone()
+        else:
+            raw_res = db.execute(text("""
+                SELECT 
+                    COALESCE(SUM(priority_gb + standard_gb), 0) AS total_gb,
+                    COUNT(DISTINCT linea_servicio_id) AS lineas_cnt
+                FROM consumo_diario
+                WHERE fecha_utc >= :start_date AND fecha_utc < :end_date
+            """), {"start_date": start_date, "end_date": end_date}).fetchone()
 
-        total_gb = float(raw_res[0]) if raw_res else 0.0
-        lineas_cnt = int(raw_res[1]) if raw_res else 0
+        total_gb = float(raw_res[0]) if raw_res and raw_res[0] is not None else 0.0
+        lineas_cnt = int(raw_res[1]) if raw_res and raw_res[1] is not None else 0
         total_mrc = lineas_cnt * 250.0  # Referencial
         total_excedentes = 0.0
     
@@ -96,18 +109,35 @@ def get_billing_details(
         else:
             end_date = f"{year}-{month+1:02d}-01"
 
-        raw_rows = db.execute(text("""
-            SELECT 
-                d.id AS dispositivo_id,
-                d.device_id,
-                d.nombre,
-                COALESCE(ls.plan_nombre, 'Priority 1TB') AS plan,
-                COALESCE(SUM(cd.priority_gb + cd.standard_gb), 0) AS consumido_gb
-            FROM lineas_servicio ls
-            JOIN dispositivos d ON d.id = ls.dispositivo_id
-            LEFT JOIN consumo_diario cd ON cd.linea_servicio_id = ls.id AND cd.fecha_utc >= :start_date AND cd.fecha_utc < :end_date
-            GROUP BY d.id, d.device_id, d.nombre, ls.plan_nombre
-        """), {"start_date": start_date, "end_date": end_date}).fetchall()
+        tenant_id = tenant_ctx.get("tenant_id")
+        if tenant_id:
+            raw_rows = db.execute(text("""
+                SELECT 
+                    d.id AS dispositivo_id,
+                    d.device_id,
+                    d.nombre,
+                    COALESCE(ls.plan_contratado, 'Priority 1TB') AS plan,
+                    COALESCE(SUM(cd.priority_gb + cd.standard_gb), 0) AS consumido_gb
+                FROM lineas_servicio ls
+                JOIN cuentas c ON c.id = ls.cuenta_id
+                JOIN dispositivos d ON d.id = ls.dispositivo_id
+                LEFT JOIN consumo_diario cd ON cd.linea_servicio_id = ls.id AND cd.fecha_utc >= :start_date AND cd.fecha_utc < :end_date
+                WHERE c.tenant_id = :t_id
+                GROUP BY d.id, d.device_id, d.nombre, ls.plan_contratado
+            """), {"start_date": start_date, "end_date": end_date, "t_id": tenant_id}).fetchall()
+        else:
+            raw_rows = db.execute(text("""
+                SELECT 
+                    d.id AS dispositivo_id,
+                    d.device_id,
+                    d.nombre,
+                    COALESCE(ls.plan_contratado, 'Priority 1TB') AS plan,
+                    COALESCE(SUM(cd.priority_gb + cd.standard_gb), 0) AS consumido_gb
+                FROM lineas_servicio ls
+                JOIN dispositivos d ON d.id = ls.dispositivo_id
+                LEFT JOIN consumo_diario cd ON cd.linea_servicio_id = ls.id AND cd.fecha_utc >= :start_date AND cd.fecha_utc < :end_date
+                GROUP BY d.id, d.device_id, d.nombre, ls.plan_contratado
+            """), {"start_date": start_date, "end_date": end_date}).fetchall()
 
         return [
             {

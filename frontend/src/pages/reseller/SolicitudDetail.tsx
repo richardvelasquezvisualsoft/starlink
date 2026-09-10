@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import client from '../../api/client';
-import { ArrowLeft, Clock, AlertTriangle, XCircle, CheckCircle, StopCircle, FileText, MessageSquare, History, Settings, Paperclip, Send, User } from 'lucide-react';
+import { ArrowLeft, Clock, AlertTriangle, XCircle, CheckCircle, StopCircle, FileText, MessageSquare, History, Settings, Paperclip, Send, RefreshCw, AlertCircle } from 'lucide-react';
 import AlertPopup from '../../components/AlertPopup';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -11,6 +12,9 @@ interface Props {
 }
 
 export default function SolicitudDetail({ solicitudId, onBack }: Props) {
+  const location = useLocation();
+  const isCliente = location.pathname.startsWith('/cliente');
+
   const [solicitud, setSolicitud] = useState<any>(null);
   const [historial, setHistorial] = useState<any[]>([]);
   const [comentarios, setComentarios] = useState<any[]>([]);
@@ -18,8 +22,8 @@ export default function SolicitudDetail({ solicitudId, onBack }: Props) {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'DETALLE' | 'DOCUMENTOS' | 'COMENTARIOS' | 'HISTORIAL' | 'GESTION'>('DETALLE');
   
-  const [alert, setAlert] = useState<{isOpen: boolean, title: string, message: string, type: "info" | "warning" | "error" | "success"}>({
-    isOpen: false, title: "", message: "", type: "info"
+  const [alert, setAlert] = useState<{isOpen: boolean, message: string, type: "info" | "error" | "success"}>({
+    isOpen: false, message: "", type: "info"
   });
 
   const [newComment, setNewComment] = useState("");
@@ -47,7 +51,7 @@ export default function SolicitudDetail({ solicitudId, onBack }: Props) {
       setDocumentos(resDoc.data);
     } catch (error) {
       console.error(error);
-      setAlert({ isOpen: true, title: "Error", message: "Error al cargar la solicitud", type: "error" });
+      setAlert({ isOpen: true, message: "Error al cargar la solicitud", type: "error" });
     } finally {
       setLoading(false);
     }
@@ -57,11 +61,11 @@ export default function SolicitudDetail({ solicitudId, onBack }: Props) {
     if (nuevoEstado === solicitud?.estado) return;
     try {
       await client.put(`/solicitudes/${solicitudId}`, { estado: nuevoEstado });
-      setAlert({ isOpen: true, title: "Éxito", message: "Estado actualizado", type: "success" });
+      setAlert({ isOpen: true, message: "Estado actualizado", type: "success" });
       fetchData();
     } catch (error) {
       console.error(error);
-      setAlert({ isOpen: true, title: "Error", message: "No se pudo actualizar el estado", type: "error" });
+      setAlert({ isOpen: true, message: "No se pudo actualizar el estado", type: "error" });
     }
   };
 
@@ -70,13 +74,13 @@ export default function SolicitudDetail({ solicitudId, onBack }: Props) {
     try {
       await client.post(`/solicitudes/${solicitudId}/comentarios`, {
         comentario: newComment,
-        visibilidad: commentVisibility
+        visibilidad: isCliente ? "PUBLICO" : commentVisibility
       });
       setNewComment("");
       fetchData();
     } catch (error) {
       console.error(error);
-      setAlert({ isOpen: true, title: "Error", message: "No se pudo agregar el comentario", type: "error" });
+      setAlert({ isOpen: true, message: "No se pudo agregar el comentario", type: "error" });
     }
   };
 
@@ -86,14 +90,12 @@ export default function SolicitudDetail({ solicitudId, onBack }: Props) {
     const formData = new FormData();
     formData.append("file", newFile);
     try {
-      await client.post(`/solicitudes/${solicitudId}/documentos?visibilidad=PUBLICO`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
+      await client.post(`/solicitudes/${solicitudId}/documentos?visibilidad=PUBLICO`, formData);
       setNewFile(null);
       fetchData();
     } catch (error) {
       console.error(error);
-      setAlert({ isOpen: true, title: "Error", message: "No se pudo subir el archivo", type: "error" });
+      setAlert({ isOpen: true, message: "No se pudo subir el archivo", type: "error" });
     }
   };
 
@@ -112,9 +114,17 @@ export default function SolicitudDetail({ solicitudId, onBack }: Props) {
     }
   };
 
+  const tabs = [
+    { id: 'DETALLE', label: 'Detalle', icon: <FileText className="w-4 h-4" /> },
+    { id: 'DOCUMENTOS', label: 'Documentos', icon: <Paperclip className="w-4 h-4" /> },
+    { id: 'COMENTARIOS', label: 'Comentarios', icon: <MessageSquare className="w-4 h-4" /> },
+    { id: 'HISTORIAL', label: 'Historial', icon: <History className="w-4 h-4" /> },
+    ...(!isCliente ? [{ id: 'GESTION', label: 'Gestión', icon: <Settings className="w-4 h-4" /> }] : [])
+  ];
+
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <AlertPopup isOpen={alert.isOpen} title={alert.title} message={alert.message} type={alert.type} onClose={() => setAlert(prev => ({...prev, isOpen: false}))} />
+      <AlertPopup isOpen={alert.isOpen} message={alert.message} type={alert.type} onClose={() => setAlert(prev => ({...prev, isOpen: false}))} />
       
       <button onClick={onBack} className="flex items-center gap-2 text-st-muted hover:text-white transition-colors text-sm font-medium">
         <ArrowLeft className="w-4 h-4" /> Volver a Bandeja
@@ -144,13 +154,7 @@ export default function SolicitudDetail({ solicitudId, onBack }: Props) {
       </div>
 
       <div className="flex space-x-1 border-b border-st-border overflow-x-auto scrollbar-hide">
-        {[
-          { id: 'DETALLE', label: 'Detalle', icon: <FileText className="w-4 h-4" /> },
-          { id: 'DOCUMENTOS', label: 'Documentos', icon: <Paperclip className="w-4 h-4" /> },
-          { id: 'COMENTARIOS', label: 'Comentarios', icon: <MessageSquare className="w-4 h-4" /> },
-          { id: 'HISTORIAL', label: 'Historial', icon: <History className="w-4 h-4" /> },
-          { id: 'GESTION', label: 'Gestión', icon: <Settings className="w-4 h-4" /> }
-        ].map(tab => (
+        {tabs.map(tab => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id as any)}
@@ -168,18 +172,41 @@ export default function SolicitudDetail({ solicitudId, onBack }: Props) {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 text-sm">
             <div className="space-y-4">
               <h3 className="text-white font-bold uppercase tracking-wider mb-4 border-b border-st-border pb-2">Información General</h3>
-              <div className="grid grid-cols-2 gap-2"><span className="text-st-muted">Cliente / Tenant ID:</span><span className="text-white">{solicitud.tenant_id}</span></div>
-              <div className="grid grid-cols-2 gap-2"><span className="text-st-muted">Canal Origen:</span><span className="text-white">{solicitud.canal_origen}</span></div>
               <div className="grid grid-cols-2 gap-2"><span className="text-st-muted">Fecha Solicitud:</span><span className="text-white">{format(new Date(solicitud.fecha_solicitud), "dd/MM/yyyy HH:mm", { locale: es })}</span></div>
+              {solicitud.fecha_requerida && (
+                <div className="grid grid-cols-2 gap-2"><span className="text-st-muted">Fecha Requerida:</span><span className="text-white">{format(new Date(solicitud.fecha_requerida), "dd/MM/yyyy", { locale: es })}</span></div>
+              )}
               <div className="grid grid-cols-2 gap-2"><span className="text-st-muted">Solicitado por:</span><span className="text-white">{solicitud.solicitado_por_nombre || 'N/A'}</span></div>
-              <div className="grid grid-cols-2 gap-2"><span className="text-st-muted">Asignado a:</span><span className="text-white">{solicitud.asignado_a_nombre || 'Sin asignar'}</span></div>
+              {solicitud.linea_servicio_nombre && (
+                <div className="grid grid-cols-2 gap-2"><span className="text-st-muted">Línea de Servicio:</span><span className="text-st-accent font-mono">{solicitud.linea_servicio_nombre}</span></div>
+              )}
+              {!isCliente && (
+                <div className="grid grid-cols-2 gap-2"><span className="text-st-muted">Asignado a:</span><span className="text-white">{solicitud.asignado_a_nombre || 'Sin asignar'}</span></div>
+              )}
+
+              {/* Specific fields from datos_solicitud */}
+              {solicitud.datos_solicitud && Object.keys(solicitud.datos_solicitud).length > 0 && (
+                <div className="mt-4 p-3 bg-black/30 rounded-xl border border-st-border/50 space-y-2">
+                  <span className="text-st-accent font-bold text-xs uppercase tracking-wider block mb-2">Datos Específicos</span>
+                  {Object.entries(solicitud.datos_solicitud).map(([k, v]) => (
+                    <div key={k} className="grid grid-cols-2 gap-2 text-xs">
+                      <span className="text-st-muted capitalize">{k.replace('_', ' ')}:</span>
+                      <span className="text-white font-medium">{String(v)}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
               <div className="mt-4">
-                <span className="text-st-muted block mb-1">Motivo:</span>
-                <p className="text-white bg-black/20 p-3 rounded">{solicitud.motivo || 'Sin motivo especificado'}</p>
+                <span className="text-st-muted block mb-1 font-bold text-xs uppercase tracking-wider">Motivo / Asunto:</span>
+                <p className="text-white bg-black/20 p-3 rounded-xl border border-st-border">{solicitud.motivo || 'Sin motivo especificado'}</p>
               </div>
               <div className="mt-4">
-                <span className="text-st-muted block mb-1">Descripción:</span>
-                <p className="text-white bg-black/20 p-3 rounded">{solicitud.descripcion || 'Sin descripción'}</p>
+                <span className="text-st-muted block mb-1 font-bold text-xs uppercase tracking-wider">Detalle de la solicitud:</span>
+                <div 
+                  className="text-white bg-black/20 p-4 rounded-xl border border-st-border space-y-2 prose prose-invert max-w-none text-sm leading-relaxed"
+                  dangerouslySetInnerHTML={{ __html: solicitud.descripcion || '<em class="text-st-muted">Sin detalle</em>' }}
+                />
               </div>
             </div>
             
@@ -288,7 +315,7 @@ export default function SolicitudDetail({ solicitudId, onBack }: Props) {
 
         {activeTab === 'HISTORIAL' && (
           <div className="space-y-4 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-st-border before:to-transparent">
-            {historial.map((h, idx) => (
+            {historial.map((h) => (
               <div key={h.id} className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
                 <div className="flex items-center justify-center w-10 h-10 rounded-full border border-white/10 bg-st-surface shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2">
                   {h.tipo_evento === 'CAMBIO_ESTADO' ? <RefreshCw className="w-4 h-4 text-blue-500" /> : 

@@ -215,11 +215,12 @@ export const ConsumptionReport: React.FC = () => {
               onChange={(e) => { setSelectedMonth(parseInt(e.target.value)); setCurrentPage(1); }}
               className="bg-transparent text-white font-semibold focus:outline-none cursor-pointer"
             >
-              {[...Array(12)].map((_, i) => (
+              {['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'].map((m, i) => (
                 <option key={i+1} value={i+1} className="bg-st-surface text-white">
-                  {new Date(2000, i, 1).toLocaleString('es-ES', { month: 'long' }).toUpperCase()}
+                  {m}
                 </option>
               ))}
+
             </select>
           </div>
 

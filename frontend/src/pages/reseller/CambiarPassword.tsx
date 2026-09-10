@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Shield, Eye, EyeOff, KeyRound, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import client from '../../api/client';
-import Layout from '../../components/Layout';
 import AlertPopup from '../../components/AlertPopup';
 
 const CambiarPassword = () => {
@@ -62,6 +61,9 @@ const CambiarPassword = () => {
     }
   };
 
+  const isCliente = location.pathname.startsWith('/cliente');
+  const dashboardPath = isCliente ? '/cliente/dashboard' : '/reseller/dashboard';
+
   return (
       <div className="max-w-4xl mx-auto py-6 px-4">
         <AlertPopup 
@@ -75,7 +77,7 @@ const CambiarPassword = () => {
           <div className="h-1 w-full bg-[#f59e0b]"></div>
           
           <button 
-            onClick={() => navigate('/reseller/dashboard')}
+            onClick={() => navigate(dashboardPath)}
             className="absolute top-4 right-4 p-2 hover:bg-gray-100 rounded-lg transition-colors z-10"
             title="Cerrar y volver al Dashboard"
           >

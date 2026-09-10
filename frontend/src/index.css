@@ -1,3 +1,103 @@
+:root {
+  /* CLIENTE Fixed Corporate Light Theme Neutral Tokens */
+  --color-bg-app: #F5F6F8;
+  --color-bg-surface: #FFFFFF;
+  --color-bg-subtle: #F1F3F5;
+  --color-border: #D9DEE5;
+
+  --color-text-primary: #111827;
+  --color-text-secondary: #4B5563;
+  --color-text-muted: #6B7280;
+
+  /* Tenant Branding Tokens (Fallbacks) */
+  --color-brand-primary: #00382B;
+  --color-brand-primary-hover: #004D3B;
+  --color-brand-primary-active: #00231B;
+  --color-brand-primary-soft: rgba(0, 56, 43, 0.15);
+  --color-brand-primary-border: rgba(0, 56, 43, 0.35);
+  --color-brand-primary-contrast: #FFFFFF;
+
+  --color-brand-secondary: #D99B26;
+  --color-brand-secondary-hover: #EBB242;
+  --color-brand-secondary-active: #B87F18;
+  --color-brand-secondary-soft: rgba(217, 155, 38, 0.15);
+  --color-brand-secondary-border: rgba(217, 155, 38, 0.35);
+  --color-brand-secondary-contrast: #111827;
+
+  /* Semantic Status Tokens */
+  --color-status-success: #10B981;
+  --color-status-warning: #F59E0B;
+  --color-status-danger: #EF4444;
+  --color-status-info: #3B82F6;
+}
+
+.bg-brand-primary {
+  background-color: var(--color-brand-primary) !important;
+}
+.bg-brand-primary-hover:hover {
+  background-color: var(--color-brand-primary-hover) !important;
+}
+.text-brand-primary {
+  color: var(--color-brand-primary) !important;
+}
+.border-brand-primary {
+  border-color: var(--color-brand-primary-border) !important;
+}
+.bg-brand-primary-soft {
+  background-color: var(--color-brand-primary-soft) !important;
+}
+
+.bg-brand-secondary {
+  background-color: var(--color-brand-secondary) !important;
+}
+.text-brand-secondary {
+  color: var(--color-brand-secondary) !important;
+}
+.border-brand-secondary {
+  border-color: var(--color-brand-secondary-border) !important;
+}
+.bg-brand-secondary-soft {
+  background-color: var(--color-brand-secondary-soft) !important;
+}
+
+.btn-brand-primary {
+  background-color: var(--color-brand-primary) !important;
+  color: var(--color-brand-primary-contrast) !important;
+  transition: all 0.15s ease-in-out;
+}
+.btn-brand-primary *,
+.btn-brand-primary svg {
+  color: inherit !important;
+  fill: currentColor;
+}
+.btn-brand-primary:hover {
+  background-color: var(--color-brand-primary-hover) !important;
+  color: var(--color-brand-primary-hover-contrast) !important;
+}
+.btn-brand-primary:active {
+  background-color: var(--color-brand-primary-active) !important;
+  color: var(--color-brand-primary-active-contrast) !important;
+}
+
+.btn-brand-secondary {
+  background-color: var(--color-brand-secondary) !important;
+  color: var(--color-brand-secondary-contrast) !important;
+  transition: all 0.15s ease-in-out;
+}
+.btn-brand-secondary *,
+.btn-brand-secondary svg {
+  color: inherit !important;
+  fill: currentColor;
+}
+.btn-brand-secondary:hover {
+  background-color: var(--color-brand-secondary-hover) !important;
+  color: var(--color-brand-secondary-hover-contrast) !important;
+}
+.btn-brand-secondary:active {
+  background-color: var(--color-brand-secondary-active) !important;
+  color: var(--color-brand-secondary-active-contrast) !important;
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -10,31 +110,38 @@
   }
 
   body {
-    @apply bg-st-bg text-white font-sans text-base selection:bg-st-accent/30 selection:text-white leading-relaxed;
+    @apply font-sans text-base leading-relaxed;
+    background-color: var(--color-bg-app);
+    color: var(--color-text-primary);
+  }
+
+  ::selection {
+    background-color: var(--color-brand-primary-soft);
+    color: var(--color-text-primary);
   }
   
-  /* Custom scrollbar for mission control density */
+  /* Custom scrollbar */
   ::-webkit-scrollbar {
     width: 6px;
     height: 6px;
   }
   
   ::-webkit-scrollbar-track {
-    background: #000000;
+    background: transparent;
   }
   
   ::-webkit-scrollbar-thumb {
-    background: #262626;
+    background: #CBD5E1;
     border-radius: 3px;
   }
   
   ::-webkit-scrollbar-thumb:hover {
-    background: #00A8E8;
+    background: #94A3B8;
   }
 }
 
 .glassmorphism {
-  background: rgba(17, 17, 17, 0.85);
+  background: rgba(255, 255, 255, 0.85);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
 }
@@ -46,6 +153,67 @@
   background: transparent;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: #333333;
+  background: rgba(0, 0, 0, 0.2);
   border-radius: 4px;
 }
+
+/* ==========================================================================
+   CLIENTE Scope: Uses STARMONITOR Original Deep Space Dark Design System
+   ========================================================================== */
+
+
+/* ==========================================================================
+   RESELLER Scope Theme Overrides (Dark / Light Modes)
+   ========================================================================== */
+[data-theme-scope="reseller"][data-reseller-theme="dark"] {
+  --color-bg-app: #000000;
+  --color-bg-surface: #111111;
+  --color-bg-subtle: #1A1A1A;
+  --color-border: #222222;
+
+  --color-text-primary: #FFFFFF;
+  --color-text-secondary: #D1D5DB;
+  --color-text-muted: #9CA3AF;
+
+  color-scheme: dark;
+}
+
+[data-theme-scope="reseller"][data-reseller-theme="light"] {
+  --color-bg-app: #F8FAFC;
+  --color-bg-surface: #FFFFFF;
+  --color-bg-subtle: #F1F5F9;
+  --color-border: #E2E8F0;
+
+  --color-text-primary: #0F172A;
+  --color-text-secondary: #334155;
+  --color-text-muted: #64748B;
+
+  color-scheme: light;
+}
+
+[data-reseller-theme="light"] body {
+  background-color: var(--color-bg-app) !important;
+  color: var(--color-text-primary) !important;
+}
+
+[data-reseller-theme="light"] .bg-st-bg {
+  background-color: var(--color-bg-app) !important;
+}
+
+[data-reseller-theme="light"] .bg-st-surface {
+  background-color: var(--color-bg-surface) !important;
+  border-color: var(--color-border) !important;
+}
+
+[data-reseller-theme="light"] .border-st-border {
+  border-color: var(--color-border) !important;
+}
+
+[data-reseller-theme="light"] .text-st-primary {
+  color: var(--color-text-primary) !important;
+}
+
+[data-reseller-theme="light"] .text-st-muted {
+  color: var(--color-text-muted) !important;
+}
+

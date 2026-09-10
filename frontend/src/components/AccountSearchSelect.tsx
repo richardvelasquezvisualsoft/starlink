@@ -67,7 +67,7 @@ export const AccountSearchSelect: React.FC<AccountSearchSelectProps> = ({
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 bg-st-surface hover:bg-white/5 border border-st-border px-3 py-2 rounded-lg text-sm text-white transition-all cursor-pointer shadow-sm focus:outline-none focus:border-st-accent max-w-[300px]"
+        className="flex items-center gap-2 bg-st-surface hover:bg-st-subtle border border-st-border px-3 py-2 rounded-lg text-sm text-st-primary transition-all cursor-pointer shadow-sm focus:outline-none focus:border-brand-primary max-w-[300px]"
       >
         <Filter className="w-4 h-4 text-st-muted flex-shrink-0" />
         <span className="truncate max-w-[200px] font-medium">{displayText}</span>
@@ -78,7 +78,7 @@ export const AccountSearchSelect: React.FC<AccountSearchSelectProps> = ({
       {isOpen && (
         <div className="absolute right-0 mt-1 w-80 rounded-xl bg-st-surface border border-st-border shadow-2xl z-50 overflow-hidden backdrop-blur-xl animate-in fade-in zoom-in-95 duration-100">
           {/* Search Input Box */}
-          <div className="p-2.5 border-b border-st-border bg-st-bg/80">
+          <div className="p-2.5 border-b border-st-border bg-st-subtle">
             <div className="relative flex items-center">
               <Search className="w-4 h-4 text-st-muted absolute left-3 pointer-events-none" />
               <input
@@ -87,13 +87,13 @@ export const AccountSearchSelect: React.FC<AccountSearchSelectProps> = ({
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder={placeholder}
-                className="w-full bg-st-bg text-white text-sm pl-9 pr-8 py-2 rounded-md border border-st-border focus:outline-none focus:border-st-accent placeholder-st-muted"
+                className="w-full bg-st-surface text-st-primary text-sm pl-9 pr-8 py-2 rounded-md border border-st-border focus:outline-none focus:border-brand-primary placeholder-st-muted"
               />
               {search && (
                 <button
                   type="button"
                   onClick={() => setSearch('')}
-                  className="absolute right-2.5 text-st-muted hover:text-white cursor-pointer"
+                  className="absolute right-2.5 text-st-muted hover:text-st-primary cursor-pointer"
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
@@ -108,12 +108,12 @@ export const AccountSearchSelect: React.FC<AccountSearchSelectProps> = ({
               <button
                 type="button"
                 onClick={() => handleSelect('')}
-                className={`w-full text-left px-3 py-2.5 text-sm flex items-center justify-between hover:bg-white/10 cursor-pointer transition-colors ${
-                  !selectedAccount ? 'text-st-accent font-bold bg-st-accent/10' : 'text-white'
+                className={`w-full text-left px-3 py-2.5 text-sm flex items-center justify-between hover:bg-st-subtle cursor-pointer transition-colors ${
+                  !selectedAccount ? 'text-brand-primary font-bold bg-brand-primary-soft' : 'text-st-primary'
                 }`}
               >
                 <span className="truncate">{allLabel}</span>
-                {!selectedAccount && <Check className="w-4 h-4 text-st-accent" />}
+                {!selectedAccount && <Check className="w-4 h-4 text-brand-primary" />}
               </button>
             )}
 
@@ -130,12 +130,12 @@ export const AccountSearchSelect: React.FC<AccountSearchSelectProps> = ({
                     key={acc.id}
                     type="button"
                     onClick={() => handleSelect(accIdStr)}
-                    className={`w-full text-left px-3.5 py-2.5 text-sm flex items-center justify-between hover:bg-white/10 cursor-pointer transition-colors ${
-                      isSelected ? 'text-st-accent font-bold bg-st-accent/10' : 'text-white'
+                    className={`w-full text-left px-3.5 py-2.5 text-sm flex items-center justify-between hover:bg-st-subtle cursor-pointer transition-colors ${
+                      isSelected ? 'text-brand-primary font-bold bg-brand-primary-soft' : 'text-st-primary'
                     }`}
                   >
                     <span className="truncate">{acc.nombre}</span>
-                    {isSelected && <Check className="w-4 h-4 text-st-accent" />}
+                    {isSelected && <Check className="w-4 h-4 text-brand-primary" />}
                   </button>
                 );
               })

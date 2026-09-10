@@ -18,9 +18,15 @@ import {
   Satellite,
   Activity,
   CreditCard,
-  Briefcase
+  Briefcase,
+  FileText,
+  Sun,
+  Moon
 } from 'lucide-react';
-import client, { API_ROOT_URL } from '../api/client';
+import client, { buildAvatarUrl } from '../api/client';
+import { useTenantTheme } from '../context/TenantThemeContext';
+import { useResellerTheme } from '../context/ResellerThemeContext';
+
 
 interface MenuItem {
   id: string;
@@ -40,10 +46,13 @@ const DEMO_TENANTS = [
   { id: 2, name: 'Compañía Petrolera Sur' }
 ];
 
-const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+const Layout: React.FC<{ children: React.ReactNode; type?: 'CLIENTE' | 'RESELLER' }> = ({ children, type }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const pathname = location.pathname;
+  const { logoUrl: tenantLogoUrl, logoVersion, shortName: tenantShortName } = useTenantTheme();
+  const { themeMode, toggleThemeMode } = useResellerTheme();
+
 
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
@@ -61,28 +70,36 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [criticalAlertsCount, setCriticalAlertsCount] = useState(0);
   const [userName, setUserName] = useState('Administrador');
   const [userFotoUrl, setUserFotoUrl] = useState('');
+  const [imageHasError, setImageHasError] = useState(false);
+  const [avatarVersion, setAvatarVersion] = useState<number>(Date.now());
+  const [nivelConfigList, setNivelConfigList] = useState<any[]>([
+    { numero_nivel: 1, nombre_nivel: 'Gerencia', nombre_nivel_plural: 'Gerencias' },
+    { numero_nivel: 2, nombre_nivel: 'Área', nombre_nivel_plural: 'Áreas' },
+    { numero_nivel: 3, nombre_nivel: 'Sede', nombre_nivel_plural: 'Sedes' }
+  ]);
 
-  // Determine Scope and Prefix
-  let scope: 'RESELLER_GLOBAL' | 'RESELLER_CONTEXT' | 'CLIENTE' = 'CLIENTE';
-  let prefix = '/cliente';
+  // Determinar Scope explícito basado en el tipo inyectado
+  let scope: 'RESELLER_GLOBAL' | 'RESELLER_CONTEXT' | 'CLIENTE' = type === 'CLIENTE' ? 'CLIENTE' : 'RESELLER_GLOBAL';
+  let prefix = type === 'CLIENTE' ? '/cliente' : '/reseller';
   let activeTenantId: number | null = null;
   
-  if (pathname.startsWith('/reseller/clientes/')) {
+  if (type === 'RESELLER' && pathname.startsWith('/reseller/clientes/')) {
     const parts = pathname.split('/');
     if (parts.length >= 4 && !isNaN(Number(parts[3]))) {
       scope = 'RESELLER_CONTEXT';
       activeTenantId = Number(parts[3]);
       prefix = `/reseller/clientes/${activeTenantId}`;
     }
-  } else if (pathname.startsWith('/reseller')) {
-    scope = 'RESELLER_GLOBAL';
-    prefix = '/reseller';
-    activeTenantId = null;
   }
 
-  // Load user data
+  // Dynamically set data-theme-scope on root element
   useEffect(() => {
-    const loadUserData = () => {
+    document.documentElement.setAttribute('data-theme-scope', scope === 'CLIENTE' ? 'cliente' : 'reseller');
+  }, [scope]);
+
+  // Load user data & levels configuration
+  useEffect(() => {
+    const loadUserData = (evt?: any) => {
       const savedFavs = localStorage.getItem('starlink_favorites');
       if (savedFavs) {
         setFavorites(JSON.parse(savedFavs));
@@ -93,12 +110,45 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
           const u = JSON.parse(userJson);
           setUserName(u.nombre || 'Administrador');
           setUserFotoUrl(u.foto_url || '');
+          setImageHasError(false);
+          setAvatarVersion(Date.now());
         } catch (e) {}
+      }
+      if (evt && evt.detail && evt.detail.foto_url !== undefined) {
+        setUserFotoUrl(evt.detail.foto_url || '');
+        setImageHasError(false);
+        setAvatarVersion(Date.now());
       }
     };
 
+    const fetchUserProfile = async () => {
+      try {
+        const res = await client.get('/auth/me');
+        if (res.data) {
+          setUserName(res.data.nombre || 'Administrador');
+          setUserFotoUrl(res.data.foto_url || '');
+          setImageHasError(false);
+          setAvatarVersion(Date.now());
+          localStorage.setItem('starlink_user', JSON.stringify(res.data));
+        }
+      } catch (e) {}
+    };
+
+    const fetchNiveles = async () => {
+      try {
+        const res = await client.get('/niveles-organizacion-config');
+        if (res.data && Array.isArray(res.data) && res.data.length > 0) {
+          setNivelConfigList(res.data);
+        }
+      } catch (e) {}
+    };
+
     loadUserData();
+    fetchUserProfile();
+    fetchNiveles();
     window.addEventListener('storage', loadUserData);
+    window.addEventListener('user_profile_updated', loadUserData);
+    window.addEventListener('niveles_config_updated', fetchNiveles);
     
     const fetchAlerts = async () => {
       try {
@@ -109,7 +159,11 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     };
     fetchAlerts();
 
-    return () => window.removeEventListener('storage', loadUserData);
+    return () => {
+      window.removeEventListener('storage', loadUserData);
+      window.removeEventListener('user_profile_updated', loadUserData);
+      window.removeEventListener('niveles_config_updated', fetchNiveles);
+    };
   }, []);
 
   const toggleSection = (section: string) => {
@@ -174,45 +228,80 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         { id: 'g-seguridad', name: 'Seguridad', path: '/reseller/seguridad', icon: Database },
       ]
     });
-  } else {
+  } else if (scope === 'CLIENTE') {
+    const n1 = nivelConfigList.find(n => n.numero_nivel === 1) || { nombre_nivel_plural: 'Gerencias' };
+    const n2 = nivelConfigList.find(n => n.numero_nivel === 2) || { nombre_nivel_plural: 'Áreas' };
+    const n3 = nivelConfigList.find(n => n.numero_nivel === 3) || { nombre_nivel_plural: 'Sedes' };
+
     sections.push({
-      title: 'SERVICIOS',
+      title: 'MI OPERACIÓN',
       icon: Satellite,
       items: [
-        { id: 'c-servicios', name: 'Servicios', path: `${prefix}/servicios`, icon: Radio },
-        { id: 'c-telemetria', name: 'Telemetría', path: `${prefix}/telemetria`, icon: Activity },
+        { id: 'c-servicios', name: 'Mis Servicios', path: `/cliente/servicios`, icon: Radio },
+        { id: 'c-equipos', name: 'Mis Equipos', path: `/cliente/equipos`, icon: Database },
+        { id: 'c-planes', name: 'Mis Planes', path: `/cliente/planes`, icon: Briefcase },
+        { id: 'c-alertas', name: 'Alertas', path: `/cliente/alertas`, icon: AlertTriangle },
+        { id: 'c-estado', name: 'Estado y Ubicación', path: `/cliente/estado-ubicacion`, icon: MapPin },
       ]
     });
     sections.push({
-      title: 'OPERACION',
-      icon: AlertTriangle,
+      title: 'ANALÍTICA',
+      icon: Activity,
       items: [
-        { id: 'c-alertas', name: 'Alertas', path: `${prefix}/alertas`, icon: AlertTriangle },
-        { id: 'c-geozonas', name: 'Geozonas', path: `${prefix}/geozonas`, icon: MapPin },
+        { id: 'c-calidad', name: 'Calidad de Servicio', path: `/cliente/analitica/calidad`, icon: Activity },
+        { id: 'c-telemetria', name: 'Telemetría', path: `/cliente/telemetria`, icon: BarChart3 },
+        { id: 'c-consumo', name: 'Consumo', path: `/cliente/consumo`, icon: Database },
+        { id: 'c-reportes', name: 'Reportes', path: `/cliente/analitica/reportes`, icon: BarChart3 },
       ]
     });
     sections.push({
-      title: 'REPORTES',
-      icon: BarChart3,
+      title: 'FACTURACIÓN',
+      icon: CreditCard,
       items: [
-        { id: 'c-consumo', name: 'Consumo de Datos', path: `${prefix}/consumo`, icon: BarChart3 },
-        { id: 'c-comprobantes', name: 'Comprobantes', path: `${prefix}/comprobantes`, icon: CreditCard },
-        { id: 'c-historicos', name: 'Históricos', path: `${prefix}/historicos`, icon: Database },
-        { id: 'c-contrato', name: 'Contrato', path: `${prefix}/contrato`, icon: Briefcase },
+        { id: 'c-resumen-gasto', name: 'Resumen de Gasto', path: `/cliente/facturacion/resumen`, icon: CreditCard },
+        { id: 'c-comparativo', name: 'Contratado vs Facturado', path: `/cliente/facturacion/comparativo`, icon: Briefcase },
+        { id: 'c-comprobantes', name: 'Mis Comprobantes', path: `/cliente/facturacion/comprobantes`, icon: FileText },
       ]
     });
     sections.push({
-      title: 'ORGANIZACIÓN',
+      title: 'OPERACIONES',
+      icon: Settings,
+      items: [
+        { id: 'c-control-datos', name: 'Control de Datos', path: `/cliente/operaciones/control-datos`, icon: Database },
+        { id: 'c-remotas', name: 'Acciones Remotas', path: `/cliente/operaciones/remotas`, icon: Activity },
+        { id: 'c-geozonas', name: 'Geozonas', path: `/cliente/operaciones/geozonas`, icon: MapPin },
+      ]
+    });
+    sections.push({
+      title: 'SOLICITUDES',
       icon: Users,
       items: [
-        { id: 'c-org', name: 'Niveles y Estructura', path: `${prefix}/organizacion`, icon: Users },
-        { id: 'c-costos', name: 'Centros de Costos', path: `${prefix}/centros-costos`, icon: Database },
+        { id: 'c-mis-solicitudes', name: 'Mis Solicitudes', path: `/cliente/solicitudes`, icon: Briefcase },
+      ]
+    });
+    sections.push({
+      title: 'MANTENIMIENTO',
+      icon: Settings,
+      items: [
+        { id: 'c-org-n1', name: n1.nombre_nivel_plural || n1.nombre_nivel || 'Nivel 1', path: `/cliente/mantenimiento/organizacion/nivel/1`, icon: Users },
+        { id: 'c-org-n2', name: n2.nombre_nivel_plural || n2.nombre_nivel || 'Nivel 2', path: `/cliente/mantenimiento/organizacion/nivel/2`, icon: Users },
+        { id: 'c-org-n3', name: n3.nombre_nivel_plural || n3.nombre_nivel || 'Nivel 3', path: `/cliente/mantenimiento/organizacion/nivel/3`, icon: Users },
+        { id: 'c-colaboradores', name: 'Colaboradores', path: `/cliente/mantenimiento/colaboradores`, icon: Users },
+        { id: 'c-centros-costos', name: 'Centros de Costos', path: `/cliente/mantenimiento/centros-costos`, icon: Database },
+        { id: 'c-asignaciones', name: 'Asignaciones', path: `/cliente/mantenimiento/asignaciones`, icon: Users },
+      ]
+    });
+    sections.push({
+      title: 'CONFIGURACIÓN',
+      icon: Settings,
+      items: [
+        { id: 'c-configuracion-global', name: 'Global', path: `/cliente/configuracion/global`, icon: Settings },
       ]
     });
   }
 
   const allItems = [
-    { id: 'dashboard', name: scope === 'RESELLER_GLOBAL' ? 'Dashboard Global' : 'Resumen', path: `${prefix}/dashboard`, icon: LayoutDashboard },
+    { id: 'dashboard', name: scope === 'CLIENTE' ? 'Dashboard' : (scope === 'RESELLER_GLOBAL' ? 'Dashboard Global' : 'Resumen'), path: `${prefix}/dashboard`, icon: LayoutDashboard },
     ...sections.flatMap(s => s.items)
   ];
   const activeFavItems = allItems.filter(item => favorites.includes(item.id));
@@ -224,54 +313,96 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       <aside className={`flex flex-col bg-st-surface border-r border-st-border transition-all duration-300 ${isSidebarCollapsed ? 'w-20' : 'w-72'}`}>
         <div className="flex items-center justify-between h-16 px-4 border-b border-st-border">
           <div className="flex items-center gap-3 overflow-hidden">
-            <div className="flex items-center justify-center w-10 h-10 rounded-lg overflow-hidden flex-shrink-0 border border-st-border shadow-[0_0_10px_rgba(0,255,255,0.3)]">
-              <img src="/logo.jpg" alt="Logo" className="w-full h-full object-cover" />
+            <div className="flex items-center justify-center w-10 h-10 rounded-lg overflow-hidden flex-shrink-0 border border-white/20 bg-black/40 shadow-[0_0_10px_rgba(0,0,0,0.3)]">
+              {scope === 'CLIENTE' ? (
+                tenantLogoUrl ? (
+                  <img src={buildAvatarUrl(tenantLogoUrl, logoVersion)} alt="Logo Tenant" className="w-full h-full object-contain p-0.5" />
+                ) : (
+                  <img src="/logo.jpg" alt="STARMONITOR" className="w-full h-full object-cover" />
+                )
+              ) : (
+                <img src="/logo.jpg" alt="STARMONITOR RESELLER" className="w-full h-full object-cover" />
+              )}
             </div>
-            {!isSidebarCollapsed && <span className="text-lg font-bold tracking-wider text-white whitespace-nowrap">STARMONITOR</span>}
+            {!isSidebarCollapsed && (
+              <span
+                className="text-sm font-bold tracking-wider text-white truncate max-w-[170px]"
+                title={scope === 'CLIENTE' ? (tenantShortName || 'STARMONITOR') : 'STARMONITOR RESELLER'}
+              >
+                {scope === 'CLIENTE' ? (tenantShortName || 'STARMONITOR') : 'STARMONITOR RESELLER'}
+              </span>
+            )}
           </div>
+
           {!isSidebarCollapsed && (
-            <button onClick={() => setIsSidebarCollapsed(true)} className="p-1 rounded text-st-muted hover:text-white hover:bg-white/5">
+            <button
+              onClick={() => setIsSidebarCollapsed(true)}
+              className="p-1 rounded opacity-80 hover:opacity-100 transition-opacity"
+              style={{ color: scope === 'CLIENTE' ? 'var(--color-brand-primary-contrast)' : '#FFFFFF' }}
+            >
               <Menu className="w-5 h-5" />
             </button>
           )}
         </div>
 
-        <div className="flex-1 overflow-y-auto py-4 px-2 space-y-4">
+        <div className="flex-1 overflow-y-auto py-4 px-2 space-y-4 custom-scrollbar">
           {isSidebarCollapsed && (
-            <button onClick={() => setIsSidebarCollapsed(false)} className="mx-auto block p-2 rounded text-st-muted hover:text-white hover:bg-white/5 mb-4">
+            <button
+              onClick={() => setIsSidebarCollapsed(false)}
+              className="mx-auto block p-2 rounded text-st-muted hover:text-white hover:bg-white/5 transition-colors mb-4"
+            >
               <Menu className="w-6 h-6" />
             </button>
           )}
 
           {activeFavItems.length > 0 && !isSidebarCollapsed && (
             <div className="space-y-1">
-              <p className="px-3 text-[10px] font-bold text-st-muted uppercase tracking-widest flex items-center gap-1.5">
-                <Star className="w-3 h-3 text-amber-500 fill-amber-500" /> FAVORITOS
+              <p className="px-3 text-[10px] font-bold uppercase tracking-widest flex items-center gap-1.5 text-st-accent">
+                <Star className="w-3 h-3 fill-current" /> FAVORITOS
               </p>
-              {activeFavItems.map(item => (
-                <div key={`fav-${item.id}`} onClick={() => navigate(item.path)} className={`group flex items-center justify-between px-3 py-2 rounded-lg cursor-pointer transition-colors ${location.pathname === item.path ? 'bg-white/10 text-white font-semibold' : 'text-st-muted hover:bg-white/5 hover:text-white'}`}>
-                  <div className="flex items-center gap-2.5">
-                    <item.icon className="w-4 h-4" />
-                    <span className="text-sm">{item.name}</span>
+              {activeFavItems.map(item => {
+                const isActive = location.pathname === item.path;
+                return (
+                  <div
+                    key={`fav-${item.id}`}
+                    onClick={() => navigate(item.path)}
+                    className={`group flex items-center justify-between px-3 py-2 rounded-lg cursor-pointer transition-all ${
+                      isActive ? 'bg-white/10 text-white font-semibold' : 'text-st-muted hover:text-white hover:bg-white/5'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <item.icon className={`w-4 h-4 ${isActive ? 'text-st-accent' : 'text-st-muted'}`} />
+                      <span className="text-sm">{item.name}</span>
+                    </div>
+                    <Star onClick={(e) => toggleFavorite(e, item.id)} className="w-3.5 h-3.5 fill-current text-st-accent hover:scale-125 transition-transform" />
                   </div>
-                  <Star onClick={(e) => toggleFavorite(e, item.id)} className="w-3.5 h-3.5 text-amber-500 fill-amber-500 hover:scale-125 transition-transform" />
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
 
           <div className="space-y-1">
-            <div onClick={() => navigate(`${prefix}/dashboard`)} className={`group flex items-center justify-between px-3 py-2 rounded-lg cursor-pointer transition-colors ${location.pathname === `${prefix}/dashboard` ? 'bg-[#D97706]/20 border border-[#D97706]/40 text-white font-semibold' : 'text-st-muted hover:bg-white/5 hover:text-white'}`}>
-              <div className="flex items-center gap-2.5">
-                <LayoutDashboard className="w-4 h-4 text-[#D97706]" />
-                {!isSidebarCollapsed && <span className="text-sm">{scope === 'RESELLER_GLOBAL' ? 'Dashboard Global' : 'Resumen'}</span>}
-              </div>
-              {!isSidebarCollapsed && (
-                <button onClick={(e) => toggleFavorite(e, 'dashboard')} className="opacity-0 group-hover:opacity-100 transition-opacity">
-                  <Star className={`w-3.5 h-3.5 ${favorites.includes('dashboard') ? 'text-amber-500 fill-amber-500' : 'text-st-muted hover:text-white'}`} />
-                </button>
-              )}
-            </div>
+            {(() => {
+              const isDashActive = location.pathname === `${prefix}/dashboard`;
+              return (
+                <div
+                  onClick={() => navigate(`${prefix}/dashboard`)}
+                  className={`group flex items-center justify-between px-3 py-2 rounded-lg cursor-pointer transition-all ${
+                    isDashActive ? 'bg-white/10 text-white font-semibold border border-white/20' : 'text-st-muted hover:text-white hover:bg-white/5'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <LayoutDashboard className={`w-4 h-4 ${isDashActive ? 'text-st-accent' : 'text-st-muted'}`} />
+                    {!isSidebarCollapsed && <span className="text-sm">{scope === 'RESELLER_GLOBAL' ? 'Dashboard Global' : 'Resumen'}</span>}
+                  </div>
+                  {!isSidebarCollapsed && (
+                    <button onClick={(e) => toggleFavorite(e, 'dashboard')} className="opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Star className={`w-3.5 h-3.5 ${favorites.includes('dashboard') ? 'fill-current text-st-accent' : 'opacity-60 hover:opacity-100'}`} />
+                    </button>
+                  )}
+                </div>
+              );
+            })()}
           </div>
 
           {sections.map(sec => {
@@ -279,45 +410,63 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             return (
               <div key={sec.title} className="space-y-1">
                 {!isSidebarCollapsed ? (
-                  <button onClick={() => toggleSection(sec.title)} className="w-full flex items-center justify-between px-3 py-1.5 text-base font-bold text-st-muted hover:text-white uppercase tracking-widest">
+                  <button
+                    onClick={() => toggleSection(sec.title)}
+                    className="w-full flex items-center justify-between px-3 py-1.5 text-base font-bold uppercase tracking-widest text-st-muted hover:text-white transition-colors"
+                  >
                     <span className="flex items-center gap-2">
-                      <sec.icon className="w-5 h-5" />
+                      <sec.icon className="w-5 h-5 text-st-muted" />
                       {sec.title}
                     </span>
                     {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
                   </button>
-                ) : <div className="w-full h-px bg-st-border my-2" />}
+                ) : <div className="w-full h-px bg-white/10 my-2" />}
 
-                {(isExpanded || isSidebarCollapsed) && sec.items.map(item => (
-                  <div key={item.id} onClick={() => navigate(item.path)} className={`group flex items-center justify-between px-3 py-2 rounded-lg cursor-pointer transition-colors ${!isSidebarCollapsed ? 'ml-8' : ''} ${location.pathname === item.path ? 'bg-white/10 text-white font-semibold' : 'text-st-muted hover:bg-white/5 hover:text-white'}`}>
-                    <div className="flex items-center gap-2.5">
-                      <item.icon className={`w-4 h-4 ${location.pathname === item.path ? 'text-st-accent' : 'text-st-muted group-hover:text-white'}`} />
-                      {!isSidebarCollapsed && <span className="text-sm">{item.name}</span>}
+                {(isExpanded || isSidebarCollapsed) && sec.items.map(item => {
+                  const isActive = location.pathname === item.path;
+                  return (
+                    <div
+                      key={item.id}
+                      onClick={() => navigate(item.path)}
+                      className={`group flex items-center justify-between px-3 py-2 rounded-lg cursor-pointer transition-all ${!isSidebarCollapsed ? 'ml-8' : ''} ${
+                        isActive ? 'bg-white/10 text-white font-semibold' : 'text-st-muted hover:text-white hover:bg-white/5'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <item.icon className={`w-4 h-4 ${isActive ? 'text-st-accent' : 'text-st-muted'}`} />
+                        {!isSidebarCollapsed && <span className="text-sm">{item.name}</span>}
+                      </div>
+                      {!isSidebarCollapsed && (
+                        <button onClick={(e) => toggleFavorite(e, item.id)} className="opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Star className={`w-3.5 h-3.5 ${favorites.includes(item.id) ? 'fill-current text-st-accent' : 'opacity-60 hover:opacity-100'}`} />
+                        </button>
+                      )}
                     </div>
-                    {!isSidebarCollapsed && (
-                      <button onClick={(e) => toggleFavorite(e, item.id)} className="opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Star className={`w-3.5 h-3.5 ${favorites.includes(item.id) ? 'text-amber-500 fill-amber-500' : 'text-st-muted hover:text-white'}`} />
-                      </button>
-                    )}
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             );
           })}
         </div>
-        <div className="p-3 border-t border-st-border">
-          <button onClick={handleLogout} className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[#EF4444] hover:bg-red-500/10 transition-colors cursor-pointer text-left">
+        <div className="p-3 border-t border-white/10">
+          <button
+            onClick={handleLogout}
+            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[#EF4444] hover:bg-red-500/10 transition-colors cursor-pointer text-left font-semibold"
+          >
             <LogOut className="w-4 h-4 flex-shrink-0" />
-            {!isSidebarCollapsed && <span className="text-sm font-semibold">Cerrar Sesión</span>}
+            {!isSidebarCollapsed && <span className="text-sm">Cerrar Sesión</span>}
           </button>
         </div>
       </aside>
 
       <div className="flex-1 flex flex-col overflow-hidden">
-        <header className="h-16 flex items-center justify-between px-6 bg-st-surface border-b border-st-border">
+        <header className="h-16 flex items-center justify-between px-6 bg-st-surface border-b border-st-border text-white">
           <div className="flex items-center gap-4">
             {isSidebarCollapsed && (
-              <button onClick={() => setIsSidebarCollapsed(false)} className="p-1 rounded text-st-muted hover:text-white hover:bg-white/5">
+              <button
+                onClick={() => setIsSidebarCollapsed(false)}
+                className="p-1 rounded text-st-muted hover:text-white hover:bg-white/5 transition-colors"
+              >
                 <Menu className="w-5 h-5" />
               </button>
             )}
@@ -369,7 +518,30 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
           </div>
 
           <div className="flex items-center gap-5">
-            <div className="relative cursor-pointer p-1 rounded-full text-st-muted hover:text-white hover:bg-white/5" onClick={() => navigate(`${prefix}/alertas`)}>
+            {type === 'RESELLER' && (
+              <button
+                onClick={toggleThemeMode}
+                className="p-2 rounded-lg bg-st-bg border border-st-border text-st-muted hover:text-white hover:bg-white/5 transition-colors flex items-center gap-2 text-xs font-bold"
+                title={`Cambiar a tema ${themeMode === 'dark' ? 'claro' : 'oscuro'}`}
+              >
+                {themeMode === 'dark' ? (
+                  <>
+                    <Sun className="w-4 h-4 text-amber-400" />
+                    <span className="hidden sm:inline">Claro</span>
+                  </>
+                ) : (
+                  <>
+                    <Moon className="w-4 h-4 text-blue-400" />
+                    <span className="hidden sm:inline">Oscuro</span>
+                  </>
+                )}
+              </button>
+            )}
+
+            <div
+              className="relative cursor-pointer p-1 rounded-full text-st-muted hover:text-white hover:bg-white/5 transition-colors"
+              onClick={() => navigate(`${prefix}/alertas`)}
+            >
               <Bell className="w-5 h-5" />
               {criticalAlertsCount > 0 && (
                 <span className="absolute -top-0.5 -right-0.5 flex h-2 w-2">
@@ -380,35 +552,43 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             </div>
 
             <div className="relative">
-              <button onClick={() => setProfileDropdownOpen(!profileDropdownOpen)} className="flex items-center gap-3 p-1.5 rounded-lg hover:bg-white/5 text-left focus:outline-none transition-colors">
-                <div className="w-10 h-10 rounded-full bg-white border border-st-border flex items-center justify-center overflow-hidden">
-                  {userFotoUrl ? (
-                    <img src={`${API_ROOT_URL}${userFotoUrl}`} alt="User" className="w-full h-full object-cover" />
+              <button
+                onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
+                className="flex items-center gap-3 p-1.5 rounded-lg hover:bg-white/5 text-left focus:outline-none transition-colors"
+              >
+                <div className="w-10 h-10 rounded-full bg-st-bg border border-st-border flex items-center justify-center overflow-hidden shadow-sm">
+                  {userFotoUrl && !imageHasError ? (
+                    <img 
+                      src={buildAvatarUrl(userFotoUrl, avatarVersion)} 
+                      alt="User" 
+                      className="w-full h-full object-cover" 
+                      onError={() => setImageHasError(true)}
+                    />
                   ) : (
                     <div className="w-full h-full bg-st-bg text-st-primary font-bold flex items-center justify-center text-lg">
                       {userName.charAt(0)}
                     </div>
                   )}
                 </div>
-                <div className="hidden md:block">
-                  <p className="text-base font-bold text-white leading-tight">{userName}</p>
-                  <p className="text-sm text-st-muted leading-tight">{scope === 'CLIENTE' ? 'Cliente' : 'Administrador'}</p>
+                <div className="hidden md:block text-right">
+                  <div className="text-sm font-semibold leading-tight text-white">{userName}</div>
+                  <div className="text-xs leading-tight text-st-muted">{scope === 'CLIENTE' ? 'Cliente' : 'Administrador'}</div>
                 </div>
-                <ChevronDown className="w-4 h-4 text-white ml-2" />
+                <ChevronDown className="w-4 h-4 ml-2 text-st-muted" />
               </button>
 
               {profileDropdownOpen && (
                 <>
                   <div className="fixed inset-0 z-10" onClick={() => setProfileDropdownOpen(false)} />
-                  <div className="absolute right-0 mt-2 w-56 rounded-xl bg-white border border-gray-200 shadow-2xl py-2 z-20">
-                    <button onClick={() => { setProfileDropdownOpen(false); navigate(`${prefix}/perfil`); }} className="w-full text-left px-5 py-2.5 text-[15px] text-gray-700 hover:bg-gray-50 transition-colors">
+                  <div className="absolute right-0 mt-2 w-56 rounded-xl bg-st-surface border border-st-border shadow-2xl py-2 z-20 text-white">
+                    <button onClick={() => { setProfileDropdownOpen(false); navigate(`${prefix}/perfil`); }} className="w-full text-left px-5 py-2.5 text-[15px] hover:bg-white/5 transition-colors">
                       Mi Perfil
                     </button>
-                    <button onClick={() => { setProfileDropdownOpen(false); navigate(`${prefix}/perfil/password`); }} className="w-full text-left px-5 py-2.5 text-[15px] text-gray-700 hover:bg-gray-50 transition-colors">
+                    <button onClick={() => { setProfileDropdownOpen(false); navigate(`${prefix}/perfil/password`); }} className="w-full text-left px-5 py-2.5 text-[15px] hover:bg-white/5 transition-colors">
                       Cambiar contraseña
                     </button>
-                    <div className="h-px bg-gray-200 my-2" />
-                    <button onClick={() => { setProfileDropdownOpen(false); handleLogout(); }} className="w-full text-left px-5 py-2.5 text-[15px] text-[#D32F2F] hover:bg-red-50 transition-colors flex items-center gap-2">
+                    <div className="h-px bg-st-border my-2" />
+                    <button onClick={() => { setProfileDropdownOpen(false); handleLogout(); }} className="w-full text-left px-5 py-2.5 text-[15px] text-[#EF4444] hover:bg-red-500/10 transition-colors flex items-center gap-2">
                       <LogOut className="w-4 h-4" /> Cerrar Sesión
                     </button>
                   </div>

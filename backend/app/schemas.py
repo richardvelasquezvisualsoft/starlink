@@ -24,7 +24,14 @@ class UserResponse(BaseModel):
     id: int
     nombre: str
     email: str
+    email_recuperacion: Optional[str] = None
+    celular: Optional[str] = None
+    sigla_corta: Optional[str] = None
+    pais: Optional[str] = None
+    zona_horaria: Optional[str] = None
+    foto_url: Optional[str] = None
     fecha_creacion: Optional[datetime] = None
+    role_codes: List[str] = []
 
     class Config:
         from_attributes = True
@@ -130,6 +137,35 @@ class LineaServicioResponse(LineaServicioBase):
     class Config:
         from_attributes = True
 
+# Planes Resumen Schemas
+class PlanResumenItem(BaseModel):
+    id: str
+    plan_contratado: str
+    id_producto: Optional[str] = None
+    tipo_suscripcion: Optional[str] = None
+    cantidad_servicios: int
+    cantidad_equipos: int
+    usage_limit_gb_unit: Optional[float] = 0.0
+    capacidad_total_gb: Optional[float] = 0.0
+    valor_plan: Optional[float] = 0.0
+    monto_total_contratado: Optional[float] = 0.0
+    consumo_ciclo_gb: Optional[float] = 0.0
+    utilizacion_pct: Optional[float] = 0.0
+    moneda: Optional[str] = "PEN"
+    estado: Optional[str] = "Activo"
+
+class PlanesKPIs(BaseModel):
+    planes_distintos: int
+    equipos_con_plan: int
+    servicios_con_plan: int
+    monto_mensual_contratado: float
+    capacidad_total_gb: float
+    moneda: Optional[str] = "PEN"
+
+class PlanesResumenResponse(BaseModel):
+    kpis: PlanesKPIs
+    planes: List[PlanResumenItem]
+
 # CatalogoAlerta Schemas
 class CatalogoAlertaBase(BaseModel):
     codigo_alerta: str
@@ -190,6 +226,11 @@ class NivelOrganizacionConfigBase(BaseModel):
     nombre_nivel_plural: Optional[str] = None
     activo: bool = True
 
+class NivelOrganizacionConfigUpdate(BaseModel):
+    nombre_nivel: Optional[str] = None
+    nombre_nivel_plural: Optional[str] = None
+    activo: Optional[bool] = None
+
 class NivelOrganizacionConfigResponse(NivelOrganizacionConfigBase):
     tenant_id: int
     fecha_creacion: Optional[datetime] = None
@@ -201,12 +242,24 @@ class UnidadOrganizacionalBase(BaseModel):
     numero_nivel: int
     codigo: str
     nombre: str
+    descripcion: Optional[str] = None
     activo: bool = True
     parent_id: Optional[int] = None
+
+class UnidadOrganizacionalCreate(UnidadOrganizacionalBase):
+    pass
+
+class UnidadOrganizacionalUpdate(BaseModel):
+    codigo: Optional[str] = None
+    nombre: Optional[str] = None
+    descripcion: Optional[str] = None
+    parent_id: Optional[int] = None
+    activo: Optional[bool] = None
 
 class UnidadOrganizacionalResponse(UnidadOrganizacionalBase):
     id: int
     tenant_id: int
+    parent_nombre: Optional[str] = None
     fecha_creacion: Optional[datetime] = None
 
     class Config:
@@ -218,6 +271,16 @@ class CentroCostoBase(BaseModel):
     descripcion: Optional[str] = None
     moneda_referencia: Optional[str] = None
     activo: bool = True
+
+class CentroCostoCreate(CentroCostoBase):
+    pass
+
+class CentroCostoUpdate(BaseModel):
+    codigo: Optional[str] = None
+    nombre: Optional[str] = None
+    descripcion: Optional[str] = None
+    moneda_referencia: Optional[str] = None
+    activo: Optional[bool] = None
 
 class CentroCostoResponse(CentroCostoBase):
     id: int
@@ -427,3 +490,63 @@ class PerfilUpdate(BaseModel):
 class PerfilPasswordUpdate(BaseModel):
     password_actual: str
     nueva_password: str
+
+# Dispositivos Estado y Ubicación Schemas
+class DispositivoEstadoUbicacionItem(BaseModel):
+    id: int
+    device_id: str
+    nombre: str
+    numero_linea: Optional[str] = None
+    plan_contratado: Optional[str] = None
+    estado_operativo: str
+    conectado: bool
+    latencia_ms: float
+    ping_drop_rate: float
+    alertas_activas: int
+    geozona_estado: str
+    latitud: float
+    longitud: float
+    distrito: str
+    es_ubicacion_demo: bool
+    ultima_actualizacion: Optional[str] = None
+
+class EstadoUbicacionKPIs(BaseModel):
+    equipos_totales: int
+    equipos_online: int
+    equipos_con_alerta: int
+    equipos_fuera_geozona: int
+    latencia_promedio_ms: float
+    packet_loss_promedio_pct: float
+
+class DispositivosEstadoUbicacionResponse(BaseModel):
+    kpis: EstadoUbicacionKPIs
+    ubicacion_demo_global: bool
+    dispositivos: List[DispositivoEstadoUbicacionItem]
+
+
+# Tenant Configuration & Branding Schemas
+class TenantConfiguracionGlobalUpdate(BaseModel):
+    nombre_corto: Optional[str] = Field(None, max_length=50)
+    color_primario: Optional[str] = Field(None, max_length=10)
+    color_secundario: Optional[str] = Field(None, max_length=10)
+    prefijo_codigo: Optional[str] = Field(None, max_length=20)
+    moneda_principal: Optional[str] = Field(None, max_length=10)
+
+class TenantConfiguracionGlobalResponse(BaseModel):
+    tenant_id: int
+    razon_social: Optional[str] = None
+    nombre_comercial: Optional[str] = None
+    nombre_corto: Optional[str] = None
+    color_primario: str = "#00382B"
+    color_secundario: str = "#D99B26"
+    logo_url: Optional[str] = None
+    logo_nombre: Optional[str] = None
+    logo_sha256: Optional[str] = None
+    logo_mime_type: Optional[str] = None
+    logo_tamano_bytes: Optional[int] = None
+    fecha_modificacion: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+

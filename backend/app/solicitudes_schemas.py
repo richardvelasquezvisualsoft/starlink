@@ -34,7 +34,7 @@ class SolicitudClienteBase(BaseModel):
     fecha_requerida: Optional[date] = None
 
 class SolicitudClienteCreate(SolicitudClienteBase):
-    tenant_id: int
+    tenant_id: Optional[int] = None
 
 class SolicitudClienteUpdate(BaseModel):
     estado: Optional[str] = None
