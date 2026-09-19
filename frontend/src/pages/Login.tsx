@@ -226,7 +226,7 @@ const Login: React.FC = () => {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full h-[44px] mt-6 bg-client-primary text-white font-bold uppercase tracking-wider rounded-[12px] hover:bg-client-primary-hover active:bg-client-primary-active transition-all disabled:opacity-50 cursor-pointer flex items-center justify-center gap-2 text-[14px]"
+                className="w-full h-[44px] mt-6 bg-client-primary text-white keep-white font-bold uppercase tracking-wider rounded-[12px] hover:bg-client-primary-hover active:bg-client-primary-active transition-all disabled:opacity-50 cursor-pointer flex items-center justify-center gap-2 text-[14px]"
               >
                 {isLoading ? (
                   <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -276,7 +276,7 @@ const Login: React.FC = () => {
               <button
                 type="submit"
                 disabled={forgotLoading || !forgotEmail.trim()}
-                className="w-full h-[44px] mt-2 bg-client-primary text-white font-bold uppercase tracking-wider rounded-[12px] hover:bg-client-primary-hover active:bg-client-primary-active transition-all disabled:opacity-50 cursor-pointer flex items-center justify-center gap-2 text-[14px]"
+                className="w-full h-[44px] mt-2 bg-client-primary text-white keep-white font-bold uppercase tracking-wider rounded-[12px] hover:bg-client-primary-hover active:bg-client-primary-active transition-all disabled:opacity-50 cursor-pointer flex items-center justify-center gap-2 text-[14px]"
               >
                 {forgotLoading ? (
                   <>
@@ -336,7 +336,7 @@ const Login: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => navigate(`/restablecer-password?token=${forgotResult.token}`)}
-                    className="w-full py-3 bg-client-primary hover:bg-client-primary-hover text-white rounded-lg text-xs font-bold uppercase tracking-wider transition-colors shadow-lg cursor-pointer flex items-center justify-center gap-2"
+                    className="w-full py-3 bg-client-primary hover:bg-client-primary-hover text-white keep-white rounded-lg text-xs font-bold uppercase tracking-wider transition-colors shadow-lg cursor-pointer flex items-center justify-center gap-2"
                   >
                     <Sparkles className="w-4 h-4" />
                     <span>Restablecer Contraseña Ahora</span>

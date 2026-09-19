@@ -11,6 +11,7 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, LineChart, Line
 } from 'recharts';
 import client from '../api/client';
+import { useResellerTheme } from '../context/ResellerThemeContext';
 
 const formatGBtoTB = (gb: number | undefined | null) => {
   if (gb === undefined || gb === null) return '0 GB';
@@ -60,6 +61,11 @@ const formatTimeLabel = (val: string, rango: string = '') => {
 
 const DashboardClienteGlobal: React.FC = () => {
   const navigate = useNavigate();
+  const { themeMode } = useResellerTheme();
+  const isLight = themeMode === 'light';
+  const tickColor = isLight ? '#000000' : '#ffffff';
+  const gridColor = isLight ? '#E2E8F0' : '#222222';
+  const axisColor = isLight ? '#94A3B8' : '#444444';
   const [summary, setSummary] = useState<any>(null);
   const [topClients, setTopClients] = useState<any[]>([]);
   const [portfolioTrend, setPortfolioTrend] = useState<any[]>([]);
@@ -617,24 +623,24 @@ const DashboardClienteGlobal: React.FC = () => {
                     <stop offset="95%" stopColor="#00E5FF" stopOpacity={0.0}/>
                   </linearGradient>
                   <linearGradient id="colorStars" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#ffffff" stopOpacity={0.1}/>
-                    <stop offset="95%" stopColor="#ffffff" stopOpacity={0.0}/>
+                    <stop offset="5%" stopColor={isLight ? '#0F172A' : '#ffffff'} stopOpacity={isLight ? 0.2 : 0.1}/>
+                    <stop offset="95%" stopColor={isLight ? '#0F172A' : '#ffffff'} stopOpacity={0.0}/>
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#222" vertical={false} />
-                <XAxis dataKey="periodo" stroke="#444" tick={{ fill: '#ffffff', fontWeight: 'bold', fontSize: 11 }} fontSize={11} tickMargin={10} tickFormatter={formatPeriodLabel} />
-                <YAxis yAxisId="left" stroke="#444" tick={{ fill: '#ffffff', fontWeight: 'bold', fontSize: 11 }} fontSize={11} />
-                <YAxis yAxisId="right" orientation="right" stroke="#444" tick={{ fill: '#ffffff', fontWeight: 'bold', fontSize: 11 }} fontSize={11} />
+                <CartesianGrid strokeDasharray="3 3" stroke={gridColor} vertical={false} />
+                <XAxis dataKey="periodo" stroke={axisColor} tick={{ fill: tickColor, fontWeight: 'bold', fontSize: 11 }} fontSize={11} tickMargin={10} tickFormatter={formatPeriodLabel} />
+                <YAxis yAxisId="left" stroke={axisColor} tick={{ fill: tickColor, fontWeight: 'bold', fontSize: 11 }} fontSize={11} />
+                <YAxis yAxisId="right" orientation="right" stroke={axisColor} tick={{ fill: tickColor, fontWeight: 'bold', fontSize: 11 }} fontSize={11} />
                 <Tooltip 
-                  contentStyle={{ backgroundColor: '#111', borderColor: '#333', borderRadius: '8px' }}
-                  itemStyle={{ color: '#fff' }}
+                  contentStyle={{ backgroundColor: isLight ? '#ffffff' : '#111', borderColor: isLight ? '#cbd5e1' : '#333', borderRadius: '8px', color: isLight ? '#000000' : '#ffffff' }}
+                  itemStyle={{ color: isLight ? '#000000' : '#fff' }}
                   labelFormatter={(label) => {
                     const formatted = formatPeriodLabel(label);
                     return formatted !== label ? `${formatted} (${label})` : label;
                   }}
                 />
                 <Area yAxisId="left" type="monotone" dataKey="clientes_activos" name="Clientes" stroke="#00E5FF" fillOpacity={1} fill="url(#colorClients)" strokeWidth={2} />
-                <Area yAxisId="right" type="monotone" dataKey="starlinks_con_actividad" name="Starlinks" stroke="#ffffff" fillOpacity={1} fill="url(#colorStars)" strokeWidth={2} />
+                <Area yAxisId="right" type="monotone" dataKey="starlinks_con_actividad" name="Starlinks" stroke={isLight ? '#0F172A' : '#ffffff'} fillOpacity={1} fill="url(#colorStars)" strokeWidth={2} />
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -647,11 +653,12 @@ const DashboardClienteGlobal: React.FC = () => {
           <div className="h-[220px]">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={qualityTrend}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#222" vertical={false} />
-                <XAxis dataKey="periodo" stroke="#444" tick={{ fill: '#ffffff', fontWeight: 'bold', fontSize: 11 }} fontSize={11} tickMargin={10} tickFormatter={formatPeriodLabel} />
-                <YAxis domain={[80, 100]} stroke="#444" tick={{ fill: '#ffffff', fontWeight: 'bold', fontSize: 11 }} fontSize={11} />
+                <CartesianGrid strokeDasharray="3 3" stroke={gridColor} vertical={false} />
+                <XAxis dataKey="periodo" stroke={axisColor} tick={{ fill: tickColor, fontWeight: 'bold', fontSize: 11 }} fontSize={11} tickMargin={10} tickFormatter={formatPeriodLabel} />
+                <YAxis domain={[80, 100]} stroke={axisColor} tick={{ fill: tickColor, fontWeight: 'bold', fontSize: 11 }} fontSize={11} />
                 <Tooltip 
-                  contentStyle={{ backgroundColor: '#111', borderColor: '#333', borderRadius: '8px' }}
+                  contentStyle={{ backgroundColor: isLight ? '#ffffff' : '#111', borderColor: isLight ? '#cbd5e1' : '#333', borderRadius: '8px', color: isLight ? '#000000' : '#ffffff' }}
+                  itemStyle={{ color: isLight ? '#000000' : '#ffffff' }}
                   labelFormatter={(label) => {
                     const formatted = formatPeriodLabel(label);
                     return formatted !== label ? `${formatted} (${label})` : label;
@@ -680,11 +687,12 @@ const DashboardClienteGlobal: React.FC = () => {
           <div className="h-[220px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={billingTrend}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#222" vertical={false} />
-                <XAxis dataKey="periodo" stroke="#444" tick={{ fill: '#ffffff', fontWeight: 'bold', fontSize: 11 }} fontSize={11} tickMargin={10} tickFormatter={formatPeriodLabel} />
-                <YAxis stroke="#444" tick={{ fill: '#ffffff', fontWeight: 'bold', fontSize: 11 }} fontSize={11} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} />
+                <CartesianGrid strokeDasharray="3 3" stroke={gridColor} vertical={false} />
+                <XAxis dataKey="periodo" stroke={axisColor} tick={{ fill: tickColor, fontWeight: 'bold', fontSize: 11 }} fontSize={11} tickMargin={10} tickFormatter={formatPeriodLabel} />
+                <YAxis stroke={axisColor} tick={{ fill: tickColor, fontWeight: 'bold', fontSize: 11 }} fontSize={11} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} />
                 <Tooltip 
-                  contentStyle={{ backgroundColor: '#111', borderColor: '#333', borderRadius: '8px' }}
+                  contentStyle={{ backgroundColor: isLight ? '#ffffff' : '#111', borderColor: isLight ? '#cbd5e1' : '#333', borderRadius: '8px', color: isLight ? '#000000' : '#ffffff' }}
+                  itemStyle={{ color: isLight ? '#000000' : '#ffffff' }}
                   labelFormatter={(label) => {
                     const formatted = formatPeriodLabel(label);
                     return formatted !== label ? `${formatted} (${label})` : label;

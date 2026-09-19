@@ -352,7 +352,7 @@ const Layout: React.FC<{ children: React.ReactNode; type?: 'CLIENTE' | 'RESELLER
             </div>
             {(!isSidebarCollapsed || isMobileDrawerOpen) && (
               <span
-                className="text-sm font-bold tracking-wider text-white truncate max-w-[160px]"
+                className="text-sm font-bold tracking-wider text-st-primary truncate max-w-[160px]"
                 title={scope === 'CLIENTE' ? (tenantShortName || 'STARMONITOR') : 'STARMONITOR RESELLER'}
               >
                 {scope === 'CLIENTE' ? (tenantShortName || 'STARMONITOR') : 'STARMONITOR RESELLER'}
@@ -364,7 +364,7 @@ const Layout: React.FC<{ children: React.ReactNode; type?: 'CLIENTE' | 'RESELLER
             {/* Mobile close button */}
             <button
               onClick={() => setIsMobileDrawerOpen(false)}
-              className="p-1.5 rounded-lg text-st-muted hover:text-white hover:bg-white/10 transition-colors lg:hidden cursor-pointer"
+              className="p-1.5 rounded-lg text-st-muted hover:text-st-primary hover:bg-white/10 transition-colors lg:hidden cursor-pointer"
               title="Cerrar menú"
             >
               <X className="w-5 h-5" />
@@ -389,7 +389,7 @@ const Layout: React.FC<{ children: React.ReactNode; type?: 'CLIENTE' | 'RESELLER
           {isSidebarCollapsed && (
             <button
               onClick={() => setIsSidebarCollapsed(false)}
-              className="hidden lg:block mx-auto p-2 rounded text-st-muted hover:text-white hover:bg-white/5 transition-colors mb-4 cursor-pointer"
+              className="hidden lg:block mx-auto p-2 rounded text-st-muted hover:text-st-primary hover:bg-white/5 transition-colors mb-4 cursor-pointer"
               title="Expandir menú lateral"
             >
               <Menu className="w-6 h-6" />
@@ -408,7 +408,7 @@ const Layout: React.FC<{ children: React.ReactNode; type?: 'CLIENTE' | 'RESELLER
                     key={`fav-${item.id}`}
                     onClick={() => handleNavigate(item.path)}
                     className={`group flex items-center justify-between px-3 py-2 rounded-lg cursor-pointer transition-all ${
-                      isActive ? 'bg-white/10 text-white font-semibold' : 'text-st-muted hover:text-white hover:bg-white/5'
+                      isActive ? 'bg-white/10 text-st-primary font-semibold' : 'text-st-muted hover:text-st-primary hover:bg-white/5'
                     }`}
                   >
                     <div className="flex items-center gap-2.5">
@@ -429,7 +429,7 @@ const Layout: React.FC<{ children: React.ReactNode; type?: 'CLIENTE' | 'RESELLER
                 <div
                   onClick={() => handleNavigate(`${prefix}/dashboard`)}
                   className={`group flex items-center justify-between px-3 py-2 rounded-lg cursor-pointer transition-all ${
-                    isDashActive ? 'bg-white/10 text-white font-semibold border border-white/20' : 'text-st-muted hover:text-white hover:bg-white/5'
+                    isDashActive ? 'bg-white/10 text-st-primary font-semibold border border-white/20' : 'text-st-muted hover:text-st-primary hover:bg-white/5'
                   }`}
                 >
                   <div className="flex items-center gap-2.5">
@@ -453,7 +453,7 @@ const Layout: React.FC<{ children: React.ReactNode; type?: 'CLIENTE' | 'RESELLER
                 {(!isSidebarCollapsed || isMobileDrawerOpen) ? (
                   <button
                     onClick={() => toggleSection(sec.title)}
-                    className="w-full flex items-center justify-between px-3 py-1.5 text-base font-bold uppercase tracking-widest text-st-muted hover:text-white transition-colors cursor-pointer"
+                    className="w-full flex items-center justify-between px-3 py-1.5 text-base font-bold uppercase tracking-widest text-st-muted hover:text-st-primary transition-colors cursor-pointer"
                   >
                     <span className="flex items-center gap-2">
                       <sec.icon className="w-5 h-5 text-st-muted" />
@@ -470,7 +470,7 @@ const Layout: React.FC<{ children: React.ReactNode; type?: 'CLIENTE' | 'RESELLER
                       key={item.id}
                       onClick={() => handleNavigate(item.path)}
                       className={`group flex items-center justify-between px-3 py-2 rounded-lg cursor-pointer transition-all ${(!isSidebarCollapsed || isMobileDrawerOpen) ? 'ml-8' : ''} ${
-                        isActive ? 'bg-white/10 text-white font-semibold' : 'text-st-muted hover:text-white hover:bg-white/5'
+                        isActive ? 'bg-white/10 text-st-primary font-semibold' : 'text-st-muted hover:text-st-primary hover:bg-white/5'
                       }`}
                     >
                       <div className="flex items-center gap-2.5">
@@ -492,7 +492,7 @@ const Layout: React.FC<{ children: React.ReactNode; type?: 'CLIENTE' | 'RESELLER
         <div className="p-3 border-t border-white/10 shrink-0">
           <button
             onClick={handleLogout}
-            className="w-full flex items-center justify-center gap-2.5 px-3 py-2 rounded-lg text-white hover:bg-white/10 transition-colors cursor-pointer font-semibold"
+            className="w-full flex items-center justify-center gap-2.5 px-3 py-2 rounded-lg text-st-primary hover:bg-white/10 transition-colors cursor-pointer font-semibold"
           >
             <LogOut className="w-4 h-4 flex-shrink-0" />
             {(!isSidebarCollapsed || isMobileDrawerOpen) && <span className="text-sm">Cerrar Sesión</span>}
@@ -501,12 +501,12 @@ const Layout: React.FC<{ children: React.ReactNode; type?: 'CLIENTE' | 'RESELLER
       </aside>
 
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        <header className="h-16 flex items-center justify-between px-3 sm:px-6 bg-st-surface border-b border-st-border text-white shrink-0">
+        <header className="h-16 flex items-center justify-between px-3 sm:px-6 bg-st-surface border-b border-st-border text-st-primary shrink-0">
           <div className="flex items-center gap-2 sm:gap-3 min-w-0">
             {/* Mobile hamburger menu toggle */}
             <button
               onClick={() => setIsMobileDrawerOpen(true)}
-              className="p-1.5 rounded-lg text-st-muted hover:text-white hover:bg-white/5 transition-colors lg:hidden cursor-pointer"
+              className="p-1.5 rounded-lg text-st-muted hover:text-st-primary hover:bg-white/5 transition-colors lg:hidden cursor-pointer"
               title="Abrir menú de navegación"
             >
               <Menu className="w-5 h-5" />
@@ -516,7 +516,7 @@ const Layout: React.FC<{ children: React.ReactNode; type?: 'CLIENTE' | 'RESELLER
             {isSidebarCollapsed && (
               <button
                 onClick={() => setIsSidebarCollapsed(false)}
-                className="hidden lg:flex p-1.5 rounded-lg text-st-muted hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
+                className="hidden lg:flex p-1.5 rounded-lg text-st-muted hover:text-st-primary hover:bg-white/5 transition-colors cursor-pointer"
                 title="Expandir menú lateral"
               >
                 <Menu className="w-5 h-5" />
@@ -525,7 +525,7 @@ const Layout: React.FC<{ children: React.ReactNode; type?: 'CLIENTE' | 'RESELLER
 
             {/* Mobile Header Brand Display */}
             <div className="flex items-center gap-2 lg:hidden min-w-0">
-              <span className="text-xs sm:text-sm font-bold tracking-wider text-white truncate max-w-[130px] sm:max-w-[200px]">
+              <span className="text-xs sm:text-sm font-bold tracking-wider text-st-primary truncate max-w-[130px] sm:max-w-[200px]">
                 {scope === 'CLIENTE' ? (tenantShortName || 'STARMONITOR') : 'STARMONITOR'}
               </span>
             </div>
@@ -539,7 +539,7 @@ const Layout: React.FC<{ children: React.ReactNode; type?: 'CLIENTE' | 'RESELLER
                   className="flex items-center justify-between w-full gap-1.5 sm:gap-2 px-2.5 sm:px-4 py-1.5 bg-st-bg border border-st-border rounded-lg hover:border-st-accent/50 transition-colors"
                 >
                   <span className="hidden sm:inline text-xs font-bold text-st-muted uppercase">Cliente:</span>
-                  <span className="text-xs sm:text-sm font-bold text-white truncate">{activeTenantName}</span>
+                  <span className="text-xs sm:text-sm font-bold text-st-primary truncate">{activeTenantName}</span>
                   <ChevronDown className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-st-muted shrink-0" />
                 </button>
 
@@ -552,7 +552,7 @@ const Layout: React.FC<{ children: React.ReactNode; type?: 'CLIENTE' | 'RESELLER
                           setTenantDropdownOpen(false);
                           navigate('/reseller/dashboard');
                         }}
-                        className={`w-full text-left px-4 py-2 text-sm transition-colors ${activeTenantId === null ? 'bg-white/10 text-white font-bold' : 'text-st-muted hover:text-white hover:bg-white/5'}`}
+                        className={`w-full text-left px-4 py-2 text-sm transition-colors ${activeTenantId === null ? 'bg-white/10 text-st-primary font-bold' : 'text-st-muted hover:text-st-primary hover:bg-white/5'}`}
                       >
                         [ Todos los clientes ]
                       </button>
@@ -564,7 +564,7 @@ const Layout: React.FC<{ children: React.ReactNode; type?: 'CLIENTE' | 'RESELLER
                             setTenantDropdownOpen(false);
                             navigate(`/reseller/clientes/${t.id}/dashboard`);
                           }}
-                          className={`w-full text-left px-4 py-2 text-sm transition-colors ${activeTenantId === t.id ? 'bg-white/10 text-white font-bold' : 'text-st-muted hover:text-white hover:bg-white/5'}`}
+                          className={`w-full text-left px-4 py-2 text-sm transition-colors ${activeTenantId === t.id ? 'bg-white/10 text-st-primary font-bold' : 'text-st-muted hover:text-st-primary hover:bg-white/5'}`}
                         >
                           {t.name}
                         </button>
@@ -596,7 +596,7 @@ const Layout: React.FC<{ children: React.ReactNode; type?: 'CLIENTE' | 'RESELLER
             </button>
 
             <div
-              className="relative cursor-pointer p-1.5 rounded-full text-st-muted hover:text-white hover:bg-white/5 transition-colors"
+              className="relative cursor-pointer p-1.5 rounded-full text-st-muted hover:text-st-primary hover:bg-white/5 transition-colors"
               onClick={() => navigate(`${prefix}/alertas`)}
               title="Alertas"
             >
@@ -629,7 +629,7 @@ const Layout: React.FC<{ children: React.ReactNode; type?: 'CLIENTE' | 'RESELLER
                   )}
                 </div>
                 <div className="hidden md:block text-right">
-                  <div className="text-sm font-semibold leading-tight text-white truncate max-w-[130px]">{userName}</div>
+                  <div className="text-sm font-semibold leading-tight text-st-primary truncate max-w-[130px]">{userName}</div>
                   <div className="text-xs leading-tight text-st-muted">{scope === 'CLIENTE' ? 'Cliente' : 'Administrador'}</div>
                 </div>
                 <ChevronDown className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-st-muted" />
@@ -638,7 +638,7 @@ const Layout: React.FC<{ children: React.ReactNode; type?: 'CLIENTE' | 'RESELLER
               {profileDropdownOpen && (
                 <>
                   <div className="fixed inset-0 z-10" onClick={() => setProfileDropdownOpen(false)} />
-                  <div className="absolute right-0 mt-2 w-56 rounded-xl bg-st-surface border border-st-border shadow-2xl py-2 z-20 text-white">
+                  <div className="absolute right-0 mt-2 w-56 rounded-xl bg-st-surface border border-st-border shadow-2xl py-2 z-20 text-st-primary">
                     <button onClick={() => { setProfileDropdownOpen(false); navigate(`${prefix}/perfil`); }} className="w-full text-left px-5 py-2.5 text-[15px] hover:bg-white/5 transition-colors cursor-pointer">
                       Mi Perfil
                     </button>

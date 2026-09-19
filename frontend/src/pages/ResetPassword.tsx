@@ -139,7 +139,7 @@ export const ResetPassword: React.FC = () => {
                 </div>
                 <button
                   type="submit"
-                  className="w-full py-3 bg-client-primary hover:bg-client-primary-hover text-white rounded-lg text-sm font-bold uppercase tracking-wider transition-all cursor-pointer"
+                  className="w-full py-3 bg-client-primary hover:bg-client-primary-hover text-white keep-white rounded-lg text-sm font-bold uppercase tracking-wider transition-all cursor-pointer"
                 >
                   Validar Token
                 </button>
@@ -261,7 +261,7 @@ export const ResetPassword: React.FC = () => {
             <button
               type="submit"
               disabled={!canSubmit}
-              className="w-full py-3.5 mt-2 bg-client-primary hover:bg-client-primary-hover active:bg-client-primary-active text-white rounded-lg text-sm font-bold uppercase tracking-wider transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shadow-lg flex items-center justify-center gap-2"
+              className="w-full py-3.5 mt-2 bg-client-primary hover:bg-client-primary-hover active:bg-client-primary-active text-white keep-white rounded-lg text-sm font-bold uppercase tracking-wider transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shadow-lg flex items-center justify-center gap-2"
             >
               {submitting ? (
                 <>
@@ -302,7 +302,7 @@ export const ResetPassword: React.FC = () => {
               <button
                 type="button"
                 onClick={() => navigate('/login')}
-                className="w-full py-3 bg-client-primary hover:bg-client-primary-hover text-white rounded-lg text-sm font-bold uppercase tracking-wider transition-colors shadow-lg cursor-pointer"
+                className="w-full py-3 bg-client-primary hover:bg-client-primary-hover text-white keep-white rounded-lg text-sm font-bold uppercase tracking-wider transition-colors shadow-lg cursor-pointer"
               >
                 Iniciar Sesión Ahora
               </button>

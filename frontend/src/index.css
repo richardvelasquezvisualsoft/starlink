@@ -87,9 +87,9 @@
   --color-brand-primary-soft: rgba(2, 132, 199, 0.12);
   --color-brand-primary-border: rgba(2, 132, 199, 0.3);
 
-  --color-text-primary: #0F172A;
-  --color-text-secondary: #334155;
-  --color-text-muted: #64748B;
+  --color-text-primary: #000000;
+  --color-text-secondary: #111111;
+  --color-text-muted: #222222;
 
   --color-status-success: #059669;
   --color-status-danger: #DC2626;
@@ -103,10 +103,10 @@
   --client-border: #CBD5E1;
   --client-border-strong: #94A3B8;
 
-  --client-text-primary: #0F172A;
-  --client-text-secondary: #334155;
-  --client-text-muted: #64748B;
-  --client-text-disabled: #94A3B8;
+  --client-text-primary: #000000;
+  --client-text-secondary: #111111;
+  --client-text-muted: #222222;
+  --client-text-disabled: #444444;
 
   --client-primary: #0284C7;
   --client-primary-hover: #0369A1;
@@ -217,210 +217,388 @@
 }
 
 /* ==========================================================================
-   DARK MODE TEXT CONTRAST DEFAULTS
-   ========================================================================== */
-:not([data-reseller-theme="light"]):not([data-theme-mode="light"]):not(.light-theme) .text-white,
-:not([data-reseller-theme="light"]):not([data-theme-mode="light"]):not(.light-theme) [class*="text-white"] {
-  color: #FFFFFF !important;
-}
-
-:not([data-reseller-theme="light"]):not([data-theme-mode="light"]):not(.light-theme) .dark-input,
-:not([data-reseller-theme="light"]):not([data-theme-mode="light"]):not(.light-theme) input.dark-input {
-  background-color: #1e2024 !important;
-  color: #FFFFFF !important;
-  -webkit-text-fill-color: #FFFFFF !important;
-  caret-color: #FFFFFF !important;
-}
-
-/* ==========================================================================
-   LIGHT MODE CONTRAST & VISIBILITY ENGINE (HIGH CONTRAST BLACK/DARK TEXT)
+   LIGHT MODE CONTRAST & VISIBILITY ENGINE (ALL TEXT BLACK ON WHITE/GRAY)
    ========================================================================== */
 
-[data-reseller-theme="light"],
+.light-theme,
 [data-theme-mode="light"],
-.light-theme {
-  background-color: #F1F5F9;
-  color: #0F172A;
+[data-reseller-theme="light"] {
+  background-color: #F8FAFC !important;
+  color: #000000 !important;
 }
 
-/* Base Headings in Light Mode */
-[data-reseller-theme="light"] h1,
-[data-reseller-theme="light"] h2,
-[data-reseller-theme="light"] h3,
-[data-reseller-theme="light"] h4,
-[data-reseller-theme="light"] h5,
-[data-reseller-theme="light"] h6 {
-  color: #0F172A !important;
+/* Base Headings & Titles in Light Mode -> Pure Black */
+.light-theme h1, .light-theme h2, .light-theme h3, .light-theme h4, .light-theme h5, .light-theme h6,
+[data-theme-mode="light"] h1, [data-theme-mode="light"] h2, [data-theme-mode="light"] h3, [data-theme-mode="light"] h4, [data-theme-mode="light"] h5, [data-theme-mode="light"] h6,
+[data-reseller-theme="light"] h1, [data-reseller-theme="light"] h2, [data-reseller-theme="light"] h3, [data-reseller-theme="light"] h4, [data-reseller-theme="light"] h5, [data-reseller-theme="light"] h6 {
+  color: #000000 !important;
 }
 
-/* Automatically transform text-white on light surfaces to Deep Dark Slate/Black */
+/* All text-white on light surfaces must be Pure Black */
+.light-theme .text-white,
+.light-theme [class*="text-white"],
+[data-theme-mode="light"] .text-white,
+[data-theme-mode="light"] [class*="text-white"],
 [data-reseller-theme="light"] .text-white,
 [data-reseller-theme="light"] [class*="text-white"] {
-  color: #0F172A !important;
+  color: #000000 !important;
+}
+
+/* All text-st-muted / secondary text on white or gray must be deep legible black */
+.light-theme .text-st-muted,
+.light-theme [class*="text-st-muted"],
+.light-theme .text-st-primary,
+[data-theme-mode="light"] .text-st-muted,
+[data-theme-mode="light"] [class*="text-st-muted"],
+[data-theme-mode="light"] .text-st-primary,
+[data-reseller-theme="light"] .text-st-muted,
+[data-reseller-theme="light"] [class*="text-st-muted"],
+[data-reseller-theme="light"] .text-st-primary {
+  color: #000000 !important;
+}
+
+/* Numbers and metrics in Light Mode */
+.light-theme .font-mono,
+[data-theme-mode="light"] .font-mono,
+[data-reseller-theme="light"] .font-mono {
+  color: #000000;
 }
 
 /* EXCEPT ON SOLID COLORED BUTTONS, BADGES, AND HIGHLIGHTS WHERE TEXT MUST REMAIN WHITE */
-[data-reseller-theme="light"] button.bg-st-accent,
-[data-reseller-theme="light"] button.bg-client-primary,
-[data-reseller-theme="light"] button.bg-primary,
-[data-reseller-theme="light"] button[type="submit"],
-[data-reseller-theme="light"] .bg-st-accent,
+.light-theme .bg-client-primary,
+.light-theme .bg-client-primary *,
+.light-theme button.bg-client-primary,
+.light-theme button.bg-client-primary *,
+.light-theme .bg-client-primary.text-white,
+.light-theme .bg-client-primary .text-white,
+.light-theme button[type="submit"],
+.light-theme button[type="submit"] *,
+.light-theme button[type="submit"].text-white,
+.light-theme button[type="submit"] .text-white,
+.light-theme .bg-client-accent,
+.light-theme .bg-client-accent *,
+.light-theme button.bg-blue-600,
+.light-theme button.bg-blue-600 *,
+.light-theme button.bg-sky-600,
+.light-theme button.bg-sky-600 *,
+.light-theme button.bg-red-600,
+.light-theme button.bg-red-600 *,
+.light-theme button.bg-red-700,
+.light-theme button.bg-red-700 *,
+.light-theme button.bg-emerald-600,
+.light-theme button.bg-emerald-600 *,
+.light-theme button.bg-emerald-700,
+.light-theme button.bg-emerald-700 *,
+.light-theme button.bg-emerald-800,
+.light-theme button.bg-emerald-800 *,
+.light-theme button.bg-green-600,
+.light-theme button.bg-green-600 *,
+.light-theme button.bg-green-700,
+.light-theme button.bg-green-700 *,
+.light-theme button.bg-green-800,
+.light-theme button.bg-green-800 *,
+.light-theme .bg-black,
+.light-theme .bg-black *,
+.light-theme .keep-white,
+.light-theme .keep-white *,
+[data-theme-mode="light"] .bg-client-primary,
+[data-theme-mode="light"] .bg-client-primary *,
+[data-theme-mode="light"] button.bg-client-primary,
+[data-theme-mode="light"] button.bg-client-primary *,
+[data-theme-mode="light"] .bg-client-primary.text-white,
+[data-theme-mode="light"] .bg-client-primary .text-white,
+[data-theme-mode="light"] button[type="submit"],
+[data-theme-mode="light"] button[type="submit"] *,
+[data-theme-mode="light"] button[type="submit"].text-white,
+[data-theme-mode="light"] button[type="submit"] .text-white,
+[data-theme-mode="light"] .bg-client-accent,
+[data-theme-mode="light"] .bg-client-accent *,
+[data-theme-mode="light"] button.bg-blue-600,
+[data-theme-mode="light"] button.bg-blue-600 *,
+[data-theme-mode="light"] button.bg-sky-600,
+[data-theme-mode="light"] button.bg-sky-600 *,
+[data-theme-mode="light"] button.bg-red-600,
+[data-theme-mode="light"] button.bg-red-600 *,
+[data-theme-mode="light"] button.bg-red-700,
+[data-theme-mode="light"] button.bg-red-700 *,
+[data-theme-mode="light"] button.bg-emerald-600,
+[data-theme-mode="light"] button.bg-emerald-600 *,
+[data-theme-mode="light"] button.bg-emerald-700,
+[data-theme-mode="light"] button.bg-emerald-700 *,
+[data-theme-mode="light"] button.bg-emerald-800,
+[data-theme-mode="light"] button.bg-emerald-800 *,
+[data-theme-mode="light"] button.bg-green-600,
+[data-theme-mode="light"] button.bg-green-600 *,
+[data-theme-mode="light"] button.bg-green-700,
+[data-theme-mode="light"] button.bg-green-700 *,
+[data-theme-mode="light"] button.bg-green-800,
+[data-theme-mode="light"] button.bg-green-800 *,
+[data-theme-mode="light"] .bg-black,
+[data-theme-mode="light"] .bg-black *,
+[data-theme-mode="light"] .keep-white,
+[data-theme-mode="light"] .keep-white *,
 [data-reseller-theme="light"] .bg-client-primary,
-[data-reseller-theme="light"] .bg-sky-600,
-[data-reseller-theme="light"] .bg-blue-600,
-[data-reseller-theme="light"] .bg-red-600,
-[data-reseller-theme="light"] .bg-red-700,
-[data-reseller-theme="light"] .bg-emerald-600,
-[data-reseller-theme="light"] .bg-emerald-700,
-[data-reseller-theme="light"] .bg-green-600,
-[data-reseller-theme="light"] .bg-black,
-[data-reseller-theme="light"] .keep-white,
-[data-reseller-theme="light"] button.bg-st-accent *,
-[data-reseller-theme="light"] button.bg-client-primary *,
-[data-reseller-theme="light"] .bg-st-accent *,
 [data-reseller-theme="light"] .bg-client-primary *,
-[data-reseller-theme="light"] .bg-sky-600 *,
-[data-reseller-theme="light"] .bg-blue-600 *,
-[data-reseller-theme="light"] .bg-red-600 *,
-[data-reseller-theme="light"] .bg-red-700 *,
-[data-reseller-theme="light"] .bg-emerald-600 *,
-[data-reseller-theme="light"] .bg-emerald-700 *,
+[data-reseller-theme="light"] button.bg-client-primary,
+[data-reseller-theme="light"] button.bg-client-primary *,
+[data-reseller-theme="light"] .bg-client-primary.text-white,
+[data-reseller-theme="light"] .bg-client-primary .text-white,
+[data-reseller-theme="light"] button[type="submit"],
+[data-reseller-theme="light"] button[type="submit"] *,
+[data-reseller-theme="light"] button[type="submit"].text-white,
+[data-reseller-theme="light"] button[type="submit"] .text-white,
+[data-reseller-theme="light"] .bg-client-accent,
+[data-reseller-theme="light"] .bg-client-accent *,
+[data-reseller-theme="light"] button.bg-blue-600,
+[data-reseller-theme="light"] button.bg-blue-600 *,
+[data-reseller-theme="light"] button.bg-sky-600,
+[data-reseller-theme="light"] button.bg-sky-600 *,
+[data-reseller-theme="light"] button.bg-red-600,
+[data-reseller-theme="light"] button.bg-red-600 *,
+[data-reseller-theme="light"] button.bg-red-700,
+[data-reseller-theme="light"] button.bg-red-700 *,
+[data-reseller-theme="light"] button.bg-emerald-600,
+[data-reseller-theme="light"] button.bg-emerald-600 *,
+[data-reseller-theme="light"] button.bg-emerald-700,
+[data-reseller-theme="light"] button.bg-emerald-700 *,
+[data-reseller-theme="light"] button.bg-emerald-800,
+[data-reseller-theme="light"] button.bg-emerald-800 *,
+[data-reseller-theme="light"] button.bg-green-600,
+[data-reseller-theme="light"] button.bg-green-600 *,
+[data-reseller-theme="light"] button.bg-green-700,
+[data-reseller-theme="light"] button.bg-green-700 *,
+[data-reseller-theme="light"] button.bg-green-800,
+[data-reseller-theme="light"] button.bg-green-800 *,
+[data-reseller-theme="light"] .bg-black,
 [data-reseller-theme="light"] .bg-black *,
+[data-reseller-theme="light"] .keep-white,
 [data-reseller-theme="light"] .keep-white * {
   color: #FFFFFF !important;
   fill: #FFFFFF !important;
-}
-
-/* Muted Labels & Descriptions in Light Mode */
-[data-reseller-theme="light"] .text-st-muted,
-[data-reseller-theme="light"] [class*="text-st-muted"] {
-  color: #475569 !important;
+  -webkit-text-fill-color: #FFFFFF !important;
 }
 
 /* Hover effects in Light Mode */
+.light-theme .hover\:text-white:hover,
+[data-theme-mode="light"] .hover\:text-white:hover,
 [data-reseller-theme="light"] .hover\:text-white:hover {
-  color: #0F172A !important;
+  color: #000000 !important;
 }
 
-/* Translucent dark containers converted to crisp light cards */
+/* Translucent dark containers converted to crisp light cards with dark text */
+.light-theme .bg-white\/5,
+.light-theme .bg-white\/10,
+.light-theme .bg-black\/10,
+.light-theme .bg-black\/20,
+.light-theme .bg-black\/30,
+.light-theme .bg-black\/40,
+[data-theme-mode="light"] .bg-white\/5,
+[data-theme-mode="light"] .bg-white\/10,
+[data-theme-mode="light"] .bg-black\/10,
+[data-theme-mode="light"] .bg-black\/20,
+[data-theme-mode="light"] .bg-black\/30,
+[data-theme-mode="light"] .bg-black\/40,
 [data-reseller-theme="light"] .bg-white\/5,
-[data-reseller-theme="light"] .bg-white\/10 {
-  background-color: #F8FAFC !important;
+[data-reseller-theme="light"] .bg-white\/10,
+[data-reseller-theme="light"] .bg-black\/10,
+[data-reseller-theme="light"] .bg-black\/20,
+[data-reseller-theme="light"] .bg-black\/30,
+[data-reseller-theme="light"] .bg-black\/40 {
+  background-color: #F1F5F9 !important;
   border-color: #E2E8F0 !important;
+  color: #000000 !important;
 }
 
+.light-theme .hover\:bg-white\/5:hover,
+.light-theme .hover\:bg-white\/10:hover,
+[data-theme-mode="light"] .hover\:bg-white\/5:hover,
+[data-theme-mode="light"] .hover\:bg-white\/10:hover,
 [data-reseller-theme="light"] .hover\:bg-white\/5:hover,
 [data-reseller-theme="light"] .hover\:bg-white\/10:hover {
   background-color: #E2E8F0 !important;
 }
 
-[data-reseller-theme="light"] .bg-black\/20,
-[data-reseller-theme="light"] .bg-black\/40 {
-  background-color: #F8FAFC !important;
-  border-color: #E2E8F0 !important;
-}
-
+.light-theme .border-white\/5,
+.light-theme .border-white\/10,
+.light-theme .border-white\/20,
+[data-theme-mode="light"] .border-white\/5,
+[data-theme-mode="light"] .border-white\/10,
+[data-theme-mode="light"] .border-white\/20,
 [data-reseller-theme="light"] .border-white\/5,
 [data-reseller-theme="light"] .border-white\/10,
 [data-reseller-theme="light"] .border-white\/20 {
-  border-color: #E2E8F0 !important;
+  border-color: #CBD5E1 !important;
 }
 
 /* Header & Sidebar in Light Mode */
+.light-theme header,
+[data-theme-mode="light"] header,
 [data-reseller-theme="light"] header {
   background-color: #FFFFFF !important;
   border-color: #E2E8F0 !important;
-  color: #0F172A !important;
+  color: #000000 !important;
 }
 
+.light-theme aside,
+[data-theme-mode="light"] aside,
 [data-reseller-theme="light"] aside {
   background-color: #FFFFFF !important;
   border-color: #E2E8F0 !important;
-  color: #0F172A !important;
+  color: #000000 !important;
 }
 
+.light-theme aside button,
+.light-theme aside a,
+.light-theme aside span,
+.light-theme aside p,
+.light-theme aside div,
+[data-theme-mode="light"] aside button,
+[data-theme-mode="light"] aside a,
+[data-theme-mode="light"] aside span,
+[data-theme-mode="light"] aside p,
+[data-theme-mode="light"] aside div,
 [data-reseller-theme="light"] aside button,
+[data-reseller-theme="light"] aside a,
+[data-reseller-theme="light"] aside span,
+[data-reseller-theme="light"] aside p,
 [data-reseller-theme="light"] aside div {
-  color: #334155;
+  color: #000000 !important;
 }
 
+.light-theme aside .bg-white\/10,
+[data-theme-mode="light"] aside .bg-white\/10,
 [data-reseller-theme="light"] aside .bg-white\/10 {
   background-color: #E0F2FE !important;
   color: #0284C7 !important;
   border-color: #BAE6FD !important;
 }
 
+.light-theme aside .bg-white\/10 *,
+[data-theme-mode="light"] aside .bg-white\/10 *,
 [data-reseller-theme="light"] aside .bg-white\/10 * {
   color: #0284C7 !important;
 }
 
 /* Selects, Inputs, Textareas in Light Mode */
+.light-theme select,
+.light-theme input:not([type="checkbox"]):not([type="radio"]):not(.keep-dark),
+.light-theme textarea:not(.keep-dark),
+[data-theme-mode="light"] select,
+[data-theme-mode="light"] input:not([type="checkbox"]):not([type="radio"]):not(.keep-dark),
+[data-theme-mode="light"] textarea:not(.keep-dark),
 [data-reseller-theme="light"] select,
 [data-reseller-theme="light"] input:not([type="checkbox"]):not([type="radio"]):not(.keep-dark),
 [data-reseller-theme="light"] textarea:not(.keep-dark) {
   background-color: #FFFFFF !important;
-  color: #0F172A !important;
+  color: #000000 !important;
+  -webkit-text-fill-color: #000000 !important;
   border-color: #CBD5E1 !important;
 }
 
+.light-theme select option,
+[data-theme-mode="light"] select option,
 [data-reseller-theme="light"] select option {
   background-color: #FFFFFF !important;
-  color: #0F172A !important;
+  color: #000000 !important;
 }
 
+.light-theme input::placeholder,
+.light-theme textarea::placeholder,
+[data-theme-mode="light"] input::placeholder,
+[data-theme-mode="light"] textarea::placeholder,
 [data-reseller-theme="light"] input::placeholder,
 [data-reseller-theme="light"] textarea::placeholder {
-  color: #94A3B8 !important;
+  color: #64748B !important;
 }
 
-/* Recharts in Light Mode (SVG text & axes) */
+/* Recharts in Light Mode (SVG text & axes) -> Pure Black */
+.light-theme .recharts-cartesian-axis-tick text,
+.light-theme .recharts-cartesian-axis-tick-value,
+.light-theme .recharts-text,
+.light-theme .recharts-legend-item-text,
+.light-theme svg text:not(.keep-white),
+[data-theme-mode="light"] .recharts-cartesian-axis-tick text,
+[data-theme-mode="light"] .recharts-cartesian-axis-tick-value,
+[data-theme-mode="light"] .recharts-text,
+[data-theme-mode="light"] .recharts-legend-item-text,
+[data-theme-mode="light"] svg text:not(.keep-white),
 [data-reseller-theme="light"] .recharts-cartesian-axis-tick text,
 [data-reseller-theme="light"] .recharts-cartesian-axis-tick-value,
 [data-reseller-theme="light"] .recharts-text,
 [data-reseller-theme="light"] .recharts-legend-item-text,
 [data-reseller-theme="light"] svg text:not(.keep-white) {
-  fill: #334155 !important;
-  color: #334155 !important;
+  fill: #000000 !important;
+  color: #000000 !important;
 }
 
+.light-theme .recharts-cartesian-axis-line,
+.light-theme .recharts-cartesian-axis-tick line,
+[data-theme-mode="light"] .recharts-cartesian-axis-line,
+[data-theme-mode="light"] .recharts-cartesian-axis-tick line,
 [data-reseller-theme="light"] .recharts-cartesian-axis-line,
 [data-reseller-theme="light"] .recharts-cartesian-axis-tick line {
-  stroke: #CBD5E1 !important;
+  stroke: #94A3B8 !important;
 }
 
+.light-theme .recharts-cartesian-grid line,
+[data-theme-mode="light"] .recharts-cartesian-grid line,
 [data-reseller-theme="light"] .recharts-cartesian-grid line {
   stroke: #E2E8F0 !important;
 }
 
+.light-theme .recharts-default-tooltip,
+[data-theme-mode="light"] .recharts-default-tooltip,
 [data-reseller-theme="light"] .recharts-default-tooltip {
   background-color: #FFFFFF !important;
   border-color: #CBD5E1 !important;
-  color: #0F172A !important;
+  color: #000000 !important;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1) !important;
 }
 
+.light-theme .recharts-default-tooltip *,
+[data-theme-mode="light"] .recharts-default-tooltip *,
+[data-reseller-theme="light"] .recharts-default-tooltip * {
+  color: #000000 !important;
+}
+
 /* Tables in Light Mode */
+.light-theme thead,
+.light-theme thead tr,
+.light-theme thead th,
+[data-theme-mode="light"] thead,
+[data-theme-mode="light"] thead tr,
+[data-theme-mode="light"] thead th,
 [data-reseller-theme="light"] thead,
 [data-reseller-theme="light"] thead tr,
 [data-reseller-theme="light"] thead th {
-  background-color: #F8FAFC !important;
+  background-color: #F1F5F9 !important;
   border-color: #E2E8F0 !important;
-  color: #475569 !important;
+  color: #000000 !important;
 }
 
+.light-theme tbody tr,
+[data-theme-mode="light"] tbody tr,
 [data-reseller-theme="light"] tbody tr {
   border-color: #E2E8F0 !important;
 }
 
+.light-theme tbody tr:hover,
+[data-theme-mode="light"] tbody tr:hover,
 [data-reseller-theme="light"] tbody tr:hover {
-  background-color: #F8FAFC !important;
+  background-color: #F1F5F9 !important;
 }
 
+.light-theme tbody td,
+[data-theme-mode="light"] tbody td,
 [data-reseller-theme="light"] tbody td {
-  color: #0F172A;
+  color: #000000 !important;
 }
 
-/* Cards shadow in Light Mode */
+/* Cards shadow and backgrounds in Light Mode */
+.light-theme .bg-st-surface,
+.light-theme .bg-client-bg-surface,
+[data-theme-mode="light"] .bg-st-surface,
+[data-theme-mode="light"] .bg-client-bg-surface,
 [data-reseller-theme="light"] .bg-st-surface,
 [data-reseller-theme="light"] .bg-client-bg-surface {
   background-color: #FFFFFF !important;
@@ -428,55 +606,82 @@
   box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08), 0 1px 2px rgba(15, 23, 42, 0.04) !important;
 }
 
-/* KPI metric numbers in Light Mode */
-[data-reseller-theme="light"] .font-mono.text-white {
-  color: #0F172A !important;
+.light-theme .bg-st-bg,
+.light-theme .bg-client-bg-app,
+[data-theme-mode="light"] .bg-st-bg,
+[data-theme-mode="light"] .bg-client-bg-app,
+[data-reseller-theme="light"] .bg-st-bg,
+[data-reseller-theme="light"] .bg-client-bg-app {
+  background-color: #F8FAFC !important;
+}
+
+.light-theme .border-st-border,
+[data-theme-mode="light"] .border-st-border,
+[data-reseller-theme="light"] .border-st-border {
+  border-color: #E2E8F0 !important;
 }
 
 /* Contrast enhancement for status badges and colored numbers in Light Mode */
-[data-reseller-theme="light"] .text-green-400,
-[data-reseller-theme="light"] .text-green-500 {
-  color: #16A34A !important;
+.light-theme .text-green-400, .light-theme .text-green-500,
+[data-theme-mode="light"] .text-green-400, [data-theme-mode="light"] .text-green-500,
+[data-reseller-theme="light"] .text-green-400, [data-reseller-theme="light"] .text-green-500 {
+  color: #15803D !important;
 }
 
-[data-reseller-theme="light"] .text-emerald-400,
-[data-reseller-theme="light"] .text-emerald-500 {
-  color: #059669 !important;
+.light-theme .text-emerald-400, .light-theme .text-emerald-500,
+[data-theme-mode="light"] .text-emerald-400, [data-theme-mode="light"] .text-emerald-500,
+[data-reseller-theme="light"] .text-emerald-400, [data-reseller-theme="light"] .text-emerald-500 {
+  color: #047857 !important;
 }
 
-[data-reseller-theme="light"] .text-amber-400,
-[data-reseller-theme="light"] .text-amber-500 {
-  color: #D97706 !important;
+.light-theme .text-amber-400, .light-theme .text-amber-500,
+[data-theme-mode="light"] .text-amber-400, [data-theme-mode="light"] .text-amber-500,
+[data-reseller-theme="light"] .text-amber-400, [data-reseller-theme="light"] .text-amber-500 {
+  color: #B45309 !important;
 }
 
-[data-reseller-theme="light"] .text-yellow-400,
-[data-reseller-theme="light"] .text-yellow-500 {
-  color: #D97706 !important;
+.light-theme .text-yellow-400, .light-theme .text-yellow-500,
+[data-theme-mode="light"] .text-yellow-400, [data-theme-mode="light"] .text-yellow-500,
+[data-reseller-theme="light"] .text-yellow-400, [data-reseller-theme="light"] .text-yellow-500 {
+  color: #B45309 !important;
 }
 
-[data-reseller-theme="light"] .text-red-400,
-[data-reseller-theme="light"] .text-red-500 {
-  color: #DC2626 !important;
+.light-theme .text-red-400, .light-theme .text-red-500,
+[data-theme-mode="light"] .text-red-400, [data-theme-mode="light"] .text-red-500,
+[data-reseller-theme="light"] .text-red-400, [data-reseller-theme="light"] .text-red-500 {
+  color: #B91C1C !important;
 }
 
 /* Bottom summary cards status badges in Light Mode */
+.light-theme .bg-red-500\/20,
+[data-theme-mode="light"] .bg-red-500\/20,
 [data-reseller-theme="light"] .bg-red-500\/20 {
   background-color: #FEE2E2 !important;
   border-color: #FECACA !important;
-  color: #DC2626 !important;
+  color: #B91C1C !important;
 }
+
+.light-theme .bg-amber-500\/20,
+[data-theme-mode="light"] .bg-amber-500\/20,
 [data-reseller-theme="light"] .bg-amber-500\/20 {
   background-color: #FEF3C7 !important;
   border-color: #FDE68A !important;
-  color: #D97706 !important;
+  color: #B45309 !important;
 }
+
+.light-theme .bg-emerald-500\/20,
+[data-theme-mode="light"] .bg-emerald-500\/20,
 [data-reseller-theme="light"] .bg-emerald-500\/20 {
   background-color: #D1FAE5 !important;
   border-color: #A7F3D0 !important;
-  color: #059669 !important;
+  color: #047857 !important;
 }
+
+.light-theme .bg-st-accent\/10,
+[data-theme-mode="light"] .bg-st-accent\/10,
 [data-reseller-theme="light"] .bg-st-accent\/10 {
   background-color: #E0F2FE !important;
   border-color: #BAE6FD !important;
   color: #0284C7 !important;
 }
+
