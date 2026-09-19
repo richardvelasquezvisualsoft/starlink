@@ -577,25 +577,23 @@ const Layout: React.FC<{ children: React.ReactNode; type?: 'CLIENTE' | 'RESELLER
           </div>
 
           <div className="flex items-center gap-2 sm:gap-4 shrink-0">
-            {type === 'RESELLER' && (
-              <button
-                onClick={toggleThemeMode}
-                className="p-1.5 sm:p-2 rounded-lg bg-st-bg border border-st-border text-st-muted hover:text-white hover:bg-white/5 transition-colors flex items-center gap-1.5 text-xs font-bold cursor-pointer"
-                title={`Cambiar a tema ${themeMode === 'dark' ? 'claro' : 'oscuro'}`}
-              >
-                {themeMode === 'dark' ? (
-                  <>
-                    <Sun className="w-4 h-4 text-amber-400" />
-                    <span className="hidden sm:inline">Claro</span>
-                  </>
-                ) : (
-                  <>
-                    <Moon className="w-4 h-4 text-blue-400" />
-                    <span className="hidden sm:inline">Oscuro</span>
-                  </>
-                )}
-              </button>
-            )}
+            <button
+              onClick={toggleThemeMode}
+              className="p-1.5 sm:p-2 rounded-lg bg-st-bg border border-st-border text-st-muted hover:text-st-primary transition-colors flex items-center gap-1.5 text-xs font-bold cursor-pointer"
+              title={`Cambiar a tema ${themeMode === 'dark' ? 'claro' : 'oscuro'}`}
+            >
+              {themeMode === 'dark' ? (
+                <>
+                  <Sun className="w-4 h-4 text-amber-400" />
+                  <span className="hidden sm:inline text-st-primary">Claro</span>
+                </>
+              ) : (
+                <>
+                  <Moon className="w-4 h-4 text-blue-500" />
+                  <span className="hidden sm:inline text-st-primary">Oscuro</span>
+                </>
+              )}
+            </button>
 
             <div
               className="relative cursor-pointer p-1.5 rounded-full text-st-muted hover:text-white hover:bg-white/5 transition-colors"

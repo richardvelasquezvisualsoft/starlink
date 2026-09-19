@@ -1,73 +1,145 @@
-[data-theme-scope="cliente"] {
-  /* Neutrales - Mismo estilo y contraste que Reseller Dark */
-  --client-bg-app:        #000000;
-  --client-bg-surface:    #111111;
-  --client-bg-soft:       #1A1A1A;
-  --client-bg-subtle:     #1E293B;
+:root {
+  --shadow-sm: 0 1px 2px rgba(15,23,42,.04);
+  --shadow-card: 0 1px 3px rgba(15,23,42,.06), 0 1px 2px rgba(15,23,42,.04);
+  --shadow-modal: 0 20px 50px rgba(15,23,42,.18);
 
-  --client-border:        #222222;
-  --client-border-strong: #334155;
-
-  --client-text-primary:   #FFFFFF;
-  --client-text-secondary: #F1F5F9;
-  --client-text-muted:     #94A3B8;
-  --client-text-disabled:  #64748B;
-
-  /* Marca / interacción (Cian / Azul Starmonitor) */
-  --client-primary:        #00A8E8;
-  --client-primary-hover:  #38BDF8;
-  --client-primary-active: #0284C7;
-  --client-primary-soft:   rgba(0, 168, 232, 0.15);
-  --client-primary-contrast: #FFFFFF;
-  --client-primary-hover-contrast: #FFFFFF;
-  --client-primary-active-contrast: #FFFFFF;
-
-  --client-accent:         #00A8E8;
-  --client-accent-hover:   #38BDF8;
-  --client-accent-soft:    rgba(0, 168, 232, 0.15);
-  --client-accent-contrast: #FFFFFF;
-  --client-accent-hover-contrast: #FFFFFF;
-  --client-accent-active-contrast: #FFFFFF;
-
-  /* Acento cálido */
-  --client-highlight:      #F59E0B;
-  --client-highlight-hover:#D97706;
-  --client-highlight-soft: rgba(245, 158, 11, 0.15);
-
-  /* Estados */
-  --client-success:        #22C55E;
-  --client-success-soft:   rgba(34, 197, 94, 0.15);
-
-  --client-warning:        #F59E0B;
-  --client-warning-soft:   rgba(245, 158, 11, 0.15);
-
-  --client-danger:         #EF4444;
-  --client-danger-soft:    rgba(239, 68, 68, 0.15);
-
-  --client-info:           #00A8E8;
-  --client-info-soft:      rgba(0, 168, 232, 0.15);
-
-  /* Mapeos legacy (fallback para st-bg, st-surface, etc.) */
+  /* Default Dark Mode Tokens (Deep Space) */
   --color-bg-app: #000000;
   --color-bg-surface: #111111;
+  --color-bg-subtle: #1A1A1A;
   --color-border: #222222;
+
   --color-brand-primary: #00A8E8;
   --color-brand-primary-hover: #38BDF8;
   --color-brand-primary-active: #0284C7;
-  --color-brand-primary-soft: rgba(0, 168, 232, 0.35);
-  --color-brand-primary-border: rgba(0, 168, 232, 0.45);
+  --color-brand-primary-soft: rgba(0, 168, 232, 0.15);
+  --color-brand-primary-border: rgba(0, 168, 232, 0.35);
+
   --color-text-primary: #FFFFFF;
   --color-text-secondary: #F1F5F9;
   --color-text-muted: #94A3B8;
 
+  --color-status-success: #10B981;
+  --color-status-danger: #EF4444;
+  --color-status-warning: #F59E0B;
+
+  --client-bg-app: #000000;
+  --client-bg-surface: #111111;
+  --client-bg-soft: #1A1A1A;
+  --client-bg-subtle: #1E293B;
+
+  --client-border: #222222;
+  --client-border-strong: #334155;
+
+  --client-text-primary: #FFFFFF;
+  --client-text-secondary: #F1F5F9;
+  --client-text-muted: #94A3B8;
+  --client-text-disabled: #64748B;
+
+  --client-primary: #00A8E8;
+  --client-primary-hover: #38BDF8;
+  --client-primary-active: #0284C7;
+  --client-primary-soft: rgba(0, 168, 232, 0.15);
+  --client-primary-contrast: #FFFFFF;
+  --client-primary-hover-contrast: #FFFFFF;
+  --client-primary-active-contrast: #FFFFFF;
+
+  --client-accent: #00A8E8;
+  --client-accent-hover: #38BDF8;
+  --client-accent-soft: rgba(0, 168, 232, 0.15);
+  --client-accent-contrast: #FFFFFF;
+  --client-accent-hover-contrast: #FFFFFF;
+  --client-accent-active-contrast: #FFFFFF;
+
+  --client-highlight: #F59E0B;
+  --client-highlight-hover: #D97706;
+  --client-highlight-soft: rgba(245, 158, 11, 0.15);
+
+  --client-success: #22C55E;
+  --client-success-soft: rgba(34, 197, 94, 0.15);
+
+  --client-warning: #F59E0B;
+  --client-warning-soft: rgba(245, 158, 11, 0.15);
+
+  --client-danger: #EF4444;
+  --client-danger-soft: rgba(239, 68, 68, 0.15);
+
+  --client-info: #00A8E8;
+  --client-info-soft: rgba(0, 168, 232, 0.15);
+
   color-scheme: dark;
-  color: #FFFFFF;
 }
 
-:root {
-  --shadow-sm: 0 1px 2px rgba(15,23,42,.04);
-  --shadow-card: 0 1px 2px rgba(15,23,42,.04), 0 8px 24px rgba(15,23,42,.05);
-  --shadow-modal: 0 20px 50px rgba(15,23,42,.18);
+/* ==========================================================================
+   LIGHT THEME DESIGN TOKENS
+   ========================================================================== */
+[data-reseller-theme="light"],
+[data-theme-mode="light"],
+.light-theme {
+  --color-bg-app: #F1F5F9;
+  --color-bg-surface: #FFFFFF;
+  --color-bg-subtle: #E2E8F0;
+  --color-border: #CBD5E1;
+
+  --color-brand-primary: #0284C7;
+  --color-brand-primary-hover: #0369A1;
+  --color-brand-primary-active: #075985;
+  --color-brand-primary-soft: rgba(2, 132, 199, 0.12);
+  --color-brand-primary-border: rgba(2, 132, 199, 0.3);
+
+  --color-text-primary: #0F172A;
+  --color-text-secondary: #334155;
+  --color-text-muted: #64748B;
+
+  --color-status-success: #059669;
+  --color-status-danger: #DC2626;
+  --color-status-warning: #D97706;
+
+  --client-bg-app: #F1F5F9;
+  --client-bg-surface: #FFFFFF;
+  --client-bg-soft: #F8FAFC;
+  --client-bg-subtle: #E2E8F0;
+
+  --client-border: #CBD5E1;
+  --client-border-strong: #94A3B8;
+
+  --client-text-primary: #0F172A;
+  --client-text-secondary: #334155;
+  --client-text-muted: #64748B;
+  --client-text-disabled: #94A3B8;
+
+  --client-primary: #0284C7;
+  --client-primary-hover: #0369A1;
+  --client-primary-active: #075985;
+  --client-primary-soft: rgba(2, 132, 199, 0.12);
+  --client-primary-contrast: #FFFFFF;
+  --client-primary-hover-contrast: #FFFFFF;
+  --client-primary-active-contrast: #FFFFFF;
+
+  --client-accent: #0284C7;
+  --client-accent-hover: #0369A1;
+  --client-accent-soft: rgba(2, 132, 199, 0.12);
+  --client-accent-contrast: #FFFFFF;
+  --client-accent-hover-contrast: #FFFFFF;
+  --client-accent-active-contrast: #FFFFFF;
+
+  --client-highlight: #D97706;
+  --client-highlight-hover: #B45309;
+  --client-highlight-soft: rgba(217, 119, 6, 0.12);
+
+  --client-success: #059669;
+  --client-success-soft: rgba(5, 150, 105, 0.12);
+
+  --client-warning: #D97706;
+  --client-warning-soft: rgba(217, 119, 6, 0.12);
+
+  --client-danger: #DC2626;
+  --client-danger-soft: rgba(220, 38, 38, 0.12);
+
+  --client-info: #0284C7;
+  --client-info-soft: rgba(2, 132, 199, 0.12);
+
+  color-scheme: light;
 }
 
 @tailwind base;
@@ -87,11 +159,6 @@
     color: var(--color-text-primary, #FFFFFF);
   }
 
-  [data-theme-scope="cliente"] {
-    background-color: var(--color-bg-app);
-    color: var(--color-text-primary);
-  }
-
   ::selection {
     background-color: #0284C7 !important;
     color: #FFFFFF !important;
@@ -105,22 +172,9 @@
   input, textarea {
     user-select: text !important;
     -webkit-user-select: text !important;
-    caret-color: #38BDF8;
+    caret-color: #0284C7;
   }
 
-  input::selection,
-  textarea::selection {
-    background-color: #0284C7 !important;
-    color: #FFFFFF !important;
-    -webkit-text-fill-color: #FFFFFF !important;
-  }
-
-  input::-moz-selection,
-  textarea::-moz-selection {
-    background-color: #0284C7 !important;
-    color: #FFFFFF !important;
-  }
-  
   /* Custom scrollbar */
   ::-webkit-scrollbar {
     width: 6px;
@@ -132,12 +186,12 @@
   }
   
   ::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.20);
+    background: rgba(148, 163, 184, 0.35);
     border-radius: 4px;
   }
   
   ::-webkit-scrollbar-thumb:hover {
-    background: #94A3B8;
+    background: rgba(148, 163, 184, 0.6);
   }
 }
 
@@ -155,145 +209,274 @@
   background: transparent;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.20);
+  background: rgba(148, 163, 184, 0.35);
   border-radius: 4px;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: #94A3B8;
+  background: rgba(148, 163, 184, 0.6);
 }
 
 /* ==========================================================================
-   CLIENTE Scope: Uses STARMONITOR Original Deep Space Dark Design System
+   DARK MODE TEXT CONTRAST DEFAULTS
    ========================================================================== */
-
-
-/* ==========================================================================
-   RESELLER Scope: Strict High-Contrast Typography & Dynamic Surface Rules
-   - Dark backgrounds (Dark mode / Dark surfaces): Text is Crisp White (#FFFFFF).
-   - Light backgrounds (Light mode / Light surfaces): Text is Navy Blue (#0F172A).
-   ========================================================================== */
-
-[data-theme-scope="reseller"],
-[data-theme-scope="reseller"][data-reseller-theme="dark"] {
-  --color-bg-app: #000000;
-  --color-bg-surface: #111111;
-  --color-bg-subtle: #1A1A1A;
-  --color-border: #222222;
-
-  --color-brand-primary: #00A8E8;
-  --color-brand-primary-hover: #38BDF8;
-  --color-brand-primary-active: #0284C7;
-  --color-brand-primary-soft: rgba(0, 168, 232, 0.15);
-  --color-brand-primary-border: rgba(0, 168, 232, 0.35);
-
-  --color-text-primary: #FFFFFF;
-  --color-text-secondary: #F1F5F9;
-  --color-text-muted: #94A3B8;
-
-  color-scheme: dark;
-}
-
-[data-theme-scope="reseller"][data-reseller-theme="light"] {
-  --color-bg-app: #F8FAFC;
-  --color-bg-surface: #FFFFFF;
-  --color-bg-subtle: #F1F5F9;
-  --color-border: #E2E8F0;
-
-  --color-brand-primary: #0284C7;
-  --color-brand-primary-hover: #0369A1;
-  --color-brand-primary-active: #075985;
-  --color-brand-primary-soft: rgba(2, 132, 199, 0.12);
-  --color-brand-primary-border: rgba(2, 132, 199, 0.3);
-
-  --color-text-primary: #0F172A;
-  --color-text-secondary: #1E293B;
-  --color-text-muted: #475569;
-
-  color-scheme: light;
-}
-
-/* Base text contrast rule for Reseller */
-[data-theme-scope="reseller"] {
-  color: var(--color-text-primary, #FFFFFF);
-}
-
-/* Light Surface Contrast Rules (Background claro -> Letra Azul Marino #0F172A) */
-[data-theme-scope="reseller"] .bg-white,
-[data-theme-scope="reseller"] .bg-slate-50,
-[data-theme-scope="reseller"] .bg-slate-100,
-[data-theme-scope="reseller"] .bg-gray-50,
-[data-theme-scope="reseller"] .bg-gray-100,
-[data-reseller-theme="light"] body,
-[data-reseller-theme="light"] .bg-st-bg,
-[data-reseller-theme="light"] .bg-st-surface {
-  color: #0F172A;
-}
-
-/* Dark Surface Contrast Rules (Background oscuro -> Letra Blanca #FFFFFF) */
-[data-theme-scope="reseller"]:not([data-reseller-theme="light"]) .bg-st-bg,
-[data-theme-scope="reseller"]:not([data-reseller-theme="light"]) .bg-st-surface,
-[data-theme-scope="reseller"]:not([data-reseller-theme="light"]) .bg-black,
-[data-theme-scope="reseller"]:not([data-reseller-theme="light"]) body {
-  color: #FFFFFF;
-}
-
-/* Badges / Chips / Code / Monospace in Reseller Dark Mode */
-[data-theme-scope="reseller"]:not([data-reseller-theme="light"]) .badge-mono,
-[data-theme-scope="reseller"]:not([data-reseller-theme="light"]) code {
+:not([data-reseller-theme="light"]):not([data-theme-mode="light"]):not(.light-theme) .text-white,
+:not([data-reseller-theme="light"]):not([data-theme-mode="light"]):not(.light-theme) [class*="text-white"] {
   color: #FFFFFF !important;
 }
 
-/* Explicit text-white class must ALWAYS be pure white */
-.text-white,
-[class*="text-white"] {
-  color: #FFFFFF !important;
-}
-
-/* ====== GLOBAL CONTRAST FIXES ====== */
-/* Dark Backgrounds */
-.bg-gray-800, .bg-gray-900, .bg-black, .bg-blue-900, .bg-slate-800, .bg-slate-900, .bg-zinc-800, .bg-zinc-900, .bg-neutral-800, .bg-neutral-900 {
-  color: #FFFFFF !important;
-}
-.bg-gray-800 *, .bg-gray-900 *, .bg-black *, .bg-blue-900 *, .bg-slate-800 *, .bg-slate-900 *, .bg-zinc-800 *, .bg-zinc-900 *, .bg-neutral-800 *, .bg-neutral-900 * {
-  color: #FFFFFF !important;
-}
-
-/* Light Backgrounds */
-.bg-white, .bg-gray-50, .bg-gray-100, .bg-slate-50, .bg-slate-100, .bg-zinc-50, .bg-zinc-100, .bg-neutral-50, .bg-neutral-100 {
-  color: #0F172A;
-}
-
-/* Dark input styling and password inputs - pure crisp white text */
-.dark-input,
-input.dark-input,
-input.dark-input[type="password"],
-input.dark-input[type="text"] {
+:not([data-reseller-theme="light"]):not([data-theme-mode="light"]):not(.light-theme) .dark-input,
+:not([data-reseller-theme="light"]):not([data-theme-mode="light"]):not(.light-theme) input.dark-input {
   background-color: #1e2024 !important;
   color: #FFFFFF !important;
   -webkit-text-fill-color: #FFFFFF !important;
   caret-color: #FFFFFF !important;
 }
 
-/* Webkit autofill fix for dark inputs */
-input.dark-input:-webkit-autofill,
-input.dark-input:-webkit-autofill:hover, 
-input.dark-input:-webkit-autofill:focus, 
-input.dark-input:-webkit-autofill:active,
-.dark-input:-webkit-autofill {
-  -webkit-box-shadow: 0 0 0 1000px #1e2024 inset !important;
-  -webkit-text-fill-color: #FFFFFF !important;
+/* ==========================================================================
+   LIGHT MODE CONTRAST & VISIBILITY ENGINE (HIGH CONTRAST BLACK/DARK TEXT)
+   ========================================================================== */
+
+[data-reseller-theme="light"],
+[data-theme-mode="light"],
+.light-theme {
+  background-color: #F1F5F9;
+  color: #0F172A;
+}
+
+/* Base Headings in Light Mode */
+[data-reseller-theme="light"] h1,
+[data-reseller-theme="light"] h2,
+[data-reseller-theme="light"] h3,
+[data-reseller-theme="light"] h4,
+[data-reseller-theme="light"] h5,
+[data-reseller-theme="light"] h6 {
+  color: #0F172A !important;
+}
+
+/* Automatically transform text-white on light surfaces to Deep Dark Slate/Black */
+[data-reseller-theme="light"] .text-white,
+[data-reseller-theme="light"] [class*="text-white"] {
+  color: #0F172A !important;
+}
+
+/* EXCEPT ON SOLID COLORED BUTTONS, BADGES, AND HIGHLIGHTS WHERE TEXT MUST REMAIN WHITE */
+[data-reseller-theme="light"] button.bg-st-accent,
+[data-reseller-theme="light"] button.bg-client-primary,
+[data-reseller-theme="light"] button.bg-primary,
+[data-reseller-theme="light"] button[type="submit"],
+[data-reseller-theme="light"] .bg-st-accent,
+[data-reseller-theme="light"] .bg-client-primary,
+[data-reseller-theme="light"] .bg-sky-600,
+[data-reseller-theme="light"] .bg-blue-600,
+[data-reseller-theme="light"] .bg-red-600,
+[data-reseller-theme="light"] .bg-red-700,
+[data-reseller-theme="light"] .bg-emerald-600,
+[data-reseller-theme="light"] .bg-emerald-700,
+[data-reseller-theme="light"] .bg-green-600,
+[data-reseller-theme="light"] .bg-black,
+[data-reseller-theme="light"] .keep-white,
+[data-reseller-theme="light"] button.bg-st-accent *,
+[data-reseller-theme="light"] button.bg-client-primary *,
+[data-reseller-theme="light"] .bg-st-accent *,
+[data-reseller-theme="light"] .bg-client-primary *,
+[data-reseller-theme="light"] .bg-sky-600 *,
+[data-reseller-theme="light"] .bg-blue-600 *,
+[data-reseller-theme="light"] .bg-red-600 *,
+[data-reseller-theme="light"] .bg-red-700 *,
+[data-reseller-theme="light"] .bg-emerald-600 *,
+[data-reseller-theme="light"] .bg-emerald-700 *,
+[data-reseller-theme="light"] .bg-black *,
+[data-reseller-theme="light"] .keep-white * {
   color: #FFFFFF !important;
-  caret-color: #FFFFFF !important;
+  fill: #FFFFFF !important;
 }
 
-input.dark-input::placeholder,
-.dark-input::placeholder {
+/* Muted Labels & Descriptions in Light Mode */
+[data-reseller-theme="light"] .text-st-muted,
+[data-reseller-theme="light"] [class*="text-st-muted"] {
+  color: #475569 !important;
+}
+
+/* Hover effects in Light Mode */
+[data-reseller-theme="light"] .hover\:text-white:hover {
+  color: #0F172A !important;
+}
+
+/* Translucent dark containers converted to crisp light cards */
+[data-reseller-theme="light"] .bg-white\/5,
+[data-reseller-theme="light"] .bg-white\/10 {
+  background-color: #F8FAFC !important;
+  border-color: #E2E8F0 !important;
+}
+
+[data-reseller-theme="light"] .hover\:bg-white\/5:hover,
+[data-reseller-theme="light"] .hover\:bg-white\/10:hover {
+  background-color: #E2E8F0 !important;
+}
+
+[data-reseller-theme="light"] .bg-black\/20,
+[data-reseller-theme="light"] .bg-black\/40 {
+  background-color: #F8FAFC !important;
+  border-color: #E2E8F0 !important;
+}
+
+[data-reseller-theme="light"] .border-white\/5,
+[data-reseller-theme="light"] .border-white\/10,
+[data-reseller-theme="light"] .border-white\/20 {
+  border-color: #E2E8F0 !important;
+}
+
+/* Header & Sidebar in Light Mode */
+[data-reseller-theme="light"] header {
+  background-color: #FFFFFF !important;
+  border-color: #E2E8F0 !important;
+  color: #0F172A !important;
+}
+
+[data-reseller-theme="light"] aside {
+  background-color: #FFFFFF !important;
+  border-color: #E2E8F0 !important;
+  color: #0F172A !important;
+}
+
+[data-reseller-theme="light"] aside button,
+[data-reseller-theme="light"] aside div {
+  color: #334155;
+}
+
+[data-reseller-theme="light"] aside .bg-white\/10 {
+  background-color: #E0F2FE !important;
+  color: #0284C7 !important;
+  border-color: #BAE6FD !important;
+}
+
+[data-reseller-theme="light"] aside .bg-white\/10 * {
+  color: #0284C7 !important;
+}
+
+/* Selects, Inputs, Textareas in Light Mode */
+[data-reseller-theme="light"] select,
+[data-reseller-theme="light"] input:not([type="checkbox"]):not([type="radio"]):not(.keep-dark),
+[data-reseller-theme="light"] textarea:not(.keep-dark) {
+  background-color: #FFFFFF !important;
+  color: #0F172A !important;
+  border-color: #CBD5E1 !important;
+}
+
+[data-reseller-theme="light"] select option {
+  background-color: #FFFFFF !important;
+  color: #0F172A !important;
+}
+
+[data-reseller-theme="light"] input::placeholder,
+[data-reseller-theme="light"] textarea::placeholder {
   color: #94A3B8 !important;
-  -webkit-text-fill-color: #94A3B8 !important;
-  opacity: 1 !important;
 }
 
-/* Fix specific Tailwind text classes on light/dark backgrounds */
-.bg-white .text-gray-200, .bg-white .text-gray-300, .bg-white .text-gray-400 {
-  color: #475569;
+/* Recharts in Light Mode (SVG text & axes) */
+[data-reseller-theme="light"] .recharts-cartesian-axis-tick text,
+[data-reseller-theme="light"] .recharts-cartesian-axis-tick-value,
+[data-reseller-theme="light"] .recharts-text,
+[data-reseller-theme="light"] .recharts-legend-item-text,
+[data-reseller-theme="light"] svg text:not(.keep-white) {
+  fill: #334155 !important;
+  color: #334155 !important;
+}
+
+[data-reseller-theme="light"] .recharts-cartesian-axis-line,
+[data-reseller-theme="light"] .recharts-cartesian-axis-tick line {
+  stroke: #CBD5E1 !important;
+}
+
+[data-reseller-theme="light"] .recharts-cartesian-grid line {
+  stroke: #E2E8F0 !important;
+}
+
+[data-reseller-theme="light"] .recharts-default-tooltip {
+  background-color: #FFFFFF !important;
+  border-color: #CBD5E1 !important;
+  color: #0F172A !important;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Tables in Light Mode */
+[data-reseller-theme="light"] thead,
+[data-reseller-theme="light"] thead tr,
+[data-reseller-theme="light"] thead th {
+  background-color: #F8FAFC !important;
+  border-color: #E2E8F0 !important;
+  color: #475569 !important;
+}
+
+[data-reseller-theme="light"] tbody tr {
+  border-color: #E2E8F0 !important;
+}
+
+[data-reseller-theme="light"] tbody tr:hover {
+  background-color: #F8FAFC !important;
+}
+
+[data-reseller-theme="light"] tbody td {
+  color: #0F172A;
+}
+
+/* Cards shadow in Light Mode */
+[data-reseller-theme="light"] .bg-st-surface,
+[data-reseller-theme="light"] .bg-client-bg-surface {
+  background-color: #FFFFFF !important;
+  border-color: #E2E8F0 !important;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08), 0 1px 2px rgba(15, 23, 42, 0.04) !important;
+}
+
+/* KPI metric numbers in Light Mode */
+[data-reseller-theme="light"] .font-mono.text-white {
+  color: #0F172A !important;
+}
+
+/* Contrast enhancement for status badges and colored numbers in Light Mode */
+[data-reseller-theme="light"] .text-green-400,
+[data-reseller-theme="light"] .text-green-500 {
+  color: #16A34A !important;
+}
+
+[data-reseller-theme="light"] .text-emerald-400,
+[data-reseller-theme="light"] .text-emerald-500 {
+  color: #059669 !important;
+}
+
+[data-reseller-theme="light"] .text-amber-400,
+[data-reseller-theme="light"] .text-amber-500 {
+  color: #D97706 !important;
+}
+
+[data-reseller-theme="light"] .text-yellow-400,
+[data-reseller-theme="light"] .text-yellow-500 {
+  color: #D97706 !important;
+}
+
+[data-reseller-theme="light"] .text-red-400,
+[data-reseller-theme="light"] .text-red-500 {
+  color: #DC2626 !important;
+}
+
+/* Bottom summary cards status badges in Light Mode */
+[data-reseller-theme="light"] .bg-red-500\/20 {
+  background-color: #FEE2E2 !important;
+  border-color: #FECACA !important;
+  color: #DC2626 !important;
+}
+[data-reseller-theme="light"] .bg-amber-500\/20 {
+  background-color: #FEF3C7 !important;
+  border-color: #FDE68A !important;
+  color: #D97706 !important;
+}
+[data-reseller-theme="light"] .bg-emerald-500\/20 {
+  background-color: #D1FAE5 !important;
+  border-color: #A7F3D0 !important;
+  color: #059669 !important;
+}
+[data-reseller-theme="light"] .bg-st-accent\/10 {
+  background-color: #E0F2FE !important;
+  border-color: #BAE6FD !important;
+  color: #0284C7 !important;
 }

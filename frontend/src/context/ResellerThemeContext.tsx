@@ -31,6 +31,14 @@ export const ResellerThemeProvider: React.FC<{ children: React.ReactNode }> = ({
 
   useEffect(() => {
     document.documentElement.setAttribute('data-reseller-theme', themeMode);
+    document.documentElement.setAttribute('data-theme-mode', themeMode);
+    if (themeMode === 'light') {
+      document.documentElement.classList.add('light-theme');
+      document.documentElement.classList.remove('dark-theme');
+    } else {
+      document.documentElement.classList.add('dark-theme');
+      document.documentElement.classList.remove('light-theme');
+    }
   }, [themeMode]);
 
   return (
