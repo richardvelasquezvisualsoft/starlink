@@ -3,7 +3,7 @@ import datetime
 import decimal
 
 from sqlalchemy import BigInteger, Boolean, CHAR, CheckConstraint, Column, Date, DateTime, ForeignKey, ForeignKeyConstraint, Index, Integer, Numeric, PrimaryKeyConstraint, SmallInteger, String, Table, Text, UniqueConstraint, text
-from sqlalchemy.dialects.postgresql import ARRAY, INET, JSONB
+from sqlalchemy.dialects.postgresql import ARRAY, INET, JSONB, UUID
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 from app.core.database import Base
@@ -70,11 +70,11 @@ class Usuario(Base):
     motivo_bloqueo: Mapped[Optional[str]] = mapped_column(String(200))
     debe_cambiar_password: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text('false'))
     email_recuperacion: Mapped[Optional[str]] = mapped_column(String(200))
-    celular: Mapped[Optional[str]] = mapped_column(String(50))
-    sigla_corta: Mapped[Optional[str]] = mapped_column(String(20))
-    pais: Mapped[Optional[str]] = mapped_column(String(100))
-    zona_horaria: Mapped[Optional[str]] = mapped_column(String(100))
-    foto_url: Mapped[Optional[str]] = mapped_column(String(500))
+    email_recuperacion_verificado: Mapped[bool] = mapped_column(Boolean, server_default=text('false'))
+    email_recuperacion_verificado_en: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime)
+    password_cambiado_en: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime)
+    ultimo_login_en: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime)
+    ultimo_login_ip: Mapped[Optional[str]] = mapped_column(INET)
     fecha_creacion: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime)
     fecha_modificacion: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime)
     creado_por: Mapped[Optional[int]] = mapped_column(Integer)
@@ -150,8 +150,8 @@ class UsuarioRoles(Base):
     usuario_id: Mapped[int] = mapped_column(Integer, ForeignKey('usuarios.id'), nullable=False)
     rol_id: Mapped[int] = mapped_column(Integer, ForeignKey('roles_portal.id'), nullable=False)
     activo: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text('true'))
-    fecha_asignacion: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime)
-    asignado_por: Mapped[Optional[int]] = mapped_column(Integer)
+#     fecha_asignacion: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime)
+#     asignado_por: Mapped[Optional[int]] = mapped_column(Integer)
 
     usuario: Mapped['Usuario'] = relationship('Usuario', back_populates='roles')
     rol: Mapped['RolesPortal'] = relationship('RolesPortal', back_populates='usuario_roles')
@@ -165,18 +165,18 @@ class PoliticasSeguridad(Base):
         Index('uq_politica_seguridad_tenant_activa', 'tenant_id', unique=True, postgresql_where=text("((tenant_id IS NOT NULL) AND (activo = true))"))
     )
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
     tenant_id: Mapped[Optional[int]] = mapped_column(BigInteger, ForeignKey('tenants.id'))
-    longitud_minima_password: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text('12'))
-    longitud_maxima_password: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text('128'))
-    max_intentos_fallidos: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text('5'))
+    longitud_minima_password: Mapped[int] = mapped_column(SmallInteger, nullable=False, server_default=text('12'))
+    longitud_maxima_password: Mapped[int] = mapped_column(SmallInteger, nullable=False, server_default=text('128'))
+    max_intentos_fallidos: Mapped[int] = mapped_column(SmallInteger, nullable=False, server_default=text('5'))
     minutos_bloqueo: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text('15'))
-    duracion_token_reset_minutos: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text('60'))
-    timeout_inactividad_minutos: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text('30'))
-    duracion_maxima_sesion_horas: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text('1440'))
-    cantidad_passwords_historial: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text('5'))
-    mfa_obligatorio_reseller: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text('false'))
-    mfa_obligatorio_cliente: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text('false'))
+    minutos_validez_token_reset: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text('60'))
+    minutos_inactividad_sesion: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text('30'))
+    minutos_maximos_sesion: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text('1440'))
+    historial_passwords: Mapped[int] = mapped_column(SmallInteger, nullable=False, server_default=text('5'))
+    requerir_mfa_reseller: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text('false'))
+    requerir_mfa_cliente: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text('false'))
     requerir_email_recuperacion_verificado: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text('false'))
     validar_password_comprometido: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text('false'))
     activo: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text('true'))
@@ -186,6 +186,54 @@ class PoliticasSeguridad(Base):
     fecha_modificacion: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime)
 
     tenant: Mapped[Optional['Tenant']] = relationship('Tenant')
+
+    @property
+    def duracion_token_reset_minutos(self) -> int:
+        return self.minutos_validez_token_reset
+
+    @duracion_token_reset_minutos.setter
+    def duracion_token_reset_minutos(self, val: int):
+        self.minutos_validez_token_reset = val
+
+    @property
+    def timeout_inactividad_minutos(self) -> int:
+        return self.minutos_inactividad_sesion
+
+    @timeout_inactividad_minutos.setter
+    def timeout_inactividad_minutos(self, val: int):
+        self.minutos_inactividad_sesion = val
+
+    @property
+    def duracion_maxima_sesion_horas(self) -> int:
+        return (self.minutos_maximos_sesion // 60) if self.minutos_maximos_sesion else 24
+
+    @duracion_maxima_sesion_horas.setter
+    def duracion_maxima_sesion_horas(self, val: int):
+        self.minutos_maximos_sesion = val * 60 if val is not None else 1440
+
+    @property
+    def cantidad_passwords_historial(self) -> int:
+        return self.historial_passwords
+
+    @cantidad_passwords_historial.setter
+    def cantidad_passwords_historial(self, val: int):
+        self.historial_passwords = val
+
+    @property
+    def mfa_obligatorio_reseller(self) -> bool:
+        return self.requerir_mfa_reseller
+
+    @mfa_obligatorio_reseller.setter
+    def mfa_obligatorio_reseller(self, val: bool):
+        self.requerir_mfa_reseller = val
+
+    @property
+    def mfa_obligatorio_cliente(self) -> bool:
+        return self.requerir_mfa_cliente
+
+    @mfa_obligatorio_cliente.setter
+    def mfa_obligatorio_cliente(self, val: bool):
+        self.requerir_mfa_cliente = val
 
 
 class UsuarioPasswordHistorial(Base):
@@ -197,9 +245,13 @@ class UsuarioPasswordHistorial(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     usuario_id: Mapped[int] = mapped_column(Integer, ForeignKey('usuarios.id'), nullable=False)
     password_hash: Mapped[str] = mapped_column(String, nullable=False)
-    fecha_cambio: Mapped[datetime.datetime] = mapped_column(DateTime, nullable=False, server_default=text('CURRENT_TIMESTAMP'))
+    fecha_creacion: Mapped[datetime.datetime] = mapped_column(DateTime, nullable=False, server_default=text('CURRENT_TIMESTAMP'))
 
     usuario: Mapped['Usuario'] = relationship('Usuario', back_populates='historial_passwords')
+
+    @property
+    def fecha_cambio(self) -> datetime.datetime:
+        return self.fecha_creacion
 
 
 class UsuarioPasswordResetToken(Base):
@@ -211,10 +263,16 @@ class UsuarioPasswordResetToken(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     usuario_id: Mapped[int] = mapped_column(Integer, ForeignKey('usuarios.id'), nullable=False)
     token_hash: Mapped[str] = mapped_column(String, nullable=False)
-    fecha_expiracion: Mapped[datetime.datetime] = mapped_column(DateTime, nullable=False)
-    usado: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text('false'))
-    revocado: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text('false'))
     fecha_creacion: Mapped[datetime.datetime] = mapped_column(DateTime, nullable=False, server_default=text('CURRENT_TIMESTAMP'))
+    fecha_expiracion: Mapped[datetime.datetime] = mapped_column(DateTime, nullable=False)
+    fecha_uso: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime)
+    revocado: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text('false'))
+    ip_solicitud: Mapped[Optional[str]] = mapped_column(INET)
+    user_agent: Mapped[Optional[str]] = mapped_column(Text)
+
+    @property
+    def usado(self) -> bool:
+        return self.fecha_uso is not None
 
 
 class UsuarioSesiones(Base):
@@ -223,32 +281,38 @@ class UsuarioSesiones(Base):
         PrimaryKeyConstraint('id', name='usuario_sesiones_pkey'),
     )
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    id: Mapped[Any] = mapped_column(UUID(as_uuid=True), primary_key=True)
     usuario_id: Mapped[int] = mapped_column(Integer, ForeignKey('usuarios.id'), nullable=False)
     refresh_token_hash: Mapped[Optional[str]] = mapped_column(String)
-    ip_address: Mapped[Optional[str]] = mapped_column(String(45))
-    user_agent: Mapped[Optional[str]] = mapped_column(String)
+    ip: Mapped[Optional[str]] = mapped_column(INET)
+    user_agent: Mapped[Optional[str]] = mapped_column(Text)
     fecha_inicio: Mapped[datetime.datetime] = mapped_column(DateTime, nullable=False, server_default=text('CURRENT_TIMESTAMP'))
     ultima_actividad: Mapped[datetime.datetime] = mapped_column(DateTime, nullable=False, server_default=text('CURRENT_TIMESTAMP'))
     fecha_expiracion: Mapped[datetime.datetime] = mapped_column(DateTime, nullable=False)
     revocada: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text('false'))
+    fecha_revocacion: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime)
+    motivo_revocacion: Mapped[Optional[str]] = mapped_column(Text)
 
     usuario: Mapped['Usuario'] = relationship('Usuario', back_populates='sesiones')
+
+    @property
+    def ip_address(self):
+        return str(self.ip) if self.ip else None
 
 
 class UsuarioMfa(Base):
     __tablename__ = 'usuario_mfa'
     __table_args__ = (
-        PrimaryKeyConstraint('id', name='usuario_mfa_pkey'),
+        PrimaryKeyConstraint('usuario_id', name='usuario_mfa_pkey'),
     )
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    usuario_id: Mapped[int] = mapped_column(Integer, ForeignKey('usuarios.id'), nullable=False)
+    usuario_id: Mapped[int] = mapped_column(Integer, ForeignKey('usuarios.id'), primary_key=True)
     habilitado: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text('false'))
     tipo: Mapped[Optional[str]] = mapped_column(String(50))
-    secret_ciphertext: Mapped[Optional[str]] = mapped_column(String)
-    recovery_codes_ciphertext: Mapped[Optional[str]] = mapped_column(String)
-    fecha_confirmacion: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime)
+    secret_ciphertext: Mapped[Optional[str]] = mapped_column(Text)
+    recovery_codes_hash: Mapped[Optional[dict]] = mapped_column(JSONB)
+    confirmado_en: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime)
+    fecha_modificacion: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime)
 
     usuario: Mapped['Usuario'] = relationship('Usuario', back_populates='mfa')
 
@@ -260,14 +324,25 @@ class AuditoriaSeguridad(Base):
     )
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
-    usuario_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey('usuarios.id'))
+    usuario_actor_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey('usuarios.id'))
+    usuario_afectado_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey('usuarios.id'))
     tenant_id: Mapped[Optional[int]] = mapped_column(BigInteger, ForeignKey('tenants.id'))
     evento: Mapped[str] = mapped_column(String(100), nullable=False)
-    descripcion: Mapped[Optional[str]] = mapped_column(Text)
-    ip_origen: Mapped[Optional[str]] = mapped_column(String(45))
-    user_agent: Mapped[Optional[str]] = mapped_column(String)
-    datos_adicionales: Mapped[Optional[Any]] = mapped_column(JSONB)
+    detalle: Mapped[Optional[dict]] = mapped_column(JSONB)
+    exitoso: Mapped[Optional[bool]] = mapped_column(Boolean, server_default=text('true'))
+    ip: Mapped[Optional[str]] = mapped_column(INET)
+    user_agent: Mapped[Optional[str]] = mapped_column(Text)
     fecha_evento: Mapped[datetime.datetime] = mapped_column(DateTime, nullable=False, server_default=text('CURRENT_TIMESTAMP'))
+
+    @property
+    def descripcion(self):
+        if self.detalle and isinstance(self.detalle, dict):
+            return self.detalle.get('descripcion') or self.detalle.get('motivo') or str(self.detalle)
+        return None
+
+    @property
+    def ip_origen(self):
+        return str(self.ip) if self.ip else None
 
 
 t_vw_cliente_comprobante_por_linea = Table(
@@ -622,7 +697,10 @@ class Dispositivo(Base):
     in_territorial_waters_actual: Mapped[Optional[bool]] = mapped_column(Boolean)
     ultima_telemetria: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime)
     raw_json: Mapped[Optional[dict]] = mapped_column(JSONB)
+    cuenta_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey('cuentas.id'))
+    kit_serial_number: Mapped[Optional[str]] = mapped_column(String(100))
 
+    cuenta: Mapped[Optional['Cuenta']] = relationship('Cuenta')
     usuarios: Mapped[Optional['Usuario']] = relationship('Usuario', foreign_keys=[creado_por], back_populates='dispositivos_creado_por')
     usuarios_: Mapped[Optional['Usuario']] = relationship('Usuario', foreign_keys=[modificado_por], back_populates='dispositivos_modificado_por')
     alertas_log: Mapped[list['AlertaLog']] = relationship('AlertaLog', back_populates='dispositivo')
@@ -637,6 +715,7 @@ class Dispositivo(Base):
     linea_dispositivo_historial: Mapped[list['LineaDispositivoHistorial']] = relationship('LineaDispositivoHistorial', back_populates='dispositivo')
     telemetria_terminal_resumen_hora: Mapped[list['TelemetriaTerminalResumenHora']] = relationship('TelemetriaTerminalResumenHora', back_populates='dispositivo')
     geozona_eventos: Mapped[list['GeozonaEvento']] = relationship('GeozonaEvento', back_populates='dispositivo')
+    asignaciones_historial: Mapped[list['DispositivoAsignacionHistorial']] = relationship('DispositivoAsignacionHistorial', back_populates='dispositivo')
 
 
 class Tenant(Base):
@@ -780,7 +859,6 @@ class Colaborador(Base):
     tenant: Mapped['Tenant'] = relationship('Tenant', back_populates='colaboradores')
     colaborador_dispositivo_historial: Mapped[list['ColaboradorDispositivoHistorial']] = relationship('ColaboradorDispositivoHistorial', back_populates='colaborador')
     colaborador_unidad_historial: Mapped[list['ColaboradorUnidadHistorial']] = relationship('ColaboradorUnidadHistorial', back_populates='colaborador')
-    costo_servicio_mes: Mapped[list['CostoServicioMes']] = relationship('CostoServicioMes', back_populates='colaborador')
     geozona_eventos: Mapped[list['GeozonaEvento']] = relationship('GeozonaEvento', back_populates='colaborador')
 
 
@@ -997,6 +1075,10 @@ class Geozona(Base):
     centro_longitud: Mapped[Optional[decimal.Decimal]] = mapped_column(Numeric(11, 7))
     radio_metros: Mapped[Optional[decimal.Decimal]] = mapped_column(Numeric(14, 2))
     geometria_geojson: Mapped[Optional[dict]] = mapped_column(JSONB)
+    pais: Mapped[Optional[str]] = mapped_column(String(100))
+    departamento: Mapped[Optional[str]] = mapped_column(String(100))
+    provincia: Mapped[Optional[str]] = mapped_column(String(100))
+    direccion: Mapped[Optional[str]] = mapped_column(Text)
     creado_por: Mapped[Optional[int]] = mapped_column(Integer)
     modificado_por: Mapped[Optional[int]] = mapped_column(Integer)
 
@@ -1471,6 +1553,37 @@ class UnidadCentroCostoHistorial(Base):
     unidad: Mapped['UnidadOrganizacional'] = relationship('UnidadOrganizacional', back_populates='unidad_centro_costo_historial')
 
 
+class DispositivoAsignacionHistorial(Base):
+    __tablename__ = 'dispositivo_asignacion_historial'
+    __table_args__ = (
+        CheckConstraint('vigente_hasta IS NULL OR vigente_hasta > vigente_desde', name='ck_disp_asig_fechas'),
+        ForeignKeyConstraint(['centro_costo_id'], ['centros_costos.id'], name='fk_disp_asig_centro_costo'),
+        ForeignKeyConstraint(['dispositivo_id'], ['dispositivos.id'], name='fk_disp_asig_dispositivo'),
+        ForeignKeyConstraint(['registrado_por'], ['usuarios.id'], name='fk_disp_asig_registrado_por'),
+        ForeignKeyConstraint(['tenant_id'], ['tenants.id'], name='fk_disp_asig_tenant'),
+        ForeignKeyConstraint(['unidad_organizacional_id'], ['unidades_organizacionales.id'], name='fk_disp_asig_unidad'),
+        PrimaryKeyConstraint('id', name='dispositivo_asignacion_historial_pkey')
+    )
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    tenant_id: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    dispositivo_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    unidad_organizacional_id: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    centro_costo_id: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    vigente_desde: Mapped[datetime.datetime] = mapped_column(DateTime, nullable=False, server_default=text('CURRENT_TIMESTAMP'))
+    vigente_hasta: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime)
+    motivo: Mapped[Optional[str]] = mapped_column(Text)
+    origen: Mapped[str] = mapped_column(String(40), nullable=False, server_default=text("'PORTAL_CLIENTE'::character varying"))
+    fecha_registro_bd: Mapped[datetime.datetime] = mapped_column(DateTime, nullable=False, server_default=text('CURRENT_TIMESTAMP'))
+    registrado_por: Mapped[Optional[int]] = mapped_column(Integer)
+
+    dispositivo: Mapped['Dispositivo'] = relationship('Dispositivo', back_populates='asignaciones_historial')
+    unidad_organizacional: Mapped['UnidadOrganizacional'] = relationship('UnidadOrganizacional')
+    centro_costo: Mapped['CentroCosto'] = relationship('CentroCosto')
+    tenant: Mapped['Tenant'] = relationship('Tenant')
+    usuario_registro: Mapped[Optional['Usuario']] = relationship('Usuario', foreign_keys=[registrado_por])
+
+
 class ComandoRemotoLog(Base):
     __tablename__ = 'comandos_remotos_log'
     __table_args__ = (
@@ -1622,7 +1735,6 @@ class CostoServicioMes(Base):
     __tablename__ = 'costo_servicio_mes'
     __table_args__ = (
         ForeignKeyConstraint(['centro_costo_id'], ['centros_costos.id'], name='costo_servicio_mes_centro_costo_id_fkey'),
-        ForeignKeyConstraint(['colaborador_id'], ['colaboradores.id'], name='costo_servicio_mes_colaborador_id_fkey'),
         ForeignKeyConstraint(['dispositivo_id'], ['dispositivos.id'], name='costo_servicio_mes_dispositivo_id_fkey'),
         ForeignKeyConstraint(['linea_servicio_id'], ['lineas_servicio.id'], name='costo_servicio_mes_linea_servicio_id_fkey'),
         ForeignKeyConstraint(['tenant_id'], ['tenants.id'], name='costo_servicio_mes_tenant_id_fkey'),
@@ -1647,7 +1759,6 @@ class CostoServicioMes(Base):
     criterio_asignacion_costo: Mapped[str] = mapped_column(String(30), nullable=False, server_default=text("'DIRECTO'::character varying"))
     fecha_calculo: Mapped[datetime.datetime] = mapped_column(DateTime, nullable=False, server_default=text('CURRENT_TIMESTAMP'))
     dispositivo_id: Mapped[Optional[int]] = mapped_column(Integer)
-    colaborador_id: Mapped[Optional[int]] = mapped_column(BigInteger)
     unidad_nivel1_id: Mapped[Optional[int]] = mapped_column(BigInteger)
     unidad_nivel2_id: Mapped[Optional[int]] = mapped_column(BigInteger)
     unidad_nivel3_id: Mapped[Optional[int]] = mapped_column(BigInteger)
@@ -1666,7 +1777,6 @@ class CostoServicioMes(Base):
     detalle_json: Mapped[Optional[dict]] = mapped_column(JSONB)
 
     centro_costo: Mapped[Optional['CentroCosto']] = relationship('CentroCosto', back_populates='costo_servicio_mes')
-    colaborador: Mapped[Optional['Colaborador']] = relationship('Colaborador', back_populates='costo_servicio_mes')
     dispositivo: Mapped[Optional['Dispositivo']] = relationship('Dispositivo', back_populates='costo_servicio_mes')
     linea_servicio: Mapped['LineaServicio'] = relationship('LineaServicio', back_populates='costo_servicio_mes')
     tenant: Mapped['Tenant'] = relationship('Tenant', back_populates='costo_servicio_mes')
@@ -2296,6 +2406,24 @@ class SolicitudClienteSlaPausa(Base):
 
     solicitud = relationship("SolicitudCliente")
 
+t_vw_dispositivo_estructura_actual = Table(
+    'vw_dispositivo_estructura_actual', Base.metadata,
+    Column('dispositivo_id', Integer, primary_key=True),
+    Column('unidad_nivel1_id', Integer),
+    Column('unidad_nivel1_codigo', String),
+    Column('unidad_nivel1_nombre', String),
+    Column('unidad_nivel2_id', Integer),
+    Column('unidad_nivel2_codigo', String),
+    Column('unidad_nivel2_nombre', String),
+    Column('unidad_nivel3_id', Integer),
+    Column('unidad_nivel3_codigo', String),
+    Column('unidad_nivel3_nombre', String),
+    Column('centro_costo_id', Integer),
+    Column('centro_costo_codigo', String),
+    Column('centro_costo_nombre', String),
+    Column('vigente_desde', DateTime),
+    extend_existing=True
+)
 
 class TenantConfiguracionGlobal(Base):
     __tablename__ = 'tenant_configuracion_global'
@@ -2319,3 +2447,41 @@ class TenantConfiguracionGlobal(Base):
     fecha_modificacion: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime, server_default=text('CURRENT_TIMESTAMP'))
     modificado_por: Mapped[Optional[int]] = mapped_column(Integer)
 
+class MenuModulo(Base):
+    __tablename__ = 'menu_modulos'
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    codigo: Mapped[str] = mapped_column(String)
+    titulo: Mapped[str] = mapped_column(String)
+    icono: Mapped[str] = mapped_column(String)
+    orden: Mapped[int] = mapped_column(Integer)
+    activo: Mapped[bool] = mapped_column(Boolean)
+    
+    items: Mapped[list['MenuItem']] = relationship('MenuItem', back_populates='modulo')
+
+class MenuItem(Base):
+    __tablename__ = 'menu_items'
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    modulo_id: Mapped[int] = mapped_column(Integer, ForeignKey('menu_modulos.id'))
+    codigo: Mapped[str] = mapped_column(String)
+    nombre: Mapped[str] = mapped_column(String)
+    path: Mapped[str] = mapped_column(String)
+    icono: Mapped[str] = mapped_column(String)
+    orden: Mapped[int] = mapped_column(Integer)
+    activo: Mapped[bool] = mapped_column(Boolean)
+    
+    modulo: Mapped['MenuModulo'] = relationship('MenuModulo', back_populates='items')
+
+class RolMenu(Base):
+    __tablename__ = 'rol_menu'
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    rol_id: Mapped[int] = mapped_column(Integer, ForeignKey('roles_portal.id'))
+    modulo_id: Mapped[int] = mapped_column(Integer, ForeignKey('menu_modulos.id'))
+    activo: Mapped[bool] = mapped_column(Boolean)
+
+class RolMenuItem(Base):
+    __tablename__ = 'rol_menu_item'
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    rol_id: Mapped[int] = mapped_column(Integer, ForeignKey('roles_portal.id'))
+    menu_item_id: Mapped[int] = mapped_column(Integer, ForeignKey('menu_items.id'))
+    activo: Mapped[bool] = mapped_column(Boolean)
+from app.models_telemetry import *

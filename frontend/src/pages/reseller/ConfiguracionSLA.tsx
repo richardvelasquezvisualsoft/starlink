@@ -33,8 +33,16 @@ export default function ConfiguracionSLA() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="bg-st-surface border border-st-border rounded-xl p-6 shadow-lg">
+    <div className="p-6 md:p-8 space-y-6 lg:space-y-8 animate-fade-in max-w-[1600px] mx-auto">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-black text-white uppercase tracking-tight font-sans">Configuración SLA</h1>
+          <p className="text-sm text-st-muted mt-1">Definición de políticas y días no laborables para tiempos de atención.</p>
+        </div>
+      </div>
+
+      <div className="space-y-6">
+        <div className="bg-st-surface border border-st-border rounded-xl p-6 shadow-lg">
         <div className="flex items-center justify-between mb-6">
           <div>
             <h2 className="text-lg font-bold text-white font-sans uppercase">Políticas SLA Vigentes</h2>
@@ -130,6 +138,7 @@ export default function ConfiguracionSLA() {
             </tbody>
           </table>
         </div>
+      </div>
       </div>
     </div>
   );

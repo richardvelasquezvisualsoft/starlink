@@ -6,7 +6,7 @@ from datetime import datetime
 
 from app.core.database import get_db
 from app.api.deps import get_tenant_context
-from app.models import Dispositivo, CatalogoOperacionRemota, ComandoRemotoLog, Cuenta, LineaServicio
+from app.models import Dispositivo, CatalogoOperacionRemota, ComandoRemotoLog, Cuenta, LineaServicio, t_vw_dispositivo_estructura_actual, DispositivoGeozonaEstadoActual, Geozona
 
 router = APIRouter()
 
@@ -24,9 +24,17 @@ def get_operation_devices(
 ):
     tenant_id = tenant_ctx.get("tenant_id")
     query = (
-        db.query(Dispositivo, LineaServicio.numero_linea)
+        db.query(
+            Dispositivo, 
+            LineaServicio.numero_linea,
+            t_vw_dispositivo_estructura_actual.c.unidad_nivel1_nombre,
+            t_vw_dispositivo_estructura_actual.c.unidad_nivel2_nombre,
+            t_vw_dispositivo_estructura_actual.c.unidad_nivel3_nombre,
+            t_vw_dispositivo_estructura_actual.c.centro_costo_nombre
+        )
         .outerjoin(LineaServicio, LineaServicio.dispositivo_id == Dispositivo.id)
         .outerjoin(Cuenta, Cuenta.id == LineaServicio.cuenta_id)
+        .outerjoin(t_vw_dispositivo_estructura_actual, t_vw_dispositivo_estructura_actual.c.dispositivo_id == Dispositivo.id)
     )
     if tenant_id:
         query = query.filter(Cuenta.tenant_id == tenant_id)
@@ -34,7 +42,13 @@ def get_operation_devices(
     results = query.all()
     out = []
     from app.models import EstadoTerminalActual
-    for device, num_linea in results:
+    for row in results:
+        device = row[0]
+        num_linea = row[1]
+        nivel1 = row[2]
+        nivel2 = row[3]
+        nivel3 = row[4]
+        cc = row[5]
         eta = db.query(EstadoTerminalActual).filter(EstadoTerminalActual.dispositivo_id == device.id).first()
         st = (eta.estado_operativo or 'OPERATIVO').upper() if eta else 'OPERATIVO'
         out.append({
@@ -42,7 +56,11 @@ def get_operation_devices(
             "device_id": device.device_id,
             "nombre": device.nombre or device.device_id,
             "numero_linea": num_linea,
-            "estado": st
+            "estado": st,
+            "nivel1": nivel1 or "-",
+            "nivel2": nivel2 or "-",
+            "nivel3": nivel3 or "-",
+            "centro_costo": cc or "-"
         })
     return out
 
@@ -163,16 +181,39 @@ def execute_operation(
     log = ComandoRemotoLog(
         dispositivo_id=device.id,
         comando=cmd_name,
-        estado="SUCCESS",
+        estado="PENDIENTE",
         fecha_solicitud=datetime.utcnow(),
-        http_status=200
+        http_status=202
     )
     db.add(log)
     db.commit()
+    db.refresh(log)
+
+    import threading
+    def background_execute_command(log_id: int):
+        from app.core.database import SessionLocal
+        import time
+        import random
+        # Simulate network delay for the command execution
+        time.sleep(3)
+        db_bg = SessionLocal()
+        try:
+            bg_log = db_bg.query(ComandoRemotoLog).filter(ComandoRemotoLog.id == log_id).first()
+            if bg_log:
+                # Randomly fail 10% of the time to show the ERROR state as requested
+                is_success = random.random() > 0.1
+                bg_log.estado = "COMPLETADO" if is_success else "FALLIDO"
+                bg_log.fecha_respuesta = datetime.utcnow()
+                db_bg.commit()
+        finally:
+            db_bg.close()
+
+    thread = threading.Thread(target=background_execute_command, args=(log.id,))
+    thread.start()
 
     return {
         "status": "success",
-        "message": f"Comando '{cmd_name}' enviado correctamente al dispositivo {device.nombre or device.device_id}.",
+        "message": f"Comando '{cmd_name}' encolado correctamente para el dispositivo {device.nombre or device.device_id}.",
         "dispositivo_id": device.id,
         "device_id": device.device_id,
         "comando": cmd_name

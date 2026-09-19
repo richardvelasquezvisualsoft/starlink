@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import {
   Radio,
   Search,
@@ -40,10 +41,12 @@ interface TelemetryLineItem {
 }
 
 export const TelemetryReport: React.FC = () => {
+  const location = useLocation();
+  const isClientView = window.location.pathname.startsWith('/cliente');
   const [accounts, setAccounts] = useState<any[]>([]);
   const [selectedAccount, setSelectedAccount] = useState<string>('');
   const [selectedStatus, setSelectedStatus] = useState<string>('');
-  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [searchQuery, setSearchQuery] = useState<string>(location.state?.searchQuery || '');
   const [chartData, setChartData] = useState<any[]>([]);
   const [chartType, setChartType] = useState<'area' | 'bar' | 'line'>('area');
   const [lines, setLines] = useState<TelemetryLineItem[]>([]);
@@ -148,7 +151,8 @@ export const TelemetryReport: React.FC = () => {
   );
 
   // Compute summary metrics (for online terminals)
-  const onlineLines = lines.filter((l) => l.estado.toLowerCase() === 'online');
+  // Compute summary metrics (for online terminals) using filteredLines instead of lines
+  const onlineLines = filteredLines.filter((l) => l.estado.toLowerCase() === 'online');
   const avgLatency = onlineLines.length > 0
     ? onlineLines.reduce((acc, l) => acc + l.latency_ms, 0) / onlineLines.length
     : 0;
@@ -165,11 +169,16 @@ export const TelemetryReport: React.FC = () => {
       {/* Header and Toolbar */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-white uppercase tracking-wider flex items-center gap-2">
+          <h1 className={`text-2xl font-bold ${isClientView ? 'text-client-text-primary' : 'text-white'} uppercase tracking-wider flex items-center gap-2`}>
             <Radio className="w-6 h-6 text-st-accent animate-pulse" />
             Calidad de Señal y Latencias
+            {searchQuery && (
+              <span className={`ml-2 text-[10px] px-2 py-1 rounded-full border ${isClientView ? 'bg-client-bg-app border-client-border text-client-text-primary' : 'bg-st-bg border-st-border text-white'}`}>
+                Resultados para: {searchQuery}
+              </span>
+            )}
           </h1>
-          <p className="text-xs text-st-muted font-sans">
+          <p className={`text-xs ${isClientView ? 'text-client-text-secondary' : 'text-st-muted'} font-sans`}>
             Monitoreo en tiempo real de la atenuación de señal, pérdidas de paquetes y latencia de red.
           </p>
         </div>
@@ -187,27 +196,27 @@ export const TelemetryReport: React.FC = () => {
           />
           
           {/* Year Filter */}
-          <div className="flex items-center gap-2 bg-st-surface border border-st-border px-3 py-1.5 rounded-lg text-xs">
+          <div className={`flex items-center gap-2 ${isClientView ? 'bg-client-bg-surface' : 'bg-st-surface'} border ${isClientView ? 'border-client-border' : 'border-st-border'} px-3 py-1.5 rounded-lg text-xs`}>
             <select
               value={selectedYear}
               onChange={(e) => { setSelectedYear(parseInt(e.target.value)); setCurrentPage(1); }}
-              className="bg-transparent text-white font-semibold focus:outline-none cursor-pointer"
+              className={`bg-transparent ${isClientView ? 'text-client-text-primary' : 'text-white'} font-semibold focus:outline-none cursor-pointer`}
             >
               {[currentYear, currentYear - 1, currentYear - 2].map(year => (
-                <option key={year} value={year} className="bg-st-surface text-white">{year}</option>
+                <option key={year} value={year} className={`${isClientView ? 'bg-client-bg-surface' : 'bg-st-surface'} ${isClientView ? 'text-client-text-primary' : 'text-white'}`}>{year}</option>
               ))}
             </select>
           </div>
 
           {/* Month Filter */}
-          <div className="flex items-center gap-2 bg-st-surface border border-st-border px-3 py-1.5 rounded-lg text-xs">
+          <div className={`flex items-center gap-2 ${isClientView ? 'bg-client-bg-surface' : 'bg-st-surface'} border ${isClientView ? 'border-client-border' : 'border-st-border'} px-3 py-1.5 rounded-lg text-xs`}>
             <select
               value={selectedMonth}
               onChange={(e) => { setSelectedMonth(parseInt(e.target.value)); setCurrentPage(1); }}
-              className="bg-transparent text-white font-semibold focus:outline-none cursor-pointer"
+              className={`bg-transparent ${isClientView ? 'text-client-text-primary' : 'text-white'} font-semibold focus:outline-none cursor-pointer`}
             >
               {['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'].map((m, i) => (
-                <option key={i+1} value={i+1} className="bg-st-surface text-white">
+                <option key={i+1} value={i+1} className={`${isClientView ? 'bg-client-bg-surface' : 'bg-st-surface'} ${isClientView ? 'text-client-text-primary' : 'text-white'}`}>
                   {m}
                 </option>
               ))}
@@ -216,21 +225,21 @@ export const TelemetryReport: React.FC = () => {
           </div>
 
           {/* Status Filter */}
-          <div className="flex items-center gap-2 bg-st-surface border border-st-border px-3 py-1.5 rounded-lg text-xs">
+          <div className={`flex items-center gap-2 ${isClientView ? 'bg-client-bg-surface' : 'bg-st-surface'} border ${isClientView ? 'border-client-border' : 'border-st-border'} px-3 py-1.5 rounded-lg text-xs`}>
             <select
               value={selectedStatus}
               onChange={(e) => { setSelectedStatus(e.target.value); setCurrentPage(1); }}
-              className="bg-transparent text-white font-semibold focus:outline-none cursor-pointer"
+              className={`bg-transparent ${isClientView ? 'text-client-text-primary' : 'text-white'} font-semibold focus:outline-none cursor-pointer`}
             >
-              <option value="" className="bg-st-surface text-white">Todos los Estados</option>
-              <option value="online" className="bg-st-surface text-white">Online</option>
-              <option value="offline" className="bg-st-surface text-white">Offline</option>
+              <option value="" className={`${isClientView ? 'bg-client-bg-surface' : 'bg-st-surface'} ${isClientView ? 'text-client-text-primary' : 'text-white'}`}>Todos los Estados</option>
+              <option value="online" className={`${isClientView ? 'bg-client-bg-surface' : 'bg-st-surface'} ${isClientView ? 'text-client-text-primary' : 'text-white'}`}>Online</option>
+              <option value="offline" className={`${isClientView ? 'bg-client-bg-surface' : 'bg-st-surface'} ${isClientView ? 'text-client-text-primary' : 'text-white'}`}>Offline</option>
             </select>
           </div>
 
           <button
             onClick={() => window.print()}
-            className="flex items-center gap-2 px-4 py-2 bg-white/10 text-white text-xs font-bold uppercase rounded-lg hover:bg-white/20 transition-all cursor-pointer"
+            className={`flex items-center gap-2 px-4 py-2 bg-white/10 ${isClientView ? 'text-client-text-primary' : 'text-white'} text-xs font-bold uppercase rounded-lg hover:bg-white/20 transition-all cursor-pointer`}
           >
             <Download className="w-4 h-4" />
             Exportar PDF
@@ -240,11 +249,11 @@ export const TelemetryReport: React.FC = () => {
 
       {/* KPI Cards Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-st-surface border border-st-border rounded-xl p-4 flex items-center justify-between shadow-lg relative overflow-hidden group">
+        <div className={`${isClientView ? 'bg-client-bg-surface' : 'bg-st-surface'} border ${isClientView ? 'border-client-border' : 'border-st-border'} rounded-xl p-4 flex items-center justify-between shadow-lg relative overflow-hidden group`}>
           <div className="space-y-1 z-10">
-            <p className="text-[10px] font-bold text-st-muted uppercase tracking-wider">Latencia Media</p>
-            <p className="text-2xl font-bold text-white font-sans">
-              {avgLatency.toFixed(1)} <span className="text-xs font-semibold text-st-muted">ms</span>
+            <p className={`text-[10px] font-bold ${isClientView ? 'text-client-text-secondary' : 'text-st-muted'} uppercase tracking-wider`}>Latencia Media</p>
+            <p className={`text-2xl font-bold ${isClientView ? 'text-client-text-primary' : 'text-white'} font-sans`}>
+              {avgLatency.toFixed(1)} <span className={`text-xs font-semibold ${isClientView ? 'text-client-text-secondary' : 'text-st-muted'}`}>ms</span>
             </p>
             <p className="text-[9px] text-st-online font-semibold uppercase">Dentro del rango óptimo</p>
           </div>
@@ -253,11 +262,11 @@ export const TelemetryReport: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-st-surface border border-st-border rounded-xl p-4 flex items-center justify-between shadow-lg relative overflow-hidden group">
+        <div className={`${isClientView ? 'bg-client-bg-surface' : 'bg-st-surface'} border ${isClientView ? 'border-client-border' : 'border-st-border'} rounded-xl p-4 flex items-center justify-between shadow-lg relative overflow-hidden group`}>
           <div className="space-y-1 z-10">
-            <p className="text-[10px] font-bold text-st-muted uppercase tracking-wider">Pérdida de Paquetes</p>
-            <p className="text-2xl font-bold text-white font-sans">
-              {avgLoss.toFixed(2)} <span className="text-xs font-semibold text-st-muted">%</span>
+            <p className={`text-[10px] font-bold ${isClientView ? 'text-client-text-secondary' : 'text-st-muted'} uppercase tracking-wider`}>Pérdida de Paquetes</p>
+            <p className={`text-2xl font-bold ${isClientView ? 'text-client-text-primary' : 'text-white'} font-sans`}>
+              {avgLoss.toFixed(2)} <span className={`text-xs font-semibold ${isClientView ? 'text-client-text-secondary' : 'text-st-muted'}`}>%</span>
             </p>
             <p className="text-[9px] text-emerald-500 font-semibold uppercase">Pérdida promedio del mes</p>
           </div>
@@ -266,11 +275,11 @@ export const TelemetryReport: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-st-surface border border-st-border rounded-xl p-4 flex items-center justify-between shadow-lg relative overflow-hidden group">
+        <div className={`${isClientView ? 'bg-client-bg-surface' : 'bg-st-surface'} border ${isClientView ? 'border-client-border' : 'border-st-border'} rounded-xl p-4 flex items-center justify-between shadow-lg relative overflow-hidden group`}>
           <div className="space-y-1 z-10">
-            <p className="text-[10px] font-bold text-st-muted uppercase tracking-wider">Calidad de Señal</p>
-            <p className="text-2xl font-bold text-white font-sans">
-              {avgSignal.toFixed(1)} <span className="text-xs font-semibold text-st-muted">%</span>
+            <p className={`text-[10px] font-bold ${isClientView ? 'text-client-text-secondary' : 'text-st-muted'} uppercase tracking-wider`}>Calidad de Señal</p>
+            <p className={`text-2xl font-bold ${isClientView ? 'text-client-text-primary' : 'text-white'} font-sans`}>
+              {avgSignal.toFixed(1)} <span className={`text-xs font-semibold ${isClientView ? 'text-client-text-secondary' : 'text-st-muted'}`}>%</span>
             </p>
             <p className="text-[9px] text-st-accent font-semibold uppercase">Promedio general activo</p>
           </div>
@@ -279,11 +288,11 @@ export const TelemetryReport: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-st-surface border border-st-border rounded-xl p-4 flex items-center justify-between shadow-lg relative overflow-hidden group">
+        <div className={`${isClientView ? 'bg-client-bg-surface' : 'bg-st-surface'} border ${isClientView ? 'border-client-border' : 'border-st-border'} rounded-xl p-4 flex items-center justify-between shadow-lg relative overflow-hidden group`}>
           <div className="space-y-1 z-10">
-            <p className="text-[10px] font-bold text-st-muted uppercase tracking-wider">Equipos Obstruidos</p>
+            <p className={`text-[10px] font-bold ${isClientView ? 'text-client-text-secondary' : 'text-st-muted'} uppercase tracking-wider`}>Equipos Obstruidos</p>
             <p className="text-2xl font-bold text-st-warning font-sans">
-              {obstructedCount} <span className="text-xs font-semibold text-st-muted">UTs</span>
+              {obstructedCount} <span className={`text-xs font-semibold ${isClientView ? 'text-client-text-secondary' : 'text-st-muted'}`}>UTs</span>
             </p>
             <p className="text-[9px] text-st-warning font-semibold uppercase">Obstrucción &gt; 0.5%</p>
           </div>
@@ -293,15 +302,27 @@ export const TelemetryReport: React.FC = () => {
         </div>
       </div>
 
+      {/* Selected Device Title */}
+      {searchQuery && filteredLines.length === 1 && (
+        <div className="flex flex-col items-center justify-center pt-6 pb-2">
+          <h2 className={`text-2xl sm:text-3xl font-black ${isClientView ? 'text-client-text-primary' : 'text-white'} tracking-wider text-center`}>
+            {filteredLines[0].dispositivo_name} <span className="text-st-accent ml-2 font-mono">({filteredLines[0].device_id})</span>
+          </h2>
+          <p className={`text-sm font-semibold mt-1 ${isClientView ? 'text-client-text-secondary' : 'text-st-muted'} uppercase tracking-widest text-center`}>
+            Línea: {filteredLines[0].numero_linea}
+          </p>
+        </div>
+      )}
+
       {/* Chart Section */}
-      <div className="bg-st-surface border border-st-border rounded-xl p-5 space-y-4">
+      <div className={`${isClientView ? 'bg-client-bg-surface' : 'bg-st-surface'} border ${isClientView ? 'border-client-border' : 'border-st-border'} rounded-xl p-5 space-y-4`}>
         <div className="flex justify-between items-center">
           <div>
-            <h2 className="text-sm font-bold text-white uppercase tracking-wider">Historial de Latencia del Enlace</h2>
-            <p className="text-[11px] text-st-muted">Ping promedio diario agregado (últimos 30 días).</p>
+            <h2 className={`text-sm font-bold ${isClientView ? 'text-client-text-primary' : 'text-white'} uppercase tracking-wider`}>Historial de Latencia del Enlace</h2>
+            <p className={`text-[11px] ${isClientView ? 'text-client-text-secondary' : 'text-st-muted'}`}>Ping promedio diario agregado (últimos 30 días).</p>
           </div>
           {/* Chart toggles */}
-          <div className="flex bg-st-bg p-1 rounded-lg border border-st-border">
+          <div className={`flex bg-st-bg p-1 rounded-lg border ${isClientView ? 'border-client-border' : 'border-st-border'}`}>
             <button
               onClick={() => setChartType('area')}
               className={`px-3 py-1 text-[10px] font-bold uppercase rounded-md cursor-pointer transition-all ${chartType === 'area' ? 'bg-st-surface text-st-accent font-bold' : 'text-st-muted'}`}
@@ -323,9 +344,9 @@ export const TelemetryReport: React.FC = () => {
           </div>
         </div>
 
-        <div className="h-64 w-full bg-st-bg/40 rounded-xl p-3 border border-st-border/50">
+        <div className={`h-64 w-full bg-st-bg/40 rounded-xl p-3 border ${isClientView ? 'border-client-border' : 'border-st-border'}/50`}>
           {chartData.length === 0 ? (
-            <div className="h-full flex items-center justify-center text-st-muted text-xs">
+            <div className={`h-full flex items-center justify-center ${isClientView ? 'text-client-text-secondary' : 'text-st-muted'} text-xs`}>
               No hay datos históricos disponibles
             </div>
           ) : (
@@ -361,18 +382,18 @@ export const TelemetryReport: React.FC = () => {
       </div>
 
       {/* Main Data Table */}
-      <div className="bg-st-surface border border-st-border rounded-xl p-5 space-y-4">
+      <div className={`${isClientView ? 'bg-client-bg-surface' : 'bg-st-surface'} border ${isClientView ? 'border-client-border' : 'border-st-border'} rounded-xl p-5 space-y-4`}>
         <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
-          <h2 className="text-sm font-bold text-white uppercase tracking-wider self-start sm:self-center">Reporte de Dispositivos y Calidad de Señal</h2>
+          <h2 className={`text-sm font-bold ${isClientView ? 'text-client-text-primary' : 'text-white'} uppercase tracking-wider self-start sm:self-center`}>Reporte de Dispositivos y Calidad de Señal</h2>
           {/* Search bar */}
           <div className="relative max-w-xs w-full">
-            <Search className="w-4 h-4 text-st-muted absolute left-3 top-1/2 -translate-y-1/2" />
+            <Search className={`w-4 h-4 ${isClientView ? 'text-client-text-secondary' : 'text-st-muted'} absolute left-3 top-1/2 -translate-y-1/2`} />
             <input
               type="text"
               placeholder="Buscar por ID, nombre, cuenta..."
               value={searchQuery}
               onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
-              className="w-full pl-9 pr-4 py-1.5 bg-st-bg border border-st-border rounded-lg text-xs text-white placeholder-st-muted/50 focus:outline-none focus:ring-1 focus:ring-st-accent focus:border-st-accent"
+              className={`w-full pl-9 pr-4 py-1.5 bg-st-bg border ${isClientView ? 'border-client-border' : 'border-st-border'} rounded-lg text-xs ${isClientView ? 'text-client-text-primary' : 'text-white'} placeholder-st-muted/50 focus:outline-none focus:ring-1 focus:ring-st-accent focus:border-st-accent`}
             />
           </div>
         </div>
@@ -381,7 +402,7 @@ export const TelemetryReport: React.FC = () => {
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="border-b border-st-border text-[10px] font-bold text-st-muted uppercase tracking-wider">
+              <tr className={`border-b ${isClientView ? 'border-client-border' : 'border-st-border'} text-[10px] font-bold ${isClientView ? 'text-client-text-secondary' : 'text-st-muted'} uppercase tracking-wider`}>
                 <th className="py-3 px-4">Línea</th>
                 <th className="py-3 px-4">Device ID</th>
                 <th className="py-3 px-4">Nombre Alias</th>
@@ -396,13 +417,13 @@ export const TelemetryReport: React.FC = () => {
             <tbody className="divide-y divide-st-border/30 text-xs">
               {loading ? (
                 <tr>
-                  <td colSpan={9} className="py-8 text-center text-st-muted">
+                  <td colSpan={9} className={`py-8 text-center ${isClientView ? 'text-client-text-secondary' : 'text-st-muted'}`}>
                     Cargando información de telemetría de red...
                   </td>
                 </tr>
               ) : pagedLines.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="py-8 text-center text-st-muted">
+                  <td colSpan={9} className={`py-8 text-center ${isClientView ? 'text-client-text-secondary' : 'text-st-muted'}`}>
                     No se encontraron terminales con telemetría.
                   </td>
                 </tr>
@@ -412,25 +433,25 @@ export const TelemetryReport: React.FC = () => {
                   
                   return (
                     <tr key={l.id} className="hover:bg-white/[0.03] transition-all">
-                      <td className="py-3 px-4 font-bold text-white">{l.numero_linea}</td>
-                      <td className="py-3 px-4 font-mono text-[10px] text-st-muted">{l.device_id}</td>
-                      <td className="py-3 px-4 text-st-muted">{l.nombre}</td>
-                      <td className="py-3 px-4 text-st-muted">{l.cuenta_nombre}</td>
+                      <td className={`py-3 px-4 font-bold ${isClientView ? 'text-client-text-primary' : 'text-white'}`}>{l.numero_linea}</td>
+                      <td className={`py-3 px-4 font-mono text-[10px] ${isClientView ? 'text-client-text-secondary' : 'text-st-muted'}`}>{l.device_id}</td>
+                      <td className={`py-3 px-4 ${isClientView ? 'text-client-text-secondary' : 'text-st-muted'}`}>{l.nombre}</td>
+                      <td className={`py-3 px-4 ${isClientView ? 'text-client-text-secondary' : 'text-st-muted'}`}>{l.cuenta_nombre}</td>
                       <td className="py-3 px-4 text-center">
                         <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold uppercase ${isOffline ? 'bg-st-offline/10 text-st-offline border border-st-offline/20' : 'bg-st-online/10 text-st-online border border-st-online/20'}`}>
                           <span className={`w-1.5 h-1.5 rounded-full ${isOffline ? 'bg-st-offline' : 'bg-st-online'}`} />
                           {l.estado}
                         </span>
                       </td>
-                      <td className="py-3 px-4 text-right font-mono text-white">
+                      <td className={`py-3 px-4 text-right font-mono ${isClientView ? 'text-client-text-primary' : 'text-white'}`}>
                         {isOffline ? '--' : `${l.latency_ms} ms`}
                       </td>
-                      <td className="py-3 px-4 text-right font-mono text-white">
+                      <td className={`py-3 px-4 text-right font-mono ${isClientView ? 'text-client-text-primary' : 'text-white'}`}>
                         {isOffline ? '100.0%' : `${l.packet_loss_pct.toFixed(2)}%`}
                       </td>
                       <td className="py-3 px-4 text-right font-mono">
                         {isOffline ? (
-                          <span className="text-st-muted">0%</span>
+                          <span className={`${isClientView ? 'text-client-text-secondary' : 'text-st-muted'}`}>0%</span>
                         ) : (
                           <span className={l.signal_quality_pct > 95 ? 'text-st-online font-bold' : 'text-st-warning'}>
                             {l.signal_quality_pct}%
@@ -439,13 +460,13 @@ export const TelemetryReport: React.FC = () => {
                       </td>
                       <td className="py-3 px-4 text-right font-mono">
                         {isOffline ? (
-                          <span className="text-st-muted">--</span>
+                          <span className={`${isClientView ? 'text-client-text-secondary' : 'text-st-muted'}`}>--</span>
                         ) : l.obstruction_pct > 0.005 ? (
                           <span className="text-st-warning font-bold">
                             {(l.obstruction_pct * 100).toFixed(2)}%
                           </span>
                         ) : (
-                          <span className="text-st-muted">0.00%</span>
+                          <span className={`${isClientView ? 'text-client-text-secondary' : 'text-st-muted'}`}>0.00%</span>
                         )}
                       </td>
                     </tr>
@@ -458,22 +479,22 @@ export const TelemetryReport: React.FC = () => {
 
         {/* Pagination footer */}
         {totalPages > 1 && (
-          <div className="flex justify-between items-center border-t border-st-border pt-4 text-xs select-none">
-            <span className="text-st-muted">
-              Mostrando página <strong className="text-white">{currentPage}</strong> de <strong className="text-white">{totalPages}</strong> ({totalItems} registros)
+          <div className={`flex justify-between items-center border-t ${isClientView ? 'border-client-border' : 'border-st-border'} pt-4 text-xs select-none`}>
+            <span className={`${isClientView ? 'text-client-text-secondary' : 'text-st-muted'}`}>
+              Mostrando página <strong className={`${isClientView ? 'text-client-text-primary' : 'text-white'}`}>{currentPage}</strong> de <strong className={`${isClientView ? 'text-client-text-primary' : 'text-white'}`}>{totalPages}</strong> ({totalItems} registros)
             </span>
             <div className="flex items-center gap-2">
               <button
                 disabled={currentPage === 1}
                 onClick={() => setCurrentPage((c) => Math.max(c - 1, 1))}
-                className="px-3 py-1.5 bg-st-bg border border-st-border text-st-muted rounded hover:text-white disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                className={`px-3 py-1.5 bg-st-bg border ${isClientView ? 'border-client-border' : 'border-st-border'} ${isClientView ? 'text-client-text-secondary' : 'text-st-muted'} rounded hover:${isClientView ? 'text-client-text-primary' : 'text-white'} disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer`}
               >
                 Anterior
               </button>
               <button
                 disabled={currentPage === totalPages}
                 onClick={() => setCurrentPage((c) => Math.min(c + 1, totalPages))}
-                className="px-3 py-1.5 bg-st-bg border border-st-border text-st-muted rounded hover:text-white disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                className={`px-3 py-1.5 bg-st-bg border ${isClientView ? 'border-client-border' : 'border-st-border'} ${isClientView ? 'text-client-text-secondary' : 'text-st-muted'} rounded hover:${isClientView ? 'text-client-text-primary' : 'text-white'} disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer`}
               >
                 Siguiente
               </button>

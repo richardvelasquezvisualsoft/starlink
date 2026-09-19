@@ -10,6 +10,7 @@ interface Props {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: (createdSolicitudId: number) => void;
+  initialAlert?: any;
 }
 
 interface AttachmentFile {
@@ -22,7 +23,10 @@ interface AttachmentFile {
   errorMsg?: string;
 }
 
-export default function NuevaSolicitudModal({ isOpen, onClose, onSuccess }: Props) {
+export default function NuevaSolicitudModal({ isOpen, onClose, onSuccess, initialAlert }: Props) {
+  // En el sistema de diseño satelital de alto contraste, los modales utilizan siempre el tema oscuro Reseller
+  const isCliente = false;
+
   const [tiposSolicitud, setTiposSolicitud] = useState<any[]>([]);
   const [selectedTipoId, setSelectedTipoId] = useState<number | null>(null);
   const [lineasServicio, setLineasServicio] = useState<any[]>([]);
@@ -77,10 +81,37 @@ export default function NuevaSolicitudModal({ isOpen, onClose, onSuccess }: Prop
 
       setTiposSolicitud(resTipos.data || []);
       if (resTipos.data && resTipos.data.length > 0) {
-        setSelectedTipoId(resTipos.data[0].id);
+        // Look for SOPORTE / TECNICA or fallback to first
+        const soporteTipo = resTipos.data.find((t: any) => 
+          (t.nombre || '').toLowerCase().includes('soporte') || 
+          (t.nombre || '').toLowerCase().includes('incidencia') || 
+          (t.codigo || '').toLowerCase().includes('soporte')
+        );
+        setSelectedTipoId(soporteTipo ? soporteTipo.id : resTipos.data[0].id);
       }
       setLineasServicio(resLineas.data || []);
       setPlanesElegibles(resPlanes.data || []);
+
+      if (initialAlert) {
+        if (initialAlert.linea_servicio_id) {
+          setLineaServicioId(initialAlert.linea_servicio_id);
+        }
+        const normCrit = (initialAlert.criticidad || '').toLowerCase();
+        if (normCrit.includes('crit') || normCrit.includes('high') || normCrit.includes('alta')) {
+          setPrioridad('URGENTE');
+        } else {
+          setPrioridad('ALTA');
+        }
+        const alertName = initialAlert.nombre_alerta || 'Incidencia de Servicio';
+        const alertCode = initialAlert.codigo_alerta || 'ALERTA';
+        setMotivo(`[INCIDENCIA - ${alertCode}] ${alertName}`);
+        
+        const html = `<p><strong>Seguimiento de Alerta Técnica</strong></p><p><strong>Alerta:</strong> ${alertName} (${alertCode})</p><p><strong>Terminal:</strong> ${initialAlert.dispositivo_nombre || 'N/A'} (${initialAlert.device_id || 'N/A'})</p><p><strong>Línea de servicio:</strong> ${initialAlert.numero_linea || 'N/A'}</p><p><strong>Descripción:</strong> ${initialAlert.descripcion || 'Condición técnica detectada en monitoreo'}</p>`;
+        setRichTextHtml(html);
+        if (editorRef.current) {
+          editorRef.current.innerHTML = html;
+        }
+      }
     } catch (err: any) {
       console.error(err);
       setErrorLoading('No se pudieron cargar los catálogos requeridos.');
@@ -248,21 +279,27 @@ export default function NuevaSolicitudModal({ isOpen, onClose, onSuccess }: Prop
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200 overflow-y-auto">
-      <div className="bg-st-surface border border-st-border rounded-2xl max-w-2xl w-full my-8 p-6 shadow-2xl space-y-6 relative max-h-[90vh] flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200 overflow-y-auto">
+      <div className={`rounded-2xl max-w-2xl w-full my-8 p-6 shadow-2xl space-y-5 relative max-h-[90vh] flex flex-col ${
+        isCliente ? 'bg-white border border-gray-300' : 'bg-st-surface border border-st-border text-white'
+      }`}>
         
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-st-border pb-4 shrink-0">
+        <div className={`flex items-center justify-between border-b pb-4 shrink-0 ${isCliente ? 'border-gray-200' : 'border-st-border'}`}>
           <div>
-            <h3 className="text-xl font-bold text-white uppercase tracking-wider flex items-center gap-2 font-sans">
+            <h3 className={`text-xl font-bold uppercase tracking-wider flex items-center gap-2 font-sans ${isCliente ? 'text-gray-900' : 'text-white'}`}>
               <Plus className="w-5 h-5 text-st-accent" />
-              NUEVA SOLICITUD
+              {initialAlert ? 'REGISTRAR INCIDENCIA TÉCNICA' : 'NUEVA SOLICITUD'}
             </h3>
-            <p className="text-xs text-st-muted mt-0.5">Complete el formulario dinámico para registrar su requerimiento.</p>
+            <p className={`text-xs mt-0.5 ${isCliente ? 'text-gray-600' : 'text-st-muted'}`}>
+              {initialAlert ? 'Formulario de registro y seguimiento de incidencia derivada de alerta Starlink.' : 'Complete el formulario dinámico para registrar su requerimiento.'}
+            </p>
           </div>
           <button 
             onClick={onClose}
-            className="text-st-muted hover:text-white p-1.5 rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
+            className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+              isCliente ? 'text-gray-500 hover:text-black hover:bg-gray-100' : 'text-st-muted hover:text-white hover:bg-white/10'
+            }`}
           >
             <X className="w-5 h-5" />
           </button>
@@ -271,54 +308,290 @@ export default function NuevaSolicitudModal({ isOpen, onClose, onSuccess }: Prop
         {/* Content Body */}
         <div className="overflow-y-auto pr-1 space-y-5 flex-1">
           {loadingTipos ? (
-            <div className="py-12 text-center text-st-muted flex flex-col items-center gap-3 animate-pulse">
+            <div className={`py-12 text-center flex flex-col items-center gap-3 animate-pulse ${isCliente ? 'text-gray-600' : 'text-st-muted'}`}>
               <RefreshCw className="w-6 h-6 animate-spin text-st-accent" />
               <span>Cargando tipos de solicitud...</span>
             </div>
           ) : errorLoading ? (
             <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-sm flex items-center justify-between">
               <span>{errorLoading}</span>
-              <button onClick={loadInitialData} className="px-3 py-1 bg-red-500/20 text-white rounded text-xs font-bold hover:bg-red-500/30">
+              <button onClick={loadInitialData} className="px-3 py-1 bg-red-600 text-white rounded text-xs font-bold hover:bg-red-700">
                 Reintentar
               </button>
             </div>
           ) : (
             <form id="nueva-solicitud-form" onSubmit={handleSubmit} className="space-y-5">
 
-              {/* 1. Tipo de Solicitud Dropdown */}
-              <div>
-                <label className="block text-xs font-bold text-st-muted uppercase tracking-wider mb-2">
-                  Tipo de Solicitud <span className="text-st-accent">*</span>
-                </label>
-                <SearchableSelect
-                  options={tiposSolicitud.map(t => ({
-                    value: t.id,
-                    label: t.nombre,
-                    sublabel: t.descripcion
-                  }))}
-                  value={selectedTipoId}
-                  onChange={(val) => {
-                    const numVal = typeof val === 'number' ? val : (val ? parseInt(val.toString()) : null);
-                    setSelectedTipoId(numVal);
-                    setLineaServicioId(null);
-                    setConfirmacionBaja(false);
-                  }}
-                  placeholder="Seleccionar tipo de solicitud..."
-                  searchPlaceholder="Buscar por nombre o descripción..."
-                  required
-                />
-                {selectedTipo?.descripcion && (
-                  <p className="text-xs text-st-muted mt-1.5 italic">{selectedTipo.descripcion}</p>
-                )}
-              </div>
-
-              {/* DYNAMIC FIELDS PER TYPE */}
-
-              {/* Service Line Selector (if required or allowed) */}
-              {(selectedTipo?.requiere_linea_servicio || ['CAMBIO_PLAN', 'BAJA_SERVICIO', 'TRASLADO_SERVICIO', 'REACTIVACION_SERVICIO'].includes(selectedTipo?.codigo)) && (
+              {/* 1. Tipo de Solicitud Dropdown or Incidencia Banner */}
+              {initialAlert ? (
+                <div className={`p-4 rounded-xl space-y-1 ${
+                  isCliente 
+                    ? 'bg-blue-50 border border-blue-200 shadow-sm' 
+                    : 'bg-st-bg border border-st-border'
+                }`}>
+                  <div className="flex items-center gap-2">
+                    <span className="px-2 py-0.5 text-[10px] font-black uppercase tracking-wider bg-st-accent text-white rounded">
+                      INCIDENCIA TÉCNICA
+                    </span>
+                    <span className="text-xs font-mono font-bold text-st-accent">
+                      {initialAlert.codigo_alerta}
+                    </span>
+                  </div>
+                  <p className={`text-sm font-extrabold ${isCliente ? 'text-gray-900' : 'text-white'}`}>{initialAlert.nombre_alerta}</p>
+                  <p className={`text-xs font-medium ${isCliente ? 'text-gray-700' : 'text-st-muted'}`}>
+                    Terminal: <strong className={isCliente ? 'text-gray-900' : 'text-white'}>{initialAlert.dispositivo_nombre}</strong> ({initialAlert.device_id}) • Línea: <strong className={isCliente ? 'text-gray-900' : 'text-white'}>{initialAlert.numero_linea || 'N/A'}</strong>
+                  </p>
+                </div>
+              ) : (
                 <div>
-                  <label className="block text-xs font-bold text-st-muted uppercase tracking-wider mb-2">
-                    Línea de Servicio {selectedTipo?.requiere_linea_servicio && <span className="text-st-accent">*</span>}
+                  <label className={`block text-xs font-bold uppercase tracking-wider mb-2 ${isCliente ? 'text-gray-800' : 'text-st-muted'}`}>
+                    Tipo de Solicitud <span className="text-st-accent">*</span>
+                  </label>
+                  <SearchableSelect
+                    options={tiposSolicitud.map(t => ({
+                      value: t.id,
+                      label: t.nombre,
+                      sublabel: t.descripcion
+                    }))}
+                    value={selectedTipoId}
+                    onChange={(val) => {
+                      const numVal = typeof val === 'number' ? val : (val ? parseInt(val.toString()) : null);
+                      setSelectedTipoId(numVal);
+                      setLineaServicioId(null);
+                      setConfirmacionBaja(false);
+                    }}
+                    placeholder="Seleccionar tipo de solicitud..."
+                    searchPlaceholder="Buscar por nombre o descripción..."
+                    required
+                  />
+                  {selectedTipo?.descripcion && (
+                    <p className={`text-xs mt-1.5 italic ${isCliente ? 'text-gray-600' : 'text-st-muted'}`}>{selectedTipo.descripcion}</p>
+                  )}
+                </div>
+              )}
+
+              {/* DYNAMIC FIELDS PER TYPE (Hidden when coming from an Alert) */}
+              {!initialAlert && (
+                <>
+                  {/* Service Line Selector (if required or allowed) */}
+                  {(selectedTipo?.requiere_linea_servicio || ['CAMBIO_PLAN', 'BAJA_SERVICIO', 'TRASLADO_SERVICIO', 'REACTIVACION_SERVICIO'].includes(selectedTipo?.codigo)) && (
+                    <div>
+                      <label className={`block text-xs font-bold uppercase tracking-wider mb-2 ${isCliente ? 'text-gray-800' : 'text-st-muted'}`}>
+                        Línea de Servicio {selectedTipo?.requiere_linea_servicio && <span className="text-st-accent">*</span>}
+                      </label>
+                      <SearchableSelect
+                        options={lineasServicio.map(l => ({
+                          value: l.id,
+                          label: l.numero_linea,
+                          sublabel: [l.plan_contratado, l.direccion_servicio].filter(Boolean).join(' • ')
+                        }))}
+                        value={lineaServicioId}
+                        onChange={(val) => {
+                          const numVal = typeof val === 'number' ? val : (val ? parseInt(val.toString()) : null);
+                          setLineaServicioId(numVal);
+                        }}
+                        placeholder="Seleccionar Línea de Servicio..."
+                        searchPlaceholder="Escriba para buscar por serie, plan o dirección..."
+                        required={selectedTipo?.requiere_linea_servicio}
+                      />
+                    </div>
+                  )}
+
+                  {/* CAMBIO_PLAN Specific Fields */}
+                  {selectedTipo?.codigo === 'CAMBIO_PLAN' && (
+                    <div className={`grid grid-cols-1 md:grid-cols-2 gap-4 p-4 rounded-xl border ${
+                      isCliente ? 'bg-gray-50 border-gray-200' : 'bg-st-bg border-st-border'
+                    }`}>
+                      <div>
+                        <label className={`block text-xs font-bold uppercase tracking-wider mb-1.5 ${isCliente ? 'text-gray-800' : 'text-st-muted'}`}>
+                          Plan Actual (Solo lectura)
+                        </label>
+                        <input
+                          type="text"
+                          readOnly
+                          value={planActual || 'Seleccione una línea para ver el plan'}
+                          className={`w-full px-3.5 py-2.5 rounded-xl text-sm font-mono font-bold ${
+                            isCliente ? 'bg-gray-100 border border-gray-300 text-gray-700' : 'bg-st-surface border border-st-border text-st-muted'
+                          }`}
+                        />
+                      </div>
+                      <div>
+                        <label className={`block text-xs font-bold uppercase tracking-wider mb-1.5 ${isCliente ? 'text-gray-800' : 'text-st-muted'}`}>
+                          Plan Solicitado (Elegibles) <span className="text-st-accent">*</span>
+                        </label>
+                        <SearchableSelect
+                          options={planesElegibles.map(p => ({
+                            value: p,
+                            label: p
+                          }))}
+                          value={planSolicitado}
+                          onChange={(val) => setPlanSolicitado(val ? val.toString() : '')}
+                          placeholder="Seleccionar plan solicitado..."
+                          searchPlaceholder="Escriba para buscar plan..."
+                          required
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* BAJA_SERVICIO Specific Fields */}
+                  {selectedTipo?.codigo === 'BAJA_SERVICIO' && (
+                    <div className="p-4 bg-rose-500/10 border border-rose-500/30 rounded-xl space-y-3">
+                      <div className="flex items-start gap-3">
+                        <AlertTriangle className="w-5 h-5 text-rose-500 shrink-0 mt-0.5" />
+                        <div>
+                          <h4 className="text-sm font-bold text-rose-400 uppercase tracking-wider">Solicitud de Baja de Servicio</h4>
+                          <p className={`text-xs mt-1 ${isCliente ? 'text-gray-700' : 'text-st-muted'}`}>
+                            Esta acción registrará la solicitud para evaluación. No cancela de inmediato la línea.
+                          </p>
+                        </div>
+                      </div>
+                      <label className="flex items-center gap-3 pt-2 cursor-pointer border-t border-rose-500/20">
+                        <input
+                          type="checkbox"
+                          checked={confirmacionBaja}
+                          onChange={(e) => setConfirmacionBaja(e.target.checked)}
+                          className="w-4 h-4 rounded bg-white border-red-400 text-st-accent focus:ring-st-accent cursor-pointer"
+                        />
+                        <span className={`text-xs font-bold ${isCliente ? 'text-gray-900' : 'text-white'}`}>
+                          Confirmo que estoy solicitando la baja de este servicio.
+                        </span>
+                      </label>
+                    </div>
+                  )}
+
+                  {/* TRASLADO_SERVICIO Specific Fields */}
+                  {selectedTipo?.codigo === 'TRASLADO_SERVICIO' && (
+                    <div className={`grid grid-cols-1 md:grid-cols-2 gap-4 p-4 rounded-xl border ${
+                      isCliente ? 'bg-gray-50 border-gray-200' : 'bg-st-bg border-st-border'
+                    }`}>
+                      <div>
+                        <label className={`block text-xs font-bold uppercase tracking-wider mb-1.5 ${isCliente ? 'text-gray-800' : 'text-st-muted'}`}>
+                          Dirección Actual
+                        </label>
+                        <input
+                          type="text"
+                          readOnly
+                          value={direccionActual || 'Seleccione una línea'}
+                          className={`w-full px-3.5 py-2.5 rounded-xl text-sm font-medium ${
+                            isCliente ? 'bg-gray-100 border border-gray-300 text-gray-800' : 'bg-st-surface border border-st-border text-st-muted'
+                          }`}
+                        />
+                      </div>
+                      <div>
+                        <label className={`block text-xs font-bold uppercase tracking-wider mb-1.5 ${isCliente ? 'text-gray-800' : 'text-st-muted'}`}>
+                          Nueva Dirección Requerida <span className="text-st-accent">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="Ej: Av. Javier Prado 450, San Isidro..."
+                          value={nuevaDireccion}
+                          onChange={(e) => setNuevaDireccion(e.target.value)}
+                          className={`w-full px-3.5 py-2.5 rounded-xl text-sm font-semibold focus:outline-none focus:border-st-accent ${
+                            isCliente ? 'bg-white border border-gray-300 text-black' : 'bg-st-surface border border-st-border text-white placeholder-st-muted/60'
+                          }`}
+                          required
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* NUEVO_SERVICIO Specific Fields */}
+                  {selectedTipo?.codigo === 'NUEVO_SERVICIO' && (
+                    <div className={`grid grid-cols-1 md:grid-cols-2 gap-4 p-4 rounded-xl border ${
+                      isCliente ? 'bg-gray-50 border-gray-200' : 'bg-st-bg border-st-border'
+                    }`}>
+                      <div>
+                        <label className={`block text-xs font-bold uppercase tracking-wider mb-1.5 ${isCliente ? 'text-gray-800' : 'text-st-muted'}`}>
+                          Dirección Requerida <span className="text-st-accent">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="Ej: Campus Minero Sechura, Piura"
+                          value={direccionRequerida}
+                          onChange={(e) => setDireccionRequerida(e.target.value)}
+                          className={`w-full px-3.5 py-2.5 rounded-xl text-sm font-semibold focus:outline-none focus:border-st-accent ${
+                            isCliente ? 'bg-white border border-gray-300 text-black' : 'bg-st-surface border border-st-border text-white placeholder-st-muted/60'
+                          }`}
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className={`block text-xs font-bold uppercase tracking-wider mb-1.5 ${isCliente ? 'text-gray-800' : 'text-st-muted'}`}>
+                          Ubicación / Coordenadas
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="Ej: -12.04637, -77.04279"
+                          value={ubicacion}
+                          onChange={(e) => setUbicacion(e.target.value)}
+                          className={`w-full px-3.5 py-2.5 rounded-xl text-sm font-semibold focus:outline-none focus:border-st-accent ${
+                            isCliente ? 'bg-white border border-gray-300 text-black' : 'bg-st-surface border border-st-border text-white placeholder-st-muted/60'
+                          }`}
+                        />
+                      </div>
+                      <div className="md:col-span-2">
+                        <label className={`block text-xs font-bold uppercase tracking-wider mb-1.5 ${isCliente ? 'text-gray-800' : 'text-st-muted'}`}>
+                          Producto / Plan Deseado
+                        </label>
+                        <SearchableSelect
+                          options={planesElegibles.map((plan) => ({
+                            value: plan,
+                            label: plan
+                          }))}
+                          value={planSolicitado}
+                          onChange={(val) => setPlanSolicitado(val ? val.toString() : '')}
+                          placeholder="Seleccionar plan (opcional)..."
+                          searchPlaceholder="Escriba para buscar plan..."
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* INCORPORAR_EQUIPO_EXISTENTE Specific Fields */}
+                  {selectedTipo?.codigo === 'INCORPORAR_EQUIPO_EXISTENTE' && (
+                    <div className={`grid grid-cols-1 md:grid-cols-2 gap-4 p-4 rounded-xl border ${
+                      isCliente ? 'bg-gray-50 border-gray-200' : 'bg-st-bg border-st-border'
+                    }`}>
+                      <div>
+                        <label className={`block text-xs font-bold uppercase tracking-wider mb-1.5 ${isCliente ? 'text-gray-800' : 'text-st-muted'}`}>
+                          Kit / Serial / Device ID <span className="text-st-accent">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="Ej: KIT00948271 / ut000099..."
+                          value={serialEquipo}
+                          onChange={(e) => setSerialEquipo(e.target.value)}
+                          className={`w-full px-3.5 py-2.5 rounded-xl text-sm font-mono font-bold focus:outline-none focus:border-st-accent ${
+                            isCliente ? 'bg-white border border-gray-300 text-black' : 'bg-st-surface border border-st-border text-white placeholder-st-muted/60'
+                          }`}
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className={`block text-xs font-bold uppercase tracking-wider mb-1.5 ${isCliente ? 'text-gray-800' : 'text-st-muted'}`}>
+                          Ubicación de Instalación
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="Ej: Almacén Principal San Borja"
+                          value={ubicacion}
+                          onChange={(e) => setUbicacion(e.target.value)}
+                          className={`w-full px-3.5 py-2.5 rounded-xl text-sm font-semibold focus:outline-none focus:border-st-accent ${
+                            isCliente ? 'bg-white border border-gray-300 text-black' : 'bg-st-surface border border-st-border text-white placeholder-st-muted/60'
+                          }`}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+
+              {/* Service Line Selector (If coming from Alert and has line) */}
+              {initialAlert && (
+                <div>
+                  <label className={`block text-xs font-bold uppercase tracking-wider mb-2 ${isCliente ? 'text-gray-800' : 'text-st-muted'}`}>
+                    Línea de Servicio Afectada <span className="text-st-accent">*</span>
                   </label>
                   <SearchableSelect
                     options={lineasServicio.map(l => ({
@@ -333,209 +606,48 @@ export default function NuevaSolicitudModal({ isOpen, onClose, onSuccess }: Prop
                     }}
                     placeholder="Seleccionar Línea de Servicio..."
                     searchPlaceholder="Escriba para buscar por serie, plan o dirección..."
-                    required={selectedTipo?.requiere_linea_servicio}
+                    required
                   />
-                </div>
-              )}
-
-              {/* CAMBIO_PLAN Specific Fields */}
-              {selectedTipo?.codigo === 'CAMBIO_PLAN' && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-black/20 rounded-xl border border-st-border">
-                  <div>
-                    <label className="block text-xs font-bold text-st-muted uppercase tracking-wider mb-1.5">
-                      Plan Actual (Solo lectura)
-                    </label>
-                    <input
-                      type="text"
-                      readOnly
-                      value={planActual || 'Seleccione una línea para ver el plan'}
-                      className="w-full px-3.5 py-2.5 bg-white/5 border border-st-border/50 rounded-xl text-sm text-st-muted font-mono"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-st-muted uppercase tracking-wider mb-1.5">
-                      Plan Solicitado (Elegibles) <span className="text-st-accent">*</span>
-                    </label>
-                    <SearchableSelect
-                      options={planesElegibles.map(p => ({
-                        value: p,
-                        label: p
-                      }))}
-                      value={planSolicitado}
-                      onChange={(val) => setPlanSolicitado(val ? val.toString() : '')}
-                      placeholder="Seleccionar plan solicitado..."
-                      searchPlaceholder="Escriba para buscar plan..."
-                      required
-                    />
-                  </div>
-                </div>
-              )}
-
-              {/* BAJA_SERVICIO Specific Fields */}
-              {selectedTipo?.codigo === 'BAJA_SERVICIO' && (
-                <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-xl space-y-3">
-                  <div className="flex items-start gap-3">
-                    <AlertTriangle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
-                    <div>
-                      <h4 className="text-sm font-bold text-red-400 uppercase tracking-wider">Solicitud de Baja de Servicio</h4>
-                      <p className="text-xs text-st-muted mt-1">
-                        Esta acción registrará la solicitud para evaluación. No cancela de inmediato la línea.
-                      </p>
-                    </div>
-                  </div>
-                  <label className="flex items-center gap-3 pt-2 cursor-pointer border-t border-red-500/20">
-                    <input
-                      type="checkbox"
-                      checked={confirmacionBaja}
-                      onChange={(e) => setConfirmacionBaja(e.target.checked)}
-                      className="w-4 h-4 rounded bg-black border-red-500 text-st-accent focus:ring-st-accent cursor-pointer"
-                    />
-                    <span className="text-xs font-bold text-white">
-                      Confirmo que estoy solicitando la baja de este servicio.
-                    </span>
-                  </label>
-                </div>
-              )}
-
-              {/* TRASLADO_SERVICIO Specific Fields */}
-              {selectedTipo?.codigo === 'TRASLADO_SERVICIO' && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-black/20 rounded-xl border border-st-border">
-                  <div>
-                    <label className="block text-xs font-bold text-st-muted uppercase tracking-wider mb-1.5">
-                      Dirección Actual
-                    </label>
-                    <input
-                      type="text"
-                      readOnly
-                      value={direccionActual || 'Seleccione una línea'}
-                      className="w-full px-3.5 py-2.5 bg-white/5 border border-st-border/50 rounded-xl text-sm text-st-muted"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-st-muted uppercase tracking-wider mb-1.5">
-                      Nueva Dirección Requerida <span className="text-st-accent">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="Ej: Av. Javier Prado 450, San Isidro..."
-                      value={nuevaDireccion}
-                      onChange={(e) => setNuevaDireccion(e.target.value)}
-                      className="w-full px-3.5 py-2.5 bg-black/40 border border-st-border rounded-xl text-sm text-white focus:outline-none focus:border-st-accent"
-                      required
-                    />
-                  </div>
-                </div>
-              )}
-
-              {/* NUEVO_SERVICIO Specific Fields */}
-              {selectedTipo?.codigo === 'NUEVO_SERVICIO' && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-black/20 rounded-xl border border-st-border">
-                  <div>
-                    <label className="block text-xs font-bold text-st-muted uppercase tracking-wider mb-1.5">
-                      Dirección Requerida <span className="text-st-accent">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="Ej: Campus Minero Sechura, Piura"
-                      value={direccionRequerida}
-                      onChange={(e) => setDireccionRequerida(e.target.value)}
-                      className="w-full px-3.5 py-2.5 bg-black/40 border border-st-border rounded-xl text-sm text-white focus:outline-none focus:border-st-accent"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-st-muted uppercase tracking-wider mb-1.5">
-                      Ubicación / Coordenadas
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="Ej: -12.04637, -77.04279"
-                      value={ubicacion}
-                      onChange={(e) => setUbicacion(e.target.value)}
-                      className="w-full px-3.5 py-2.5 bg-black/40 border border-st-border rounded-xl text-sm text-white focus:outline-none focus:border-st-accent"
-                    />
-                  </div>
-                  <div className="md:col-span-2">
-                    <label className="block text-xs font-bold text-st-muted uppercase tracking-wider mb-1.5">
-                      Producto / Plan Deseado
-                    </label>
-                    <SearchableSelect
-                      options={planesElegibles.map((plan) => ({
-                        value: plan,
-                        label: plan
-                      }))}
-                      value={planSolicitado}
-                      onChange={(val) => setPlanSolicitado(val ? val.toString() : '')}
-                      placeholder="Seleccionar plan (opcional)..."
-                      searchPlaceholder="Escriba para buscar plan..."
-                    />
-                  </div>
-                </div>
-              )}
-
-              {/* INCORPORAR_EQUIPO_EXISTENTE Specific Fields */}
-              {selectedTipo?.codigo === 'INCORPORAR_EQUIPO_EXISTENTE' && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-black/20 rounded-xl border border-st-border">
-                  <div>
-                    <label className="block text-xs font-bold text-st-muted uppercase tracking-wider mb-1.5">
-                      Kit / Serial / Device ID <span className="text-st-accent">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="Ej: KIT00948271 / ut000099..."
-                      value={serialEquipo}
-                      onChange={(e) => setSerialEquipo(e.target.value)}
-                      className="w-full px-3.5 py-2.5 bg-black/40 border border-st-border rounded-xl text-sm text-white focus:outline-none focus:border-st-accent font-mono"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-st-muted uppercase tracking-wider mb-1.5">
-                      Ubicación de Instalación
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="Ej: Almacén Principal San Borja"
-                      value={ubicacion}
-                      onChange={(e) => setUbicacion(e.target.value)}
-                      className="w-full px-3.5 py-2.5 bg-black/40 border border-st-border rounded-xl text-sm text-white focus:outline-none focus:border-st-accent"
-                    />
-                  </div>
                 </div>
               )}
 
               {/* Prioridad y Fecha Requerida Row */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-st-muted uppercase tracking-wider mb-1.5">
+                  <label className={`block text-xs font-bold uppercase tracking-wider mb-1.5 ${isCliente ? 'text-gray-800' : 'text-st-muted'}`}>
                     Prioridad
                   </label>
                   <select
                     value={prioridad}
                     onChange={(e) => setPrioridad(e.target.value)}
-                    className="w-full px-3.5 py-2.5 bg-black/40 border border-st-border rounded-xl text-sm text-white focus:outline-none focus:border-st-accent cursor-pointer"
+                    className={`w-full px-3.5 py-2.5 rounded-xl text-sm font-bold focus:outline-none focus:border-st-accent cursor-pointer ${
+                      isCliente ? 'bg-white border border-gray-300 text-black' : 'bg-st-bg border border-st-border text-white'
+                    }`}
                   >
-                    <option value="BAJA" className="bg-st-surface text-white">BAJA</option>
-                    <option value="NORMAL" className="bg-st-surface text-white">NORMAL</option>
-                    <option value="ALTA" className="bg-st-surface text-white">ALTA</option>
+                    <option value="BAJA" className={isCliente ? "bg-white text-black font-bold" : "bg-st-surface text-white font-bold"}>BAJA</option>
+                    <option value="NORMAL" className={isCliente ? "bg-white text-black font-bold" : "bg-st-surface text-white font-bold"}>NORMAL</option>
+                    <option value="ALTA" className={isCliente ? "bg-white text-black font-bold" : "bg-st-surface text-white font-bold"}>ALTA</option>
+                    <option value="URGENTE" className={isCliente ? "bg-white text-black font-bold" : "bg-st-surface text-white font-bold"}>URGENTE</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-st-muted uppercase tracking-wider mb-1.5">
+                  <label className={`block text-xs font-bold uppercase tracking-wider mb-1.5 ${isCliente ? 'text-gray-800' : 'text-st-muted'}`}>
                     Fecha Requerida
                   </label>
                   <input
                     type="date"
                     value={fechaRequerida}
                     onChange={(e) => setFechaRequerida(e.target.value)}
-                    className="w-full px-3.5 py-2.5 bg-black/40 border border-st-border rounded-xl text-sm text-white focus:outline-none focus:border-st-accent"
+                    className={`w-full px-3.5 py-2.5 rounded-xl text-sm font-bold focus:outline-none focus:border-st-accent ${
+                      isCliente ? 'bg-white border border-gray-300 text-black' : 'bg-st-bg border border-st-border text-white'
+                    }`}
                   />
                 </div>
               </div>
 
               {/* Motivo / Asunto (Short Subject) */}
               <div>
-                <label className="block text-xs font-bold text-st-muted uppercase tracking-wider mb-1.5">
+                <label className={`block text-xs font-bold uppercase tracking-wider mb-1.5 ${isCliente ? 'text-gray-800' : 'text-st-muted'}`}>
                   Motivo / Asunto <span className="text-st-accent">*</span>
                 </label>
                 <input
@@ -543,7 +655,11 @@ export default function NuevaSolicitudModal({ isOpen, onClose, onSuccess }: Prop
                   placeholder="Ej: Cambio de plan por incremento de consumo"
                   value={motivo}
                   onChange={(e) => setMotivo(e.target.value)}
-                  className="w-full px-4 py-3 bg-black/40 border border-st-border rounded-xl text-sm text-white focus:outline-none focus:border-st-accent transition-colors font-medium"
+                  className={`w-full px-4 py-3 rounded-xl text-sm focus:outline-none focus:border-st-accent transition-colors font-bold ${
+                    isCliente 
+                      ? 'bg-white border border-gray-300 text-black placeholder-gray-500' 
+                      : 'bg-st-bg border border-st-border text-white placeholder-st-muted/60'
+                  }`}
                   maxLength={150}
                   required
                 />
@@ -551,17 +667,23 @@ export default function NuevaSolicitudModal({ isOpen, onClose, onSuccess }: Prop
 
               {/* Rich Text Editor for Detalle */}
               <div>
-                <label className="block text-xs font-bold text-st-muted uppercase tracking-wider mb-1.5">
-                  Detalle de la solicitud
+                <label className={`block text-xs font-bold uppercase tracking-wider mb-1.5 ${isCliente ? 'text-gray-800' : 'text-st-muted'}`}>
+                  Detalle de la {initialAlert ? 'Incidencia' : 'Solicitud'}
                 </label>
 
                 {/* Toolbar */}
-                <div className="flex flex-wrap items-center gap-1.5 p-2 bg-black/60 border border-st-border rounded-t-xl border-b-0">
+                <div className={`flex flex-wrap items-center gap-1.5 p-2 rounded-t-xl border-b-0 border ${
+                  isCliente ? 'bg-gray-100 border-gray-300' : 'bg-st-bg border-st-border'
+                }`}>
                   <button
                     type="button"
                     onClick={() => execEditorCommand('bold')}
                     title="Negrita"
-                    className="p-1.5 bg-white/5 hover:bg-white/15 text-white rounded font-bold text-xs cursor-pointer flex items-center justify-center w-7 h-7"
+                    className={`p-1.5 rounded font-bold text-xs cursor-pointer flex items-center justify-center w-7 h-7 border ${
+                      isCliente 
+                        ? 'bg-white hover:bg-gray-200 text-black border-gray-300' 
+                        : 'bg-st-surface hover:bg-white/10 text-white border-st-border'
+                    }`}
                   >
                     <Bold className="w-3.5 h-3.5" />
                   </button>
@@ -569,7 +691,11 @@ export default function NuevaSolicitudModal({ isOpen, onClose, onSuccess }: Prop
                     type="button"
                     onClick={() => execEditorCommand('italic')}
                     title="Cursiva"
-                    className="p-1.5 bg-white/5 hover:bg-white/15 text-white rounded italic text-xs cursor-pointer flex items-center justify-center w-7 h-7"
+                    className={`p-1.5 rounded italic text-xs cursor-pointer flex items-center justify-center w-7 h-7 border ${
+                      isCliente 
+                        ? 'bg-white hover:bg-gray-200 text-black border-gray-300' 
+                        : 'bg-st-surface hover:bg-white/10 text-white border-st-border'
+                    }`}
                   >
                     <Italic className="w-3.5 h-3.5" />
                   </button>
@@ -577,31 +703,43 @@ export default function NuevaSolicitudModal({ isOpen, onClose, onSuccess }: Prop
                     type="button"
                     onClick={() => execEditorCommand('underline')}
                     title="Subrayado"
-                    className="p-1.5 bg-white/5 hover:bg-white/15 text-white rounded underline text-xs cursor-pointer flex items-center justify-center w-7 h-7"
+                    className={`p-1.5 rounded underline text-xs cursor-pointer flex items-center justify-center w-7 h-7 border ${
+                      isCliente 
+                        ? 'bg-white hover:bg-gray-200 text-black border-gray-300' 
+                        : 'bg-st-surface hover:bg-white/10 text-white border-st-border'
+                    }`}
                   >
                     <Underline className="w-3.5 h-3.5" />
                   </button>
 
-                  <div className="h-4 w-px bg-st-border mx-1" />
+                  <div className={`h-4 w-px mx-1 ${isCliente ? 'bg-gray-300' : 'bg-st-border'}`} />
 
                   {/* Preset Format Dropdown */}
                   <select
                     value={presetSize}
                     onChange={(e) => handleApplyPresetSize(e.target.value)}
-                    className="px-2 py-1 bg-black/40 border border-st-border rounded text-xs text-white focus:outline-none cursor-pointer"
+                    className={`px-2 py-1 rounded text-xs font-bold focus:outline-none cursor-pointer border ${
+                      isCliente 
+                        ? 'bg-white border-gray-300 text-black' 
+                        : 'bg-st-surface border-st-border text-white'
+                    }`}
                   >
-                    <option value="normal" className="bg-st-surface text-white">Normal</option>
-                    <option value="destacado" className="bg-st-surface text-white">Destacado</option>
-                    <option value="titulo" className="bg-st-surface text-white">Título</option>
+                    <option value="normal" className={isCliente ? "bg-white text-black" : "bg-st-surface text-white"}>Normal</option>
+                    <option value="destacado" className={isCliente ? "bg-white text-black" : "bg-st-surface text-white"}>Destacado</option>
+                    <option value="titulo" className={isCliente ? "bg-white text-black" : "bg-st-surface text-white"}>Título</option>
                   </select>
 
-                  <div className="h-4 w-px bg-st-border mx-1" />
+                  <div className={`h-4 w-px mx-1 ${isCliente ? 'bg-gray-300' : 'bg-st-border'}`} />
 
                   <button
                     type="button"
                     onClick={() => execEditorCommand('insertUnorderedList')}
                     title="Lista con viñetas"
-                    className="p-1.5 bg-white/5 hover:bg-white/15 text-white rounded text-xs cursor-pointer flex items-center justify-center w-7 h-7"
+                    className={`p-1.5 rounded text-xs cursor-pointer flex items-center justify-center w-7 h-7 border ${
+                      isCliente 
+                        ? 'bg-white hover:bg-gray-200 text-black border-gray-300' 
+                        : 'bg-st-surface hover:bg-white/10 text-white border-st-border'
+                    }`}
                   >
                     <List className="w-3.5 h-3.5" />
                   </button>
@@ -609,7 +747,11 @@ export default function NuevaSolicitudModal({ isOpen, onClose, onSuccess }: Prop
                     type="button"
                     onClick={() => execEditorCommand('insertOrderedList')}
                     title="Lista numerada"
-                    className="p-1.5 bg-white/5 hover:bg-white/15 text-white rounded text-xs cursor-pointer flex items-center justify-center w-7 h-7"
+                    className={`p-1.5 rounded text-xs cursor-pointer flex items-center justify-center w-7 h-7 border ${
+                      isCliente 
+                        ? 'bg-white hover:bg-gray-200 text-black border-gray-300' 
+                        : 'bg-st-surface hover:bg-white/10 text-white border-st-border'
+                    }`}
                   >
                     <ListOrdered className="w-3.5 h-3.5" />
                   </button>
@@ -620,7 +762,11 @@ export default function NuevaSolicitudModal({ isOpen, onClose, onSuccess }: Prop
                   ref={editorRef}
                   contentEditable
                   onInput={handleEditorInput}
-                  className="w-full min-h-[130px] p-3.5 bg-black/40 border border-st-border rounded-b-xl text-sm text-white focus:outline-none focus:border-st-accent transition-colors overflow-y-auto prose prose-invert max-w-none"
+                  className={`w-full min-h-[130px] p-3.5 rounded-b-xl text-sm focus:outline-none focus:border-st-accent transition-colors overflow-y-auto prose max-w-none font-medium border ${
+                    isCliente 
+                      ? 'bg-white border-gray-300 text-black' 
+                      : 'bg-st-bg border-st-border text-white'
+                  }`}
                   style={{ minHeight: '130px' }}
                 />
               </div>
@@ -628,7 +774,7 @@ export default function NuevaSolicitudModal({ isOpen, onClose, onSuccess }: Prop
               {/* Attachments Section */}
               <div className="space-y-3 pt-2">
                 <div className="flex items-center justify-between">
-                  <label className="text-xs font-bold text-st-muted uppercase tracking-wider flex items-center gap-1.5">
+                  <label className={`text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 ${isCliente ? 'text-gray-800' : 'text-st-muted'}`}>
                     <Paperclip className="w-4 h-4 text-st-accent" />
                     Documentos adjuntos
                   </label>
@@ -645,18 +791,20 @@ export default function NuevaSolicitudModal({ isOpen, onClose, onSuccess }: Prop
                 </div>
 
                 {attachments.length > 0 && (
-                  <div className="space-y-2 p-3 bg-black/30 rounded-xl border border-st-border">
+                  <div className={`space-y-2 p-3 rounded-xl border ${isCliente ? 'bg-gray-50 border-gray-300' : 'bg-st-bg border-st-border'}`}>
                     {attachments.map((att) => (
-                      <div key={att.id} className="flex items-center justify-between p-2.5 bg-white/5 rounded-lg border border-white/5 text-xs">
+                      <div key={att.id} className={`flex items-center justify-between p-2.5 rounded-lg border text-xs ${
+                        isCliente ? 'bg-white border-gray-200' : 'bg-st-surface border-st-border'
+                      }`}>
                         <div className="flex items-center gap-2.5 truncate">
                           <FileText className="w-4 h-4 text-st-accent shrink-0" />
-                          <span className="text-white font-medium truncate">{att.name}</span>
-                          <span className="text-st-muted shrink-0">({att.sizeFormatted})</span>
+                          <span className={`font-semibold truncate ${isCliente ? 'text-black' : 'text-white'}`}>{att.name}</span>
+                          <span className={`shrink-0 ${isCliente ? 'text-gray-500' : 'text-st-muted'}`}>({att.sizeFormatted})</span>
                         </div>
                         <button
                           type="button"
                           onClick={() => handleRemoveAttachment(att.id)}
-                          className="text-red-400 hover:text-red-300 p-1 rounded hover:bg-red-500/10 cursor-pointer shrink-0"
+                          className="text-red-500 hover:text-red-700 p-1 rounded hover:bg-red-500/10 cursor-pointer shrink-0"
                           title="Quitar archivo"
                         >
                           <X className="w-4 h-4" />
@@ -669,7 +817,7 @@ export default function NuevaSolicitudModal({ isOpen, onClose, onSuccess }: Prop
 
               {/* Submit Error Display */}
               {submitError && (
-                <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-xs font-medium flex items-center gap-2">
+                <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-xs font-bold flex items-center gap-2">
                   <AlertTriangle className="w-4 h-4 shrink-0" />
                   <span>{submitError}</span>
                 </div>
@@ -679,12 +827,16 @@ export default function NuevaSolicitudModal({ isOpen, onClose, onSuccess }: Prop
         </div>
 
         {/* Modal Footer Buttons */}
-        <div className="flex items-center justify-end gap-3 pt-4 border-t border-st-border shrink-0">
+        <div className={`flex items-center justify-end gap-3 pt-4 border-t shrink-0 ${isCliente ? 'border-gray-200' : 'border-st-border'}`}>
           <button
             type="button"
             onClick={onClose}
             disabled={submitting}
-            className="px-5 py-2.5 bg-st-surface border border-st-border text-st-muted hover:text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer disabled:opacity-50"
+            className={`px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer disabled:opacity-50 border ${
+              isCliente 
+                ? 'bg-gray-100 border-gray-300 text-gray-800 hover:bg-gray-200' 
+                : 'bg-st-bg border-st-border text-st-muted hover:text-white hover:bg-white/5'
+            }`}
           >
             CANCELAR
           </button>
@@ -695,7 +847,7 @@ export default function NuevaSolicitudModal({ isOpen, onClose, onSuccess }: Prop
             className="px-5 py-2.5 bg-st-accent text-white rounded-xl text-xs font-bold uppercase tracking-wider hover:bg-st-accent/80 transition-colors flex items-center gap-2 cursor-pointer shadow-lg shadow-st-accent/20 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {submitting ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-            {submitting ? 'GUARDANDO...' : '+ CREAR SOLICITUD'}
+            {submitting ? 'GUARDANDO...' : (initialAlert ? '+ CREAR INCIDENCIA' : '+ CREAR SOLICITUD')}
           </button>
         </div>
 

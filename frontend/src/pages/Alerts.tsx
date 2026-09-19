@@ -266,6 +266,7 @@ const Alerts: React.FC = () => {
       if (selectedAlert && selectedAlert.id === alertaId) {
         setSelectedAlert(prev => prev ? { ...prev, reconocida: true, fecha_reconocimiento: new Date().toISOString() } : null);
       }
+      setIsDrawerOpen(false);
       fetchResumen();
     } catch (err) {
       console.error('Error al reconocer alerta:', err);
@@ -394,10 +395,10 @@ const Alerts: React.FC = () => {
               <BellRing className="w-6 h-6 animate-pulse" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold tracking-tight text-white font-sans">
+              <h1 className={`text-2xl font-bold tracking-tight font-sans text-white`}>
                 {isClientView ? 'ALERTAS' : 'Alertas Globales'}
               </h1>
-              <p className="text-xs text-st-muted mt-0.5">
+              <p className={`text-xs mt-0.5 text-st-muted`}>
                 {isClientView ? 'Monitoreo de alertas e incidencias de tus servicios Starlink.' : 'Gestión de alertas e incidencias de la cartera Starlink'}
               </p>
             </div>
@@ -408,11 +409,11 @@ const Alerts: React.FC = () => {
           <button
             onClick={handleExportCSV}
             disabled={alertsList.length === 0}
-            className="flex items-center gap-2 px-3.5 py-2 bg-st-surface border border-st-border rounded-xl text-xs font-semibold text-st-muted hover:text-white hover:border-white/20 transition-all active:scale-[0.98] cursor-pointer disabled:opacity-50"
+            className={`flex items-center gap-2 px-4 h-9 bg-st-surface border border-st-border rounded-lg text-xs font-semibold text-white hover:bg-white/5 transition-all active:scale-[0.98] cursor-pointer whitespace-nowrap disabled:opacity-50`}
             title="Exportar lista filtrada a CSV"
           >
-            <Download className="w-4 h-4 text-st-accent" />
-            <span>Exportar CSV</span>
+            <Download className="w-3.5 h-3.5 text-st-accent" />
+            <span>Exportar</span>
           </button>
 
           <button
@@ -421,10 +422,10 @@ const Alerts: React.FC = () => {
               fetchAlerts();
             }}
             disabled={isLoading}
-            className="flex items-center gap-2 px-3.5 py-2 bg-st-accent/10 border border-st-accent/30 rounded-xl text-xs font-semibold text-st-accent hover:bg-st-accent/20 transition-all active:scale-[0.98] cursor-pointer"
+            className="flex items-center gap-2 px-4 h-9 bg-st-surface border border-st-border rounded-lg text-xs font-semibold text-white hover:bg-white/5 transition-all active:scale-[0.98] cursor-pointer whitespace-nowrap disabled:opacity-50"
           >
-            <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
-            <span>Actualizar</span>
+            <RefreshCw className={`w-3.5 h-3.5 text-st-muted ${isLoading ? 'animate-spin' : ''}`} />
+            <span>Refrescar</span>
           </button>
         </div>
       </div>
@@ -433,50 +434,50 @@ const Alerts: React.FC = () => {
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
         {/* KPI 1 — Alertas activas */}
         <div className="bg-st-surface border border-st-border rounded-xl p-4 flex flex-col justify-between hover:border-st-offline/40 transition-all">
-          <div className="flex items-center justify-between text-st-muted">
+          <div className={`flex items-center justify-between text-st-muted`}>
             <span className="text-[11px] font-semibold uppercase tracking-wider">Alertas Activas</span>
             <Radio className="w-4 h-4 text-st-offline animate-ping" />
           </div>
           <div className="mt-2 flex items-baseline justify-between">
-            <span className="text-2xl font-black text-white font-mono">{resumen.alertas_activas}</span>
+            <span className={`text-2xl font-black font-mono text-white`}>{resumen.alertas_activas}</span>
             <span className="text-[10px] text-st-offline font-semibold">En monitoreo</span>
           </div>
         </div>
 
         {/* KPI 2 — Críticas/Altas activas */}
         <div className="bg-st-surface border border-st-border rounded-xl p-4 flex flex-col justify-between hover:border-orange-500/40 transition-all">
-          <div className="flex items-center justify-between text-st-muted">
+          <div className={`flex items-center justify-between text-st-muted`}>
             <span className="text-[11px] font-semibold uppercase tracking-wider">Críticas / Altas</span>
             <ShieldAlert className="w-4 h-4 text-orange-400" />
           </div>
           <div className="mt-2 flex items-baseline justify-between">
-            <span className="text-2xl font-black text-white font-mono">{resumen.criticas_altas}</span>
+            <span className={`text-2xl font-black font-mono text-white`}>{resumen.criticas_altas}</span>
             <span className="text-[10px] text-orange-400 font-semibold">Prioridad alta</span>
           </div>
         </div>
 
         {/* KPI 3 — Sin reconocer */}
         <div className="bg-st-surface border border-st-border rounded-xl p-4 flex flex-col justify-between hover:border-st-warning/40 transition-all">
-          <div className="flex items-center justify-between text-st-muted">
+          <div className={`flex items-center justify-between text-st-muted`}>
             <span className="text-[11px] font-semibold uppercase tracking-wider">Sin Reconocer</span>
             <AlertTriangle className="w-4 h-4 text-st-warning" />
           </div>
           <div className="mt-2 flex items-baseline justify-between">
-            <span className="text-2xl font-black text-white font-mono">{resumen.sin_reconocer}</span>
+            <span className={`text-2xl font-black font-mono text-white`}>{resumen.sin_reconocer}</span>
             <span className="text-[10px] text-st-warning font-semibold">Pendientes operador</span>
           </div>
         </div>
 
         {/* KPI 4 — Servicios Afectados / Clientes Afectados */}
         <div className="bg-st-surface border border-st-border rounded-xl p-4 flex flex-col justify-between hover:border-st-accent/40 transition-all">
-          <div className="flex items-center justify-between text-st-muted">
+          <div className={`flex items-center justify-between text-st-muted`}>
             <span className="text-[11px] font-semibold uppercase tracking-wider">
               {isClientView ? 'Servicios Afectados' : 'Clientes Afectados'}
             </span>
             {isClientView ? <Satellite className="w-4 h-4 text-st-accent" /> : <Building2 className="w-4 h-4 text-st-accent" />}
           </div>
           <div className="mt-2 flex items-baseline justify-between">
-            <span className="text-2xl font-black text-white font-mono">
+            <span className={`text-2xl font-black font-mono text-white`}>
               {isClientView ? (resumen.servicios_afectados ?? resumen.clientes_afectados) : resumen.clientes_afectados}
             </span>
             <span className="text-[10px] text-st-accent font-semibold">
@@ -487,12 +488,12 @@ const Alerts: React.FC = () => {
 
         {/* KPI 5 — Abiertas > 24h */}
         <div className="bg-st-surface border border-st-border rounded-xl p-4 flex flex-col justify-between hover:border-purple-500/40 transition-all col-span-2 sm:col-span-1">
-          <div className="flex items-center justify-between text-st-muted">
+          <div className={`flex items-center justify-between text-st-muted`}>
             <span className="text-[11px] font-semibold uppercase tracking-wider">Abiertas &gt; 24h</span>
             <Clock className="w-4 h-4 text-purple-400" />
           </div>
           <div className="mt-2 flex items-baseline justify-between">
-            <span className="text-2xl font-black text-white font-mono">{resumen.abiertas_sobre_umbral}</span>
+            <span className={`text-2xl font-black font-mono text-white`}>{resumen.abiertas_sobre_umbral}</span>
             <span className="text-[10px] text-purple-400 font-semibold">Umbral antigüedad</span>
           </div>
         </div>
@@ -508,7 +509,7 @@ const Alerts: React.FC = () => {
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
               placeholder={isClientView ? "Buscar por servicio, equipo o alerta..." : "Buscar por cliente, servicio, equipo o alerta..."}
-              className="w-full bg-st-bg border border-st-border rounded-xl pl-10 pr-10 py-2 text-xs text-white placeholder-st-muted focus:outline-none focus:border-st-accent transition-all"
+              className={`w-full bg-st-bg border border-st-border rounded-xl pl-10 pr-10 py-2 text-xs text-white placeholder-st-muted focus:outline-none focus:border-st-accent transition-all`}
             />
             {searchTerm && (
               <button
@@ -517,7 +518,7 @@ const Alerts: React.FC = () => {
                   setSearchTerm('');
                   setPage(1);
                 }}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-st-muted hover:text-white"
+                className={`absolute right-3 top-1/2 -translate-y-1/2 text-st-muted hover:text-white`}
               >
                 <X className="w-3.5 h-3.5" />
               </button>
@@ -534,7 +535,7 @@ const Alerts: React.FC = () => {
         </form>
 
         {/* Dropdowns */}
-        <div className={`grid grid-cols-2 sm:grid-cols-3 ${isClientView ? 'lg:grid-cols-4' : 'lg:grid-cols-5'} gap-3 pt-2 border-t border-st-border/50`}>
+        <div className={`grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 pt-2 border-t border-st-border/50`}>
           {/* Cliente (RESELLER view only) */}
           {!isClientView && (
             <div>
@@ -559,14 +560,14 @@ const Alerts: React.FC = () => {
 
           {/* Severidad */}
           <div>
-            <label className="block text-[10px] font-bold text-st-muted uppercase mb-1">Severidad</label>
+            <label className={`block text-[10px] font-bold uppercase mb-1 text-st-muted`}>Severidad</label>
             <select
               value={selectedSeveridad}
               onChange={e => {
                 setSelectedSeveridad(e.target.value);
                 setPage(1);
               }}
-              className="w-full bg-st-bg border border-st-border rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-st-accent"
+              className={`w-full bg-st-bg border border-st-border rounded-lg px-2.5 py-1.5 text-xs text-white bg-st-surface focus:outline-none focus:border-st-accent`}
             >
               <option value="todas">Todas las severidades</option>
               <option value="critical">Crítica</option>
@@ -578,14 +579,14 @@ const Alerts: React.FC = () => {
 
           {/* Estado */}
           <div>
-            <label className="block text-[10px] font-bold text-st-muted uppercase mb-1">Estado</label>
+            <label className={`block text-[10px] font-bold uppercase mb-1 text-st-muted`}>Estado</label>
             <select
               value={selectedEstado}
               onChange={e => {
                 setSelectedEstado(e.target.value);
                 setPage(1);
               }}
-              className="w-full bg-st-bg border border-st-border rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-st-accent"
+              className={`w-full bg-st-bg border border-st-border rounded-lg px-2.5 py-1.5 text-xs text-white bg-st-surface focus:outline-none focus:border-st-accent`}
             >
               <option value="todas">Todos los estados</option>
               <option value="activas">Activas</option>
@@ -595,14 +596,14 @@ const Alerts: React.FC = () => {
 
           {/* Reconocimiento */}
           <div>
-            <label className="block text-[10px] font-bold text-st-muted uppercase mb-1">Reconocimiento</label>
+            <label className={`block text-[10px] font-bold uppercase mb-1 text-st-muted`}>Reconocimiento</label>
             <select
               value={selectedReconocimiento}
               onChange={e => {
                 setSelectedReconocimiento(e.target.value);
                 setPage(1);
               }}
-              className="w-full bg-st-bg border border-st-border rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-st-accent"
+              className={`w-full bg-st-bg border border-st-border rounded-lg px-2.5 py-1.5 text-xs text-white bg-st-surface focus:outline-none focus:border-st-accent`}
             >
               <option value="todas">Todas</option>
               <option value="no_reconocidas">No reconocidas</option>
@@ -612,14 +613,14 @@ const Alerts: React.FC = () => {
 
           {/* Tipo de Alerta */}
           <div>
-            <label className="block text-[10px] font-bold text-st-muted uppercase mb-1">Tipo de alerta</label>
+            <label className={`block text-[10px] font-bold uppercase mb-1 text-st-muted`}>Tipo de alerta</label>
             <select
               value={selectedTipoAlerta}
               onChange={e => {
                 setSelectedTipoAlerta(e.target.value);
                 setPage(1);
               }}
-              className="w-full bg-st-bg border border-st-border rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-st-accent truncate"
+              className={`w-full bg-st-bg border border-st-border rounded-lg px-2.5 py-1.5 text-xs text-white bg-st-surface focus:outline-none focus:border-st-accent truncate`}
             >
               <option value="todas">Todos los tipos</option>
               {catalogItems.map(cat => (
@@ -643,7 +644,7 @@ const Alerts: React.FC = () => {
             className={`px-4 py-2 rounded-xl font-bold text-xs transition-all cursor-pointer flex items-center gap-2 ${
               activeTab === 'activas'
                 ? 'bg-st-offline/10 text-st-offline border border-st-offline/30 shadow-md'
-                : 'text-st-muted hover:text-white hover:bg-st-surface'
+                : `text-st-muted hover:text-white hover:bg-st-surface`
             }`}
           >
             <span className="w-2 h-2 rounded-full bg-st-offline animate-ping block" />
@@ -658,7 +659,7 @@ const Alerts: React.FC = () => {
             className={`px-4 py-2 rounded-xl font-bold text-xs transition-all cursor-pointer flex items-center gap-2 ${
               activeTab === 'historicas'
                 ? 'bg-st-online/10 text-st-online border border-st-online/30 shadow-md'
-                : 'text-st-muted hover:text-white hover:bg-st-surface'
+                : `text-st-muted hover:text-white hover:bg-st-surface`
             }`}
           >
             <CheckCircle2 className="w-3.5 h-3.5" />
@@ -673,7 +674,7 @@ const Alerts: React.FC = () => {
             className={`px-4 py-2 rounded-xl font-bold text-xs transition-all cursor-pointer flex items-center gap-2 ${
               activeTab === 'recurrentes'
                 ? 'bg-purple-500/10 text-purple-400 border border-purple-500/30 shadow-md'
-                : 'text-st-muted hover:text-white hover:bg-st-surface'
+                : `text-st-muted hover:text-white hover:bg-st-surface`
             }`}
           >
             <Repeat className="w-3.5 h-3.5" />
@@ -681,7 +682,7 @@ const Alerts: React.FC = () => {
           </button>
         </div>
 
-        <div className="text-xs text-st-muted font-mono hidden sm:block">
+        <div className={`text-xs font-mono hidden sm:block text-st-muted`}>
           Mostrando {totalCount} registro(s)
         </div>
       </div>
@@ -709,36 +710,36 @@ const Alerts: React.FC = () => {
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
-                <tr className="bg-st-bg/80 text-st-muted uppercase tracking-wider font-semibold border-b border-st-border">
+                <tr className={`bg-st-bg/80 uppercase tracking-wider font-extrabold border-b border-st-border text-st-muted`}>
                   <th
-                    className="py-3 px-4 cursor-pointer hover:text-white"
+                    className={`py-3 px-4 cursor-pointer hover:text-white`}
                     onClick={() => handleHeaderSort('criticidad')}
                   >
-                    Severidad {renderSortIcon('criticidad')}
+                    {isClientView ? 'CRITICIDAD' : 'Severidad'} {renderSortIcon('criticidad')}
                   </th>
                   {!isClientView && (
                     <th
-                      className="py-3 px-4 cursor-pointer hover:text-white"
+                      className={`py-3 px-4 cursor-pointer hover:text-white`}
                       onClick={() => handleHeaderSort('cliente')}
                     >
                       Cliente {renderSortIcon('cliente')}
                     </th>
                   )}
-                  <th className="py-3 px-4">Service Line</th>
-                  <th className="py-3 px-4">Equipo / Terminal</th>
-                  <th className="py-3 px-4">Alerta</th>
+                  <th className="py-3 px-4">{isClientView ? 'SERVICIO' : 'Service Line'}</th>
+                  <th className="py-3 px-4">{isClientView ? 'DISPOSITIVO' : 'Equipo / Terminal'}</th>
+                  <th className="py-3 px-4">{isClientView ? 'ALERTA' : 'Alerta'}</th>
                   <th
-                    className="py-3 px-4 cursor-pointer hover:text-white"
+                    className={`py-3 px-4 cursor-pointer hover:text-white`}
                     onClick={() => handleHeaderSort('fecha_hora_deteccion')}
                   >
-                    {activeTab === 'activas' ? 'Detectada' : 'Inicio'} {renderSortIcon('fecha_hora_deteccion')}
+                    {isClientView ? 'FECHA DE DETECCIÓN' : (activeTab === 'activas' ? 'Detectada' : 'Inicio')} {renderSortIcon('fecha_hora_deteccion')}
                   </th>
                   {activeTab === 'activas' ? (
                     <th
-                      className="py-3 px-4 cursor-pointer hover:text-white"
+                      className={`py-3 px-4 cursor-pointer hover:text-white`}
                       onClick={() => handleHeaderSort('antiguedad')}
                     >
-                      Antigüedad {renderSortIcon('antiguedad')}
+                      {isClientView ? 'ANTIGÜEDAD' : 'Antigüedad'} {renderSortIcon('antiguedad')}
                     </th>
                   ) : (
                     <>
@@ -748,19 +749,19 @@ const Alerts: React.FC = () => {
                   )}
                   {activeTab === 'activas' && (
                     <th
-                      className="py-3 px-4 cursor-pointer hover:text-white"
+                      className={`py-3 px-4 cursor-pointer hover:text-white`}
                       onClick={() => handleHeaderSort('reincidencias')}
                     >
-                      Reincidencias {renderSortIcon('reincidencias')}
+                      {isClientView ? 'REINCIDENCIAS' : 'Reincidencias'} {renderSortIcon('reincidencias')}
                     </th>
                   )}
                   <th
-                    className="py-3 px-4 cursor-pointer hover:text-white"
+                    className={`py-3 px-4 cursor-pointer hover:text-white`}
                     onClick={() => handleHeaderSort('reconocida')}
                   >
-                    Reconocida {renderSortIcon('reconocida')}
+                    {isClientView ? 'SEGUIMIENTO' : 'Reconocida'} {renderSortIcon('reconocida')}
                   </th>
-                  <th className="py-3 px-4 text-right">Acción</th>
+                  <th className="py-3 px-4 text-right">{isClientView ? 'ACCIÓN' : 'Acción'}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-st-border/50">
@@ -777,8 +778,8 @@ const Alerts: React.FC = () => {
                       {activeTab === 'activas' ? (
                         <div className="flex flex-col items-center space-y-2">
                           <CheckCircle2 className="w-10 h-10 text-st-online opacity-80" />
-                          <p className="font-bold text-white text-sm">No hay alertas activas</p>
-                          <p className="text-xs">
+                          <p className={`font-bold text-sm text-white`}>No hay alertas activas</p>
+                          <p className={`text-xs text-st-muted`}>
                             {isClientView 
                               ? 'Todos tus servicios se encuentran operando sin incidencias activas.' 
                               : 'Toda la cartera se encuentra operando sin incidencias activas.'}
@@ -787,7 +788,7 @@ const Alerts: React.FC = () => {
                       ) : (
                         <div className="flex flex-col items-center space-y-2">
                           <Info className="w-10 h-10 text-st-muted opacity-80" />
-                          <p className="font-bold text-white text-sm">No hay alertas históricas registradas</p>
+                          <p className={`font-bold text-sm text-white`}>No hay alertas históricas registradas</p>
                         </div>
                       )}
                     </td>
@@ -808,7 +809,7 @@ const Alerts: React.FC = () => {
                       {/* Cliente (RESELLER only) */}
                       {!isClientView && (
                         <td className="py-3 px-4">
-                          <div className="font-bold text-white">{item.cliente}</div>
+                          <div className={`font-bold text-white`}>{item.cliente}</div>
                           <div className="text-[10px] text-st-muted font-mono">{item.tenant_codigo}</div>
                         </td>
                       )}
@@ -816,15 +817,15 @@ const Alerts: React.FC = () => {
                       {/* Service Line */}
                       <td className="py-3 px-4">
                         <div className="font-mono text-st-accent font-semibold">{item.numero_linea}</div>
-                        <div className="text-[10px] text-st-muted">{item.plan_nombre}</div>
+                        <div className={`text-[10px] text-st-muted`}>{item.plan_nombre}</div>
                       </td>
 
                       {/* Equipo */}
                       <td className="py-3 px-4">
-                        <div className="font-semibold text-white truncate max-w-[180px]">
+                        <div className={`font-semibold truncate max-w-[180px] text-white`}>
                           {item.dispositivo_nombre}
                         </div>
-                        <div className="text-[10px] text-st-muted font-mono flex items-center gap-1">
+                        <div className={`text-[10px] font-mono flex items-center gap-1 text-st-muted`}>
                           <Satellite className="w-3 h-3 text-st-accent" />
                           {item.device_id}
                         </div>
@@ -832,14 +833,14 @@ const Alerts: React.FC = () => {
 
                       {/* Código / Alerta */}
                       <td className="py-3 px-4">
-                        <div className="font-bold text-white">{item.nombre_alerta}</div>
-                        <div className="text-[10px] font-mono text-st-muted uppercase">
+                        <div className={`font-bold text-white`}>{item.nombre_alerta}</div>
+                        <div className={`text-[10px] font-mono uppercase text-st-muted`}>
                           {item.codigo_alerta}
                         </div>
                       </td>
 
                       {/* Detectada / Inicio */}
-                      <td className="py-3 px-4 text-st-muted font-mono text-[11px]">
+                      <td className={`py-3 px-4 font-mono text-[11px] text-st-muted`}>
                         {new Date(item.fecha_hora_deteccion).toLocaleString('es-ES', {
                           month: 'short',
                           day: '2-digit',
@@ -851,14 +852,30 @@ const Alerts: React.FC = () => {
                       {/* Antigüedad or Cierre/Duración */}
                       {activeTab === 'activas' ? (
                         <td className="py-3 px-4">
-                          <span className="inline-flex items-center gap-1 font-mono text-white text-xs bg-st-bg px-2 py-1 rounded border border-st-border">
-                            <Clock className="w-3 h-3 text-st-warning" />
-                            {item.antiguedad_formateada}
+                          <span className={`inline-flex items-center gap-1 font-mono text-xs px-2 py-1 rounded border ${
+                            isClientView 
+                              ? 'bg-white/5 text-st-muted font-bold border-white/10' 
+                              : 'bg-st-bg text-white border-st-border'
+                          }`}>
+                            <Clock className={`w-3 h-3 text-st-warning`} />
+                            {isClientView ? (
+                              (() => {
+                                const diffMs = Math.max(0, Date.now() - new Date(item.fecha_hora_deteccion).getTime());
+                                const d = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+                                const h = Math.floor((diffMs / (1000 * 60 * 60)) % 24);
+                                const m = Math.floor((diffMs / (1000 * 60)) % 60);
+                                if (d > 0) return `${d}d ${h}h ${m}m`;
+                                if (h > 0) return `${h}h ${m}m`;
+                                return `${m}m`;
+                              })()
+                            ) : (
+                              item.antiguedad_formateada
+                            )}
                           </span>
                         </td>
                       ) : (
                         <>
-                          <td className="py-3 px-4 text-st-muted font-mono text-[11px]">
+                          <td className={`py-3 px-4 font-mono text-[11px] text-st-muted`}>
                             {item.fecha_hora_cierre
                               ? new Date(item.fecha_hora_cierre).toLocaleString('es-ES', {
                                   month: 'short',
@@ -868,7 +885,7 @@ const Alerts: React.FC = () => {
                                 })
                               : '-'}
                           </td>
-                          <td className="py-3 px-4 text-st-muted font-mono text-xs">
+                          <td className={`py-3 px-4 font-mono text-xs text-st-muted`}>
                             {item.duracion_formateada || '-'}
                           </td>
                         </>
@@ -877,15 +894,34 @@ const Alerts: React.FC = () => {
                       {/* Reincidencias */}
                       {activeTab === 'activas' && (
                         <td className="py-3 px-4">
-                          <span className="text-[11px] font-mono font-semibold text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded border border-purple-500/20">
-                            {item.reincidencia_texto}
+                          <span className={`text-[11px] font-mono font-semibold px-2 py-0.5 rounded border ${
+                            isClientView 
+                              ? 'bg-blue-50 text-blue-700 border-blue-200'
+                              : 'bg-purple-500/10 text-purple-400 border-purple-500/20'
+                          }`}>
+                            {isClientView ? (
+                              `${item.reincidencias_24h || 0} (24h) / ${item.reincidencias_7d || 0} (7d)`
+                            ) : (
+                              item.reincidencia_texto
+                            )}
                           </span>
                         </td>
                       )}
 
-                      {/* Reconocida */}
+                      {/* Reconocida / Seguimiento */}
                       <td className="py-3 px-4">
-                        {item.reconocida ? (
+                        {isClientView ? (
+                          item.reconocida ? (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-300 shadow-sm" title="Alerta reconocida por la organización">
+                              <Check className="w-3 h-3 text-emerald-600" />
+                              Reconocida
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded bg-white/5 text-st-muted font-bold border border-white/10" title="Sin gestión realizada">
+                              Sin gestión
+                            </span>
+                          )
+                        ) : item.reconocida ? (
                           <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded bg-st-online/10 text-st-online border border-st-online/30">
                             <Check className="w-3 h-3" />
                             Sí
@@ -899,7 +935,20 @@ const Alerts: React.FC = () => {
 
                       {/* Acción */}
                       <td className="py-3 px-4 text-right" onClick={e => e.stopPropagation()}>
-                        {item.activa && !item.reconocida ? (
+                        {isClientView ? (
+                          <button
+                            onClick={() => {
+                              navigate('/cliente/solicitudes', {
+                                state: { openModal: true, alertData: item }
+                              });
+                            }}
+                            className="px-3 py-1.5 bg-st-accent hover:bg-st-accent/90 text-white font-bold text-[11px] rounded-lg transition-all active:scale-[0.98] cursor-pointer shadow-md inline-flex items-center gap-1"
+                            title="Crear incidencia o seguimiento interno para esta alerta"
+                          >
+                            <ShieldAlert className="w-3.5 h-3.5" />
+                            <span>Crear incidencia</span>
+                          </button>
+                        ) : item.activa && !item.reconocida ? (
                           <button
                             onClick={e => handleReconocer(item.id, e)}
                             disabled={actionLoadingId === item.id}
@@ -919,7 +968,7 @@ const Alerts: React.FC = () => {
                               setSelectedAlert(item);
                               setIsDrawerOpen(true);
                             }}
-                            className="px-2.5 py-1 bg-st-bg border border-st-border text-st-muted hover:text-white font-semibold text-[11px] rounded-lg transition-all cursor-pointer inline-flex items-center gap-1"
+                            className={`px-2.5 py-1 bg-st-bg border border-st-border text-st-muted hover:text-white font-semibold text-[11px] rounded-lg transition-all cursor-pointer inline-flex items-center gap-1`}
                           >
                             <Eye className="w-3 h-3" />
                             <span>Ver detalle</span>
@@ -939,7 +988,7 @@ const Alerts: React.FC = () => {
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
-                <tr className="bg-st-bg/80 text-st-muted uppercase tracking-wider font-semibold border-b border-st-border">
+                <tr className={`bg-st-bg/80 uppercase tracking-wider font-extrabold border-b border-st-border text-st-muted`}>
                   {!isClientView && <th className="py-3 px-4">Cliente</th>}
                   <th className="py-3 px-4">Equipo / Terminal</th>
                   <th className="py-3 px-4">Código / Alerta</th>
@@ -979,8 +1028,8 @@ const Alerts: React.FC = () => {
                         <div className="text-[10px] text-st-muted font-mono">{rec.device_id}</div>
                       </td>
                       <td className="py-3 px-4">
-                        <div className="font-bold text-white">{rec.nombre_alerta}</div>
-                        <div className="text-[10px] font-mono text-st-muted uppercase">
+                        <div className={`font-bold text-white`}>{rec.nombre_alerta}</div>
+                        <div className={`text-[10px] font-mono uppercase text-st-muted`}>
                           {rec.codigo_alerta}
                         </div>
                       </td>
@@ -993,7 +1042,7 @@ const Alerts: React.FC = () => {
                       <td className="py-3 px-4 text-center font-mono text-sm font-black text-st-accent">
                         {rec.ocurrencias_totales}
                       </td>
-                      <td className="py-3 px-4 text-st-muted font-mono text-[11px]">
+                      <td className={`py-3 px-4 font-mono text-[11px] text-st-muted`}>
                         {rec.ultima_ocurrencia
                           ? new Date(rec.ultima_ocurrencia).toLocaleString('es-ES', {
                               month: 'short',
@@ -1025,7 +1074,7 @@ const Alerts: React.FC = () => {
 
         {/* 25. PAGINACIÓN ESCALABLE */}
         {activeTab !== 'recurrentes' && totalPages > 0 && (
-          <div className="bg-st-bg/60 border-t border-st-border px-4 py-3 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-st-muted">
+          <div className={`bg-st-bg/60 border-t border-st-border px-4 py-3 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-st-muted`}>
             <div className="flex items-center gap-2">
               <span>Registros por página:</span>
               <select
@@ -1034,7 +1083,7 @@ const Alerts: React.FC = () => {
                   setPageSize(Number(e.target.value));
                   setPage(1);
                 }}
-                className="bg-st-surface border border-st-border rounded px-2 py-1 text-xs text-white focus:outline-none"
+                className={`bg-st-surface border border-st-border rounded px-2 py-1 text-xs text-white bg-st-surface focus:outline-none`}
               >
                 <option value={10}>10</option>
                 <option value={25}>25</option>
@@ -1053,14 +1102,14 @@ const Alerts: React.FC = () => {
                 <button
                   onClick={() => setPage(p => Math.max(1, p - 1))}
                   disabled={page === 1}
-                  className="p-1.5 bg-st-surface border border-st-border rounded text-white disabled:opacity-30 disabled:cursor-not-allowed hover:bg-white/5"
+                  className={`p-1.5 bg-st-surface border border-st-border rounded text-white hover:bg-white/5 disabled:opacity-30 disabled:cursor-not-allowed`}
                 >
                   <ChevronLeft className="w-4 h-4" />
                 </button>
                 <button
                   onClick={() => setPage(p => Math.min(totalPages, p + 1))}
                   disabled={page >= totalPages}
-                  className="p-1.5 bg-st-surface border border-st-border rounded text-white disabled:opacity-30 disabled:cursor-not-allowed hover:bg-white/5"
+                  className={`p-1.5 bg-st-surface border border-st-border rounded text-white hover:bg-white/5 disabled:opacity-30 disabled:cursor-not-allowed`}
                 >
                   <ChevronRight className="w-4 h-4" />
                 </button>
@@ -1078,121 +1127,123 @@ const Alerts: React.FC = () => {
             onClick={() => setIsDrawerOpen(false)}
           />
 
-          <div className="relative w-full max-w-xl bg-st-surface border-l border-st-border h-full shadow-2xl overflow-y-auto z-10 flex flex-col justify-between">
-            {/* Drawer Header */}
-            <div className="p-6 border-b border-st-border flex items-start justify-between bg-st-bg/50">
+          <div className="relative w-full max-w-xl bg-st-surface border-l border-st-border h-full max-h-screen shadow-2xl z-10 flex flex-col justify-between overflow-hidden">
+            {/* Drawer Header Compact */}
+            <div className="px-5 py-4 border-b border-st-border flex items-center justify-between bg-st-bg/70 shrink-0">
               <div className="space-y-1">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   {getSeverityBadge(selectedAlert.criticidad)}
-                  <span className="text-xs font-mono text-st-muted uppercase border border-st-border px-2 py-0.5 rounded">
+                  <span className="text-xs font-mono text-st-muted font-bold uppercase border border-st-border/80 px-2 py-0.5 rounded bg-st-bg/60">
                     {selectedAlert.codigo_alerta}
                   </span>
+                  <h2 className={`text-lg sm:text-xl font-black font-sans text-white`}>
+                    {selectedAlert.nombre_alerta}
+                  </h2>
                 </div>
-                <h2 className="text-xl font-bold text-white font-sans mt-1">
-                  {selectedAlert.nombre_alerta}
-                </h2>
-                <p className="text-xs text-st-muted">{selectedAlert.descripcion}</p>
+                <p className={`text-xs font-medium line-clamp-1 text-st-muted`}>{selectedAlert.descripcion}</p>
               </div>
 
               <button
                 onClick={() => setIsDrawerOpen(false)}
-                className="p-1.5 text-st-muted hover:text-white rounded-lg bg-st-surface border border-st-border transition-all cursor-pointer"
+                className={`p-1.5 text-st-muted hover:text-white rounded-lg bg-st-surface border border-st-border hover:border-st-accent/40 transition-all cursor-pointer shrink-0 ml-2`}
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            {/* Drawer Content */}
-            <div className="p-6 space-y-6 flex-1">
-              {/* Identificación */}
-              <div className="bg-st-bg/40 border border-st-border rounded-xl p-4 space-y-3">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-st-muted flex items-center gap-2">
-                  <Building2 className="w-4 h-4 text-st-accent" />
-                  {isClientView ? 'Identificación del Servicio' : 'Identificación de Cartera'}
-                </h3>
-                <div className="grid grid-cols-2 gap-3 text-xs">
+            {/* Drawer Content Compact */}
+            <div className="p-4 sm:p-5 space-y-3.5 flex-1 overflow-y-auto">
+              {/* 1. Identificación */}
+              <div className="bg-st-bg/40 border border-st-border rounded-xl p-3.5 sm:p-4 space-y-2.5">
+                <div className="flex items-center gap-2 text-st-muted">
+                  <Building2 className="w-4 h-4 text-st-accent shrink-0" />
+                  <span className={`text-xs sm:text-sm font-extrabold uppercase tracking-wider text-st-muted`}>
+                    {isClientView ? 'Identificación del Servicio' : 'Identificación de Cartera'}
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                   {!isClientView && (
                     <>
                       <div>
-                        <span className="text-st-muted text-[10px] block">Cliente</span>
-                        <span className="font-bold text-white">{selectedAlert.cliente}</span>
+                        <span className={`text-xs block font-bold mb-0.5 text-st-muted`}>Cliente</span>
+                        <span className={`font-bold text-xs sm:text-sm text-white`}>{selectedAlert.cliente}</span>
                       </div>
                       <div>
-                        <span className="text-st-muted text-[10px] block">Código Tenant</span>
-                        <span className="font-mono text-white">{selectedAlert.tenant_codigo}</span>
+                        <span className={`text-xs block font-bold mb-0.5 text-st-muted`}>Código Tenant</span>
+                        <span className="font-mono text-xs sm:text-sm text-white font-semibold">{selectedAlert.tenant_codigo}</span>
                       </div>
                     </>
                   )}
                   <div>
-                    <span className="text-st-muted text-[10px] block">Service Line</span>
-                    <span className="font-mono text-st-accent font-semibold">{selectedAlert.numero_linea}</span>
+                    <span className={`text-xs block font-bold mb-0.5 text-st-muted`}>Service Line</span>
+                    <span className="font-mono text-xs sm:text-sm text-st-accent font-bold">{selectedAlert.numero_linea}</span>
                   </div>
                   <div>
-                    <span className="text-st-muted text-[10px] block">Plan</span>
-                    <span className="text-white">{selectedAlert.plan_nombre}</span>
+                    <span className={`text-xs block font-bold mb-0.5 text-st-muted`}>Plan</span>
+                    <span className={`text-xs sm:text-sm font-bold text-white`}>{selectedAlert.plan_nombre}</span>
                   </div>
                   <div>
-                    <span className="text-st-muted text-[10px] block">Terminal</span>
-                    <span className="font-semibold text-white">{selectedAlert.dispositivo_nombre}</span>
+                    <span className={`text-xs block font-bold mb-0.5 text-st-muted`}>Terminal</span>
+                    <span className={`font-bold text-xs sm:text-sm truncate block text-white`}>{selectedAlert.dispositivo_nombre}</span>
                   </div>
                   <div>
-                    <span className="text-st-muted text-[10px] block">Device ID</span>
-                    <span className="font-mono text-st-muted text-[11px]">{selectedAlert.device_id}</span>
+                    <span className={`text-xs block font-bold mb-0.5 text-st-muted`}>Device ID</span>
+                    <span className={`font-mono text-xs font-bold text-st-muted`}>{selectedAlert.device_id}</span>
                   </div>
                 </div>
               </div>
 
-              {/* Tiempos & Reconocimiento */}
-              <div className="bg-st-bg/40 border border-st-border rounded-xl p-4 space-y-3">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-st-muted flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-st-warning" />
-                  Tiempos &amp; Operación
-                </h3>
-                <div className="grid grid-cols-2 gap-3 text-xs">
+              {/* 2. Tiempos & Operación */}
+              <div className="bg-st-bg/40 border border-st-border rounded-xl p-3.5 sm:p-4 space-y-2.5">
+                <div className="flex items-center gap-2 text-st-muted">
+                  <Clock className="w-4 h-4 text-st-warning shrink-0" />
+                  <span className={`text-xs sm:text-sm font-extrabold uppercase tracking-wider text-st-muted`}>Tiempos &amp; Operación</span>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   <div>
-                    <span className="text-st-muted text-[10px] block">Fecha Detección</span>
-                    <span className="font-mono text-white">
+                    <span className={`text-xs block font-bold mb-0.5 text-st-muted`}>Fecha Detección</span>
+                    <span className={`font-mono text-xs sm:text-sm font-bold text-white`}>
                       {new Date(selectedAlert.fecha_hora_deteccion).toLocaleString()}
                     </span>
                   </div>
                   <div>
-                    <span className="text-st-muted text-[10px] block">Antigüedad</span>
-                    <span className="font-mono font-bold text-st-warning">
+                    <span className={`text-xs block font-bold mb-0.5 text-st-muted`}>Antigüedad</span>
+                    <span className="font-mono font-black text-xs sm:text-sm text-st-warning">
                       {selectedAlert.antiguedad_formateada}
                     </span>
                   </div>
                   <div>
-                    <span className="text-st-muted text-[10px] block">Estado Condición</span>
+                    <span className={`text-xs block font-bold mb-0.5 text-st-muted`}>Estado Condición</span>
                     <span
-                      className={`font-bold ${
+                      className={`font-black text-xs sm:text-sm ${
                         selectedAlert.activa ? 'text-st-offline' : 'text-st-online'
                       }`}
                     >
-                      {selectedAlert.activa ? 'Activa en Monitoreo' : 'Cerrada / Resuelta'}
+                      {selectedAlert.activa ? 'Activa en Monitoreo' : 'Cerrada'}
                     </span>
                   </div>
                   <div>
-                    <span className="text-st-muted text-[10px] block">Reconocida por Operador</span>
+                    <span className={`text-xs block font-bold mb-0.5 text-st-muted`}>Reconocimiento</span>
                     <span
-                      className={`font-bold ${
+                      className={`font-black text-xs sm:text-sm ${
                         selectedAlert.reconocida ? 'text-st-online' : 'text-st-warning'
                       }`}
                     >
-                      {selectedAlert.reconocida ? 'Sí (Operador anotado)' : 'No reconocida'}
+                      {selectedAlert.reconocida ? 'Sí (Anotado)' : 'Pendiente'}
                     </span>
                   </div>
                   {selectedAlert.fecha_reconocimiento && (
                     <div className="col-span-2">
-                      <span className="text-st-muted text-[10px] block">Fecha de Reconocimiento</span>
-                      <span className="font-mono text-st-online">
+                      <span className={`text-xs block font-bold mb-0.5 text-st-muted`}>Fecha Reconocimiento</span>
+                      <span className="font-mono text-xs font-bold text-st-online">
                         {new Date(selectedAlert.fecha_reconocimiento).toLocaleString()}
                       </span>
                     </div>
                   )}
                   {selectedAlert.fecha_hora_cierre && (
                     <div className="col-span-2">
-                      <span className="text-st-muted text-[10px] block">Fecha de Cierre (Starlink API)</span>
-                      <span className="font-mono text-white">
+                      <span className={`text-xs block font-bold mb-0.5 text-st-muted`}>Fecha Cierre</span>
+                      <span className="font-mono text-xs font-bold text-white">
                         {new Date(selectedAlert.fecha_hora_cierre).toLocaleString()}
                       </span>
                     </div>
@@ -1200,40 +1251,31 @@ const Alerts: React.FC = () => {
                 </div>
               </div>
 
-              {/* Reincidencia */}
-              <div className="bg-st-bg/40 border border-st-border rounded-xl p-4 space-y-3">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-st-muted flex items-center gap-2">
-                  <Repeat className="w-4 h-4 text-purple-400" />
-                  Métrica de Reincidencia
-                </h3>
-                <div className="grid grid-cols-2 gap-3 text-xs">
-                  <div className="bg-st-surface border border-st-border p-3 rounded-lg text-center">
-                    <span className="text-st-muted text-[10px] block uppercase">Últimas 24 horas</span>
-                    <span className="text-lg font-black text-white font-mono">
-                      {selectedAlert.reincidencias_24h}
+              {/* 3. Reincidencias & Contexto Técnico Consolidado */}
+              <div className="bg-st-bg/40 border border-st-border rounded-xl p-3.5 sm:p-4 space-y-3">
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <div className="flex items-center gap-2">
+                    <Activity className="w-4 h-4 text-st-online shrink-0" />
+                    <span className={`text-xs sm:text-sm font-extrabold uppercase tracking-wider text-white`}>
+                      Telemetría y Reincidencias
                     </span>
                   </div>
-                  <div className="bg-st-surface border border-st-border p-3 rounded-lg text-center">
-                    <span className="text-st-muted text-[10px] block uppercase">Últimos 7 días</span>
-                    <span className="text-lg font-black text-purple-400 font-mono">
-                      {selectedAlert.reincidencias_7d}
+                  <div className="flex items-center gap-2">
+                    <span className={`px-2.5 py-1 rounded-lg border text-xs font-mono font-semibold bg-st-surface border-st-border text-st-muted`}>
+                      24h: <strong className="text-white">{selectedAlert.reincidencias_24h}</strong>
+                    </span>
+                    <span className="px-2.5 py-1 rounded-lg bg-purple-500/10 border border-purple-500/30 text-xs font-mono text-purple-600 font-bold">
+                      7d: <strong className="text-purple-700 font-black">{selectedAlert.reincidencias_7d}</strong>
                     </span>
                   </div>
                 </div>
-              </div>
 
-              {/* Contexto Técnico Mínimo (de estado_terminal_actual) */}
-              {selectedAlert.contexto_tecnico && (
-                <div className="bg-st-bg/40 border border-st-border rounded-xl p-4 space-y-3">
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-st-muted flex items-center gap-2">
-                    <Activity className="w-4 h-4 text-st-online" />
-                    Contexto Técnico Actual del Terminal
-                  </h3>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs text-center">
-                    <div className="bg-st-surface border border-st-border p-2.5 rounded-lg">
-                      <span className="text-st-muted text-[10px] block">Estado</span>
+                {selectedAlert.contexto_tecnico ? (
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-center pt-1">
+                    <div className={`p-2.5 sm:p-3 rounded-xl border bg-st-surface border-st-border`}>
+                      <span className={`text-xs block font-bold uppercase mb-1 text-st-muted`}>Estado</span>
                       <span
-                        className={`font-bold text-[11px] ${
+                        className={`font-black text-sm sm:text-base ${
                           selectedAlert.contexto_tecnico.conectado ? 'text-st-online' : 'text-st-offline'
                         }`}
                       >
@@ -1241,49 +1283,48 @@ const Alerts: React.FC = () => {
                       </span>
                     </div>
 
-                    <div className="bg-st-surface border border-st-border p-2.5 rounded-lg">
-                      <span className="text-st-muted text-[10px] block">Latencia</span>
-                      <span className="font-bold text-white font-mono">
+                    <div className={`p-2.5 sm:p-3 rounded-xl border bg-st-surface border-st-border`}>
+                      <span className={`text-xs block font-bold uppercase mb-1 text-st-muted`}>Latencia</span>
+                      <span className={`font-black font-mono text-sm sm:text-base text-white`}>
                         {selectedAlert.contexto_tecnico.ping_latency_ms != null
                           ? `${selectedAlert.contexto_tecnico.ping_latency_ms} ms`
                           : 'N/A'}
                       </span>
                     </div>
 
-                    <div className="bg-st-surface border border-st-border p-2.5 rounded-lg">
-                      <span className="text-st-muted text-[10px] block">Packet Loss</span>
-                      <span className="font-bold text-white font-mono">
+                    <div className={`p-2.5 sm:p-3 rounded-xl border bg-st-surface border-st-border`}>
+                      <span className={`text-xs block font-bold uppercase mb-1 text-st-muted`}>P. Loss</span>
+                      <span className={`font-black font-mono text-sm sm:text-base text-white`}>
                         {selectedAlert.contexto_tecnico.ping_drop_rate != null
                           ? `${selectedAlert.contexto_tecnico.ping_drop_rate} %`
                           : '0 %'}
                       </span>
                     </div>
 
-                    <div className="bg-st-surface border border-st-border p-2.5 rounded-lg">
-                      <span className="text-st-muted text-[10px] block">Obstrucción</span>
-                      <span className="font-bold text-white font-mono">
+                    <div className={`p-2.5 sm:p-3 rounded-xl border bg-st-surface border-st-border`}>
+                      <span className={`text-xs block font-bold uppercase mb-1 text-st-muted`}>Obstrucción</span>
+                      <span className={`font-black font-mono text-sm sm:text-base text-white`}>
                         {selectedAlert.contexto_tecnico.porcentaje_obstruccion != null
                           ? `${selectedAlert.contexto_tecnico.porcentaje_obstruccion} %`
                           : '0 %'}
                       </span>
                     </div>
                   </div>
-                  {selectedAlert.contexto_tecnico.fecha_telemetria && (
-                    <div className="text-[10px] text-st-muted text-right pt-1 font-mono">
-                      Última telemetría: {new Date(selectedAlert.contexto_tecnico.fecha_telemetria).toLocaleString()}
-                    </div>
-                  )}
-                </div>
-              )}
+                ) : (
+                  <div className={`text-xs italic text-center py-2 text-st-muted`}>
+                    Sin datos de telemetría reciente para este terminal.
+                  </div>
+                )}
+              </div>
             </div>
 
-            {/* Drawer Actions Footer */}
-            <div className="p-6 border-t border-st-border bg-st-bg/80 space-y-3">
+            {/* Drawer Actions Footer Compact */}
+            <div className="px-5 py-3.5 border-t border-st-border bg-st-bg/90 space-y-2.5 shrink-0">
               {selectedAlert.activa && !selectedAlert.reconocida && (
                 <button
                   onClick={() => handleReconocer(selectedAlert.id)}
                   disabled={actionLoadingId === selectedAlert.id}
-                  className="w-full py-2.5 bg-st-accent hover:bg-st-accent/90 text-white font-bold text-xs rounded-xl transition-all active:scale-[0.98] cursor-pointer shadow-lg flex items-center justify-center gap-2"
+                  className="w-full py-2.5 bg-st-accent hover:bg-st-accent/90 text-white font-bold text-xs sm:text-sm rounded-xl transition-all active:scale-[0.98] cursor-pointer shadow-lg flex items-center justify-center gap-2"
                 >
                   {actionLoadingId === selectedAlert.id ? (
                     <RefreshCw className="w-4 h-4 animate-spin" />
@@ -1294,14 +1335,14 @@ const Alerts: React.FC = () => {
                 </button>
               )}
 
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              <div className={`grid grid-cols-3 gap-2.5 w-full`}>
                 {!isClientView && (
                   <button
                     onClick={() => {
                       setIsDrawerOpen(false);
                       navigate('/reseller/noc');
                     }}
-                    className="py-2 px-3 bg-st-surface border border-st-border hover:border-st-accent/50 text-st-muted hover:text-white font-semibold text-[11px] rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                    className="py-2 px-3 bg-st-surface border border-st-border hover:border-st-accent/50 text-st-muted hover:text-white font-semibold text-xs rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 w-full"
                   >
                     <Activity className="w-3.5 h-3.5 text-st-accent" />
                     <span>Ver en NOC</span>
@@ -1311,20 +1352,20 @@ const Alerts: React.FC = () => {
                 <button
                   onClick={() => {
                     setIsDrawerOpen(false);
-                    navigate(isClientView ? '/cliente/telemetria' : '/reseller/telemetria');
+                    navigate(isClientView ? '/cliente/calidad/telemetria' : '/reseller/telemetria', { state: { searchQuery: selectedAlert.device_id } });
                   }}
-                  className="py-2 px-3 bg-st-surface border border-st-border hover:border-st-accent/50 text-st-muted hover:text-white font-semibold text-[11px] rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                  className={`py-2 px-3 bg-st-surface border border-st-border text-st-muted hover:text-white hover:border-st-accent/50 font-bold text-xs rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 w-full`}
                 >
-                  <Radio className="w-3.5 h-3.5 text-purple-400" />
+                  <Radio className="w-3.5 h-3.5 text-purple-500" />
                   <span>Telemetría</span>
                 </button>
 
                 <button
                   onClick={() => {
                     setIsDrawerOpen(false);
-                    navigate(isClientView ? '/cliente/servicios' : '/reseller/servicios');
+                    navigate(isClientView ? '/cliente/servicios' : '/reseller/servicios', { state: { searchQuery: selectedAlert.numero_linea } });
                   }}
-                  className="py-2 px-3 bg-st-surface border border-st-border hover:border-st-accent/50 text-st-muted hover:text-white font-semibold text-[11px] rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                  className={`py-2 px-3 bg-st-surface border border-st-border text-st-muted hover:text-white hover:border-st-accent/50 font-bold text-xs rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 w-full`}
                 >
                   <Satellite className="w-3.5 h-3.5 text-st-online" />
                   <span>Ver servicio</span>

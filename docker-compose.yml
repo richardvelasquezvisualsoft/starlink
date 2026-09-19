@@ -1,34 +1,17 @@
 
 services:
-  db:
-    image: postgres:15-alpine
-    container_name: starlink_db
-    restart: always
-    environment:
-      - POSTGRES_DB=starlink_db
-      - POSTGRES_USER=star_user
-      - POSTGRES_PASSWORD=v1su@ls0ft
-    ports:
-      - "5432:5432"
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-    networks:
-      - red_global
-
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
     container_name: starlink_backend
     restart: always
-    depends_on:
-      - db
     ports:
       - "8050:8050"
     environment:
       - PORT=8050
       - HOST=0.0.0.0
-      - DB_HOST=db
+      - DB_HOST=192.168.100.5
       - DB_PORT=5432
       - DB_NAME=starlink_db
       - DB_USER=star_user

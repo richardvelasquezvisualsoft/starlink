@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Layers,
   Plus,
@@ -8,7 +8,10 @@ import {
   ArrowRight,
   X,
   Check,
-  Trash2
+  Trash2,
+  ChevronUp,
+  ChevronDown,
+  ArrowUpDown
 } from 'lucide-react';
 import client from '../api/client';
 
@@ -225,6 +228,47 @@ const Provisioning: React.FC = () => {
       (s.device_id && s.device_id.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
+  const [sortBy, setSortBy] = useState<string>('cliente');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+
+  const handleSort = (field: string) => {
+    if (sortBy === field) {
+      setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortBy(field);
+      setSortDirection('asc');
+    }
+  };
+
+  const sortedServicios = useMemo(() => {
+    const list = [...filteredServicios];
+    list.sort((a: any, b: any) => {
+      let aVal = a[sortBy];
+      let bVal = b[sortBy];
+
+      if (aVal === undefined || aVal === null) aVal = '';
+      if (bVal === undefined || bVal === null) bVal = '';
+
+      if (typeof aVal === 'string') {
+        const comp = aVal.localeCompare(String(bVal));
+        return sortDirection === 'asc' ? comp : -comp;
+      }
+      return sortDirection === 'asc' ? Number(aVal) - Number(bVal) : Number(bVal) - Number(aVal);
+    });
+    return list;
+  }, [filteredServicios, sortBy, sortDirection]);
+
+  const renderSortIcon = (field: string) => {
+    if (sortBy === field) {
+      return sortDirection === 'asc' ? (
+        <ChevronUp className="w-3 h-3 text-st-accent flex-shrink-0" />
+      ) : (
+        <ChevronDown className="w-3 h-3 text-st-accent flex-shrink-0" />
+      );
+    }
+    return <ArrowUpDown className="w-2.5 h-2.5 text-st-muted/40 group-hover:text-st-muted flex-shrink-0 transition-colors" />;
+  };
+
   return (
     <div className="space-y-6 pb-12">
       {/* HEADER */}
@@ -250,10 +294,10 @@ const Provisioning: React.FC = () => {
               setIsWizardOpen(true);
               setWizardStep(1);
             }}
-            className="flex items-center gap-2 px-4 py-2 bg-st-accent hover:bg-st-accent/90 text-white font-bold text-xs rounded-xl shadow-lg transition-all active:scale-[0.98] cursor-pointer"
+            className="flex items-center gap-2 px-4 h-9 bg-st-primary text-black font-bold uppercase text-xs rounded-lg hover:bg-white/90 transition-all active:scale-[0.98] cursor-pointer whitespace-nowrap"
           >
-            <Plus className="w-4 h-4" />
-            <span>Nuevo Servicio</span>
+            <Plus className="w-4 h-4 stroke-[3]" />
+            <span>Nuevo</span>
           </button>
 
           <button
@@ -262,9 +306,9 @@ const Provisioning: React.FC = () => {
               fetchServicios();
             }}
             disabled={isLoading}
-            className="flex items-center gap-2 px-3.5 py-2 bg-st-surface border border-st-border rounded-xl text-xs font-semibold text-st-muted hover:text-white transition-all cursor-pointer"
+            className="flex items-center gap-2 px-4 h-9 bg-st-surface border border-st-border rounded-lg text-xs font-semibold text-white hover:bg-white/5 transition-all cursor-pointer whitespace-nowrap"
           >
-            <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`w-3.5 h-3.5 text-st-muted ${isLoading ? 'animate-spin' : ''}`} />
             <span>Refrescar</span>
           </button>
         </div>
@@ -352,14 +396,44 @@ const Provisioning: React.FC = () => {
         <div className="bg-st-surface border border-st-border rounded-xl overflow-hidden shadow-xl">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs border-collapse">
-              <thead>
-                <tr className="bg-st-bg/80 text-st-muted uppercase tracking-wider font-semibold border-b border-st-border">
-                  <th className="py-3 px-4">Cliente</th>
-                  <th className="py-3 px-4">Cuenta Starlink</th>
-                  <th className="py-3 px-4">Service Line</th>
-                  <th className="py-3 px-4">Plan Actual</th>
-                  <th className="py-3 px-4">Terminal Asignado</th>
-                  <th className="py-3 px-4">Estado Aprovisionamiento</th>
+              <thead className="bg-st-bg/80 text-st-muted uppercase tracking-wider font-semibold border-b border-st-border select-none">
+                <tr>
+                  <th onClick={() => handleSort('cliente')} className="py-3 px-4 cursor-pointer hover:text-white transition-colors group">
+                    <div className="flex items-center gap-1.5">
+                      <span>Cliente</span>
+                      {renderSortIcon('cliente')}
+                    </div>
+                  </th>
+                  <th onClick={() => handleSort('cuenta_starlink')} className="py-3 px-4 cursor-pointer hover:text-white transition-colors group">
+                    <div className="flex items-center gap-1.5">
+                      <span>Cuenta Starlink</span>
+                      {renderSortIcon('cuenta_starlink')}
+                    </div>
+                  </th>
+                  <th onClick={() => handleSort('numero_linea')} className="py-3 px-4 cursor-pointer hover:text-white transition-colors group">
+                    <div className="flex items-center gap-1.5">
+                      <span>Service Line</span>
+                      {renderSortIcon('numero_linea')}
+                    </div>
+                  </th>
+                  <th onClick={() => handleSort('plan_contratado')} className="py-3 px-4 cursor-pointer hover:text-white transition-colors group">
+                    <div className="flex items-center gap-1.5">
+                      <span>Plan Actual</span>
+                      {renderSortIcon('plan_contratado')}
+                    </div>
+                  </th>
+                  <th onClick={() => handleSort('dispositivo_nombre')} className="py-3 px-4 cursor-pointer hover:text-white transition-colors group">
+                    <div className="flex items-center gap-1.5">
+                      <span>Terminal Asignado</span>
+                      {renderSortIcon('dispositivo_nombre')}
+                    </div>
+                  </th>
+                  <th onClick={() => handleSort('estado_provisionamiento')} className="py-3 px-4 cursor-pointer hover:text-white transition-colors group">
+                    <div className="flex items-center gap-1.5">
+                      <span>Estado Aprovisionamiento</span>
+                      {renderSortIcon('estado_provisionamiento')}
+                    </div>
+                  </th>
                   <th className="py-3 px-4 text-right">Acción Ciclo de Vida</th>
                 </tr>
               </thead>
@@ -371,14 +445,14 @@ const Provisioning: React.FC = () => {
                       Cargando ciclo de vida de servicios...
                     </td>
                   </tr>
-                ) : filteredServicios.length === 0 ? (
+                ) : sortedServicios.length === 0 ? (
                   <tr>
                     <td colSpan={7} className="py-12 text-center text-st-muted">
                       No hay servicios registrados en la cartera.
                     </td>
                   </tr>
                 ) : (
-                  filteredServicios.map(item => (
+                  sortedServicios.map(item => (
                     <tr key={item.linea_servicio_id} className="hover:bg-white/[0.03] transition-colors">
                       <td className="py-3 px-4 font-bold text-white">{item.cliente}</td>
                       <td className="py-3 px-4 font-mono text-st-muted text-[11px]">{item.cuenta_starlink}</td>

@@ -5,7 +5,6 @@ import {
   Activity,
   Database,
   Search,
-  RefreshCw,
   SlidersHorizontal,
   ChevronRight,
   ChevronLeft,
@@ -22,6 +21,7 @@ import {
 } from 'recharts';
 import client from '../api/client';
 import { AccountSearchSelect } from '../components/AccountSearchSelect';
+import { DashboardFilterBar, DashboardFilterState } from '../components/ui/DashboardFilterBar';
 
 interface KPIState {
   active_terminals: number;
@@ -56,6 +56,7 @@ const Dashboard: React.FC = () => {
   const [chartData, setChartData] = useState<any[]>([]);
   const [devices, setDevices] = useState<DeviceItem[]>([]);
   const [geoPoints, setGeoPoints] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
   const [accounts, setAccounts] = useState<any[]>([]);
 
   // Filter states
@@ -63,6 +64,18 @@ const Dashboard: React.FC = () => {
   const [selectedStatus, setSelectedStatus] = useState<string>('');
   const [selectedPlanType, setSelectedPlanType] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [filterState, setFilterState] = useState<DashboardFilterState>({
+    modo: 'historico',
+    year: '2026',
+    month: '9',
+    rango: '12m',
+    incluyeMesEnCurso: true,
+    tiempoRealWindow: '30d'
+  });
+
+  const handleFilterChange = (newFilters: DashboardFilterState) => {
+    setFilterState(newFilters);
+  };
   
   // Table paging
   const [currentPage, setCurrentPage] = useState(1);
@@ -77,10 +90,20 @@ const Dashboard: React.FC = () => {
   });
 
   const fetchData = async () => {
+    setLoading(true);
     try {
-      // 1. Fetch KPIs
-      const kpiParams: any = {};
+      const kpiParams: any = { modo: filterState.modo };
       if (selectedAccount) kpiParams.cuenta_id = selectedAccount;
+      if (filterState.modo === 'historico') {
+        if (filterState.year !== 'ALL') kpiParams.year = filterState.year;
+        if (filterState.month !== 'ALL') kpiParams.month = filterState.month;
+        kpiParams.rango = filterState.rango;
+      } else {
+        kpiParams.window = filterState.tiempoRealWindow;
+        kpiParams.rango_tiempo = filterState.tiempoRealWindow;
+      }
+
+      // 1. Fetch KPIs
       const kpisRes = await client.get('/dashboard/kpis', { params: kpiParams });
       setKpis(kpisRes.data);
 
@@ -119,12 +142,16 @@ const Dashboard: React.FC = () => {
       });
 
       setDevices(compiledDevices);
-    } catch (err) {}
+    } catch (err) {
+      console.error("Error fetching dashboard:", err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
     fetchData();
-  }, [selectedAccount]);
+  }, [selectedAccount, filterState]);
 
   // Apply frontend filters
   const filteredDevices = devices.filter(d => {
@@ -164,42 +191,45 @@ const Dashboard: React.FC = () => {
       {/* Title & Actions Row */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-white font-sans">Dashboard Analítico</h1>
-          <p className="text-xs text-st-muted mt-0.5">Visualización consolidada de telemetría, alertas y consumo.</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={fetchData}
-            className="flex items-center gap-2 px-3 py-2 bg-st-surface border border-st-border rounded-lg text-sm text-st-muted hover:text-white hover:border-white/20 transition-all active:scale-[0.98] cursor-pointer"
-          >
-            <RefreshCw className="w-4 h-4" />
-            <span>Refrescar</span>
-          </button>
+          <h1 className="text-[28px] font-bold tracking-tight text-st-primary font-sans leading-tight">Dashboard Analítico</h1>
+          <p className="text-[14px] font-medium text-client-text-muted mt-0.5">Visualización consolidada de telemetría, alertas y consumo.</p>
         </div>
       </div>
 
+      {/* Primary Dashboard Filter Bar */}
+      <DashboardFilterBar
+        initialState={filterState}
+        onFilterChange={handleFilterChange}
+        onRefresh={fetchData}
+        loading={loading}
+      />
+
       {/* Filters Row */}
-      <div className="bg-st-surface border border-st-border rounded-xl p-4 flex flex-wrap gap-4 items-center">
-        <div className="flex items-center gap-2 text-st-muted text-xs font-bold uppercase tracking-wider">
-          <SlidersHorizontal className="w-4 h-4 text-st-accent" />
+      <div className="bg-st-surface border border-st-border rounded-[14px] p-3 flex flex-wrap gap-4 items-center shadow-sm">
+        <div className="flex items-center gap-2 px-2 text-client-text-muted text-xs font-bold uppercase tracking-wider">
+          <SlidersHorizontal className="w-4 h-4 text-client-primary" />
           <span>Filtros Rápidos</span>
         </div>
 
+        <div className="h-6 w-px bg-st-border hidden md:block"></div>
+
         {/* Account Filter with Search */}
-        <AccountSearchSelect
-          accounts={accounts}
-          selectedAccount={selectedAccount}
-          onSelectAccount={(accId) => {
-            setSelectedAccount(accId);
-            setCurrentPage(1);
-          }}
-        />
+        <div className="min-w-[200px]">
+          <AccountSearchSelect
+            accounts={accounts}
+            selectedAccount={selectedAccount}
+            onSelectAccount={(accId) => {
+              setSelectedAccount(accId);
+              setCurrentPage(1);
+            }}
+          />
+        </div>
 
         {/* Status Filter */}
         <select
           value={selectedStatus}
           onChange={(e) => { setSelectedStatus(e.target.value); setCurrentPage(1); }}
-          className="bg-st-bg border border-st-border text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-st-accent focus:border-st-accent"
+          className="h-10 bg-st-bg border border-st-border text-st-primary text-sm font-medium rounded-[10px] px-3 focus:outline-none focus:ring-2 focus:ring-client-primary/20 focus:border-client-primary transition-all cursor-pointer"
         >
           <option value="">TODOS LOS ESTADOS</option>
           <option value="Online">ONLINE</option>
@@ -210,7 +240,7 @@ const Dashboard: React.FC = () => {
         <select
           value={selectedPlanType}
           onChange={(e) => { setSelectedPlanType(e.target.value); setCurrentPage(1); }}
-          className="bg-st-bg border border-st-border text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-st-accent focus:border-st-accent"
+          className="h-10 bg-st-bg border border-st-border text-st-primary text-sm font-medium rounded-[10px] px-3 focus:outline-none focus:ring-2 focus:ring-client-primary/20 focus:border-client-primary transition-all cursor-pointer"
         >
           <option value="">TODAS LAS SUSCRIPCIONES</option>
           <option value="Fixed">PLANES FIJOS</option>
@@ -221,67 +251,71 @@ const Dashboard: React.FC = () => {
       {/* 4 KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
         {/* Active Terminals */}
-        <div className="bg-st-surface border border-st-border rounded-xl p-5 flex items-center justify-between shadow-lg relative overflow-hidden group">
-          <div className="space-y-1 z-10">
-            <p className="text-[10px] font-bold text-st-muted uppercase tracking-wider">Terminales Activas</p>
-            <p className="text-3xl font-bold text-white font-sans">
+        <div className="bg-st-surface border border-st-border rounded-[16px] p-5 flex flex-col justify-between shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group min-h-[140px]">
+          <div className="flex items-start justify-between w-full z-10">
+            <div className="w-10 h-10 rounded-lg bg-client-primary-soft text-client-primary flex items-center justify-center flex-shrink-0">
+              <Satellite className="w-5 h-5" />
+            </div>
+            <p className="text-[10px] px-2 py-0.5 bg-st-bg text-st-muted rounded-md font-bold uppercase tracking-wider">
+              12 MESES
+            </p>
+          </div>
+          <div className="space-y-0.5 z-10 mt-4">
+            <p className="text-[13px] font-bold text-st-muted tracking-wide">Servicios Activos</p>
+            <p className="text-[32px] font-bold text-st-primary font-sans leading-none">
               {kpis.active_terminals} <span className="text-sm font-semibold text-st-muted">/ {kpis.total_terminals}</span>
             </p>
-            <p className="text-[9px] px-2 py-0.5 bg-st-online/10 text-st-online border border-st-online/20 rounded inline-block font-semibold">
-              ACUMULADO ÚLTIMOS 12 MESES
-            </p>
           </div>
-          <div className="w-12 h-12 rounded-lg bg-st-online/10 text-st-online flex items-center justify-center flex-shrink-0">
-            <Satellite className="w-6 h-6" />
-          </div>
-          <div className="absolute -bottom-2 -right-2 w-16 h-16 bg-st-online/5 rounded-full blur-xl group-hover:scale-125 transition-transform" />
         </div>
 
         {/* Active Alerts */}
-        <div className="bg-st-surface border border-st-border rounded-xl p-5 flex items-center justify-between shadow-lg relative overflow-hidden group">
-          <div className="space-y-1 z-10">
-            <p className="text-[10px] font-bold text-st-muted uppercase tracking-wider">Alertas Activas</p>
-            <p className="text-3xl font-bold text-white font-sans">{kpis.critical_alerts}</p>
-            <p className="text-[9px] px-2 py-0.5 bg-st-offline/10 text-st-offline border border-st-offline/20 rounded inline-block font-semibold">
-              FALLAS CRÍTICAS AHORA
+        <div className="bg-st-surface border border-st-border rounded-[16px] p-5 flex flex-col justify-between shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group min-h-[140px]">
+          <div className="flex items-start justify-between w-full z-10">
+            <div className="w-10 h-10 rounded-lg bg-client-warning-soft text-client-warning flex items-center justify-center flex-shrink-0">
+              <AlertTriangle className="w-5 h-5" />
+            </div>
+            <p className="text-[10px] px-2 py-0.5 bg-st-bg text-st-muted rounded-md font-bold uppercase tracking-wider">
+              CRÍTICAS AHORA
             </p>
           </div>
-          <div className="w-12 h-12 rounded-lg bg-st-offline/10 text-st-offline flex items-center justify-center flex-shrink-0">
-            <AlertTriangle className="w-6 h-6 animate-bounce" />
+          <div className="space-y-0.5 z-10 mt-4">
+            <p className="text-[13px] font-bold text-st-muted tracking-wide">Alertas Críticas</p>
+            <p className="text-[32px] font-bold text-st-primary font-sans leading-none">{kpis.critical_alerts}</p>
           </div>
-          <div className="absolute -bottom-2 -right-2 w-16 h-16 bg-st-offline/5 rounded-full blur-xl group-hover:scale-125 transition-transform" />
         </div>
 
-        {/* Avg Latency (Only Contextual) */}
+        {/* Avg Latency */}
         {!isGlobal && (
-          <div className="bg-st-surface border border-st-border rounded-xl p-5 flex items-center justify-between shadow-lg relative overflow-hidden group">
-            <div className="space-y-1 z-10">
-              <p className="text-[10px] font-bold text-st-muted uppercase tracking-wider">Latencia Promedio</p>
-              <p className="text-3xl font-bold text-white font-sans">{kpis.avg_latency_ms} <span className="text-xs font-semibold text-st-muted">ms</span></p>
-              <p className="text-[9px] px-2 py-0.5 bg-st-accent/10 text-st-accent border border-st-accent/20 rounded inline-block font-semibold">
-                ESTADO DE RED GLOBAL
+          <div className="bg-st-surface border border-st-border rounded-[16px] p-5 flex flex-col justify-between shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group min-h-[140px]">
+            <div className="flex items-start justify-between w-full z-10">
+              <div className="w-10 h-10 rounded-lg bg-client-accent-soft text-client-accent flex items-center justify-center flex-shrink-0">
+                <Activity className="w-5 h-5" />
+              </div>
+              <p className="text-[10px] px-2 py-0.5 bg-st-bg text-st-muted rounded-md font-bold uppercase tracking-wider">
+                ESTADO RED
               </p>
             </div>
-            <div className="w-12 h-12 rounded-lg bg-st-accent/10 text-st-accent flex items-center justify-center flex-shrink-0">
-              <Activity className="w-6 h-6 animate-pulse" />
+            <div className="space-y-0.5 z-10 mt-4">
+              <p className="text-[13px] font-bold text-st-muted tracking-wide">Latencia Promedio</p>
+              <p className="text-[32px] font-bold text-st-primary font-sans leading-none">{kpis.avg_latency_ms} <span className="text-sm font-semibold text-st-muted">ms</span></p>
             </div>
-            <div className="absolute -bottom-2 -right-2 w-16 h-16 bg-st-accent/5 rounded-full blur-xl group-hover:scale-125 transition-transform" />
           </div>
         )}
 
         {/* Data Consumption */}
-        <div className={`bg-st-surface border border-st-border rounded-xl p-5 flex items-center justify-between shadow-lg relative overflow-hidden group ${isGlobal ? 'md:col-span-2' : ''}`}>
-          <div className="space-y-1 z-10">
-            <p className="text-[10px] font-bold text-st-muted uppercase tracking-wider">Consumo Total</p>
-            <p className="text-3xl font-bold text-white font-sans">{kpis.total_data_usage_gb} <span className="text-xs font-semibold text-st-muted">GB</span></p>
-            <p className="text-[9px] px-2 py-0.5 bg-[#D97706]/10 text-[#D97706] border border-[#D97706]/20 rounded inline-block font-semibold">
-              TRÁFICO TOTAL DEL MES
+        <div className={`bg-st-surface border border-st-border rounded-[16px] p-5 flex flex-col justify-between shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group min-h-[140px] ${isGlobal ? 'md:col-span-2' : ''}`}>
+          <div className="flex items-start justify-between w-full z-10">
+            <div className="w-10 h-10 rounded-lg bg-client-info-soft text-client-info flex items-center justify-center flex-shrink-0">
+              <Database className="w-5 h-5" />
+            </div>
+            <p className="text-[10px] px-2 py-0.5 bg-st-bg text-st-muted rounded-md font-bold uppercase tracking-wider">
+              MES ACTUAL
             </p>
           </div>
-          <div className="w-12 h-12 rounded-lg bg-[#D97706]/10 text-[#D97706] flex items-center justify-center flex-shrink-0">
-            <Database className="w-6 h-6" />
+          <div className="space-y-0.5 z-10 mt-4">
+            <p className="text-[13px] font-bold text-st-muted tracking-wide">Consumo Total</p>
+            <p className="text-[32px] font-bold text-st-primary font-sans leading-none">{kpis.total_data_usage_gb} <span className="text-sm font-semibold text-st-muted">GB</span></p>
           </div>
-          <div className="absolute -bottom-2 -right-2 w-16 h-16 bg-[#D97706]/5 rounded-full blur-xl group-hover:scale-125 transition-transform" />
         </div>
       </div>
 
@@ -292,7 +326,11 @@ const Dashboard: React.FC = () => {
         <div className="lg:col-span-2 bg-st-surface border border-st-border rounded-xl p-5 space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
-              <h2 className="text-base font-bold text-white leading-tight">Tendencia de Telemetría</h2>
+              <h2 className="text-base font-bold text-st-primary leading-tight">
+                {filterState.modo === 'tiempo_real'
+                  ? `Tendencia de Telemetría Operativa (${filterState.tiempoRealWindow})`
+                  : `Tendencia de Telemetría Histórica (${filterState.year === 'ALL' ? 'Total' : `${filterState.month}/${filterState.year}`})`}
+              </h2>
               <p className="text-[11px] text-st-muted">Consolidación de velocidad de transmisión y latencias de conexión.</p>
             </div>
             
@@ -300,19 +338,19 @@ const Dashboard: React.FC = () => {
             <div className="flex bg-st-bg p-1 rounded-lg border border-st-border self-start">
               <button
                 onClick={() => setChartType('area')}
-                className={`px-3 py-1 text-xs font-bold uppercase rounded-md cursor-pointer transition-colors ${chartType === 'area' ? 'bg-st-surface text-st-accent font-bold' : 'text-st-muted hover:text-white'}`}
+                className={`px-3 py-1 text-xs font-bold uppercase rounded-md cursor-pointer transition-colors ${chartType === 'area' ? 'bg-st-surface text-st-accent font-bold' : 'text-st-muted hover:text-st-primary'}`}
               >
                 Área
               </button>
               <button
                 onClick={() => setChartType('bar')}
-                className={`px-3 py-1 text-xs font-bold uppercase rounded-md cursor-pointer transition-colors ${chartType === 'bar' ? 'bg-st-surface text-st-accent font-bold' : 'text-st-muted hover:text-white'}`}
+                className={`px-3 py-1 text-xs font-bold uppercase rounded-md cursor-pointer transition-colors ${chartType === 'bar' ? 'bg-st-surface text-st-accent font-bold' : 'text-st-muted hover:text-st-primary'}`}
               >
                 Barras
               </button>
               <button
                 onClick={() => setChartType('line')}
-                className={`px-3 py-1 text-xs font-bold uppercase rounded-md cursor-pointer transition-colors ${chartType === 'line' ? 'bg-st-surface text-st-accent font-bold' : 'text-st-muted hover:text-white'}`}
+                className={`px-3 py-1 text-xs font-bold uppercase rounded-md cursor-pointer transition-colors ${chartType === 'line' ? 'bg-st-surface text-st-accent font-bold' : 'text-st-muted hover:text-st-primary'}`}
               >
                 Líneas
               </button>
@@ -326,76 +364,76 @@ const Dashboard: React.FC = () => {
                 type="checkbox"
                 checked={activeSeries.downlink}
                 onChange={() => setActiveSeries(p => ({ ...p, downlink: !p.downlink }))}
-                className="accent-st-accent"
+                className="accent-[#0F766E]"
               />
-              <span className="w-2.5 h-2.5 rounded-full bg-st-accent block" />
-              <span className={activeSeries.downlink ? 'text-white' : 'text-st-muted'}>Downlink (Mbps)</span>
+              <span className="w-2.5 h-2.5 rounded-full bg-[#0F766E] block" />
+              <span className={activeSeries.downlink ? 'text-st-primary' : 'text-st-muted'}>Downlink (Mbps)</span>
             </label>
             <label className="flex items-center gap-1.5 cursor-pointer">
               <input
                 type="checkbox"
                 checked={activeSeries.uplink}
                 onChange={() => setActiveSeries(p => ({ ...p, uplink: !p.uplink }))}
-                className="accent-emerald-500"
+                className="accent-[#2563EB]"
               />
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 block" />
-              <span className={activeSeries.uplink ? 'text-white' : 'text-st-muted'}>Uplink (Mbps)</span>
+              <span className="w-2.5 h-2.5 rounded-full bg-[#2563EB] block" />
+              <span className={activeSeries.uplink ? 'text-st-primary' : 'text-st-muted'}>Uplink (Mbps)</span>
             </label>
             <label className="flex items-center gap-1.5 cursor-pointer">
               <input
                 type="checkbox"
                 checked={activeSeries.latency}
                 onChange={() => setActiveSeries(p => ({ ...p, latency: !p.latency }))}
-                className="accent-amber-500"
+                className="accent-[#F59E0B]"
               />
-              <span className="w-2.5 h-2.5 rounded-full bg-amber-500 block" />
-              <span className={activeSeries.latency ? 'text-white' : 'text-st-muted'}>Latencia (ms)</span>
+              <span className="w-2.5 h-2.5 rounded-full bg-[#F59E0B] block" />
+              <span className={activeSeries.latency ? 'text-st-primary' : 'text-st-muted'}>Latencia (ms)</span>
             </label>
           </div>
 
           {/* Recharts Container */}
-          <div className="h-80 w-full bg-st-bg/40 rounded-xl p-3 border border-st-border/50">
+          <div className="h-80 w-full rounded-[16px] p-3">
             {chartData.length === 0 ? (
-              <div className="h-full flex items-center justify-center text-st-muted text-sm">
+              <div className="h-full flex items-center justify-center text-st-muted text-sm font-semibold">
                 Sin registros en el rango seleccionado
               </div>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
                 {chartType === 'area' ? (
                   <AreaChart data={chartData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#222222" />
-                    <XAxis dataKey="timestamp" stroke="#9CA3AF" fontSize={10} />
-                    <YAxis stroke="#9CA3AF" fontSize={10} />
-                    <Tooltip contentStyle={{ backgroundColor: '#111111', borderColor: '#222222', borderRadius: '8px' }} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
+                    <XAxis dataKey="timestamp" stroke="var(--color-text-muted)" fontSize={10} axisLine={false} tickLine={false} />
+                    <YAxis stroke="var(--color-text-muted)" fontSize={10} axisLine={false} tickLine={false} />
+                    <Tooltip contentStyle={{ backgroundColor: 'var(--color-bg-surface)', borderColor: 'var(--color-border)', color: 'var(--color-text-primary)', borderRadius: '12px', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)' }} />
                     {activeSeries.downlink && (
-                      <Area type="monotone" dataKey="downlink_mbps" stroke="#00A8E8" fill="#00A8E8" fillOpacity={0.15} strokeWidth={2} />
+                      <Area type="monotone" dataKey="downlink_mbps" stroke="#0F766E" fill="#0F766E" fillOpacity={0.15} strokeWidth={2.5} />
                     )}
                     {activeSeries.uplink && (
-                      <Area type="monotone" dataKey="uplink_mbps" stroke="#10B981" fill="#10B981" fillOpacity={0.15} strokeWidth={2} />
+                      <Area type="monotone" dataKey="uplink_mbps" stroke="#2563EB" fill="#2563EB" fillOpacity={0.15} strokeWidth={2.5} />
                     )}
                     {activeSeries.latency && (
-                      <Area type="monotone" dataKey="latency_ms" stroke="#F59E0B" fill="#F59E0B" fillOpacity={0.15} strokeWidth={2} />
+                      <Area type="monotone" dataKey="latency_ms" stroke="#F59E0B" fill="#F59E0B" fillOpacity={0.15} strokeWidth={2.5} />
                     )}
                   </AreaChart>
                 ) : chartType === 'bar' ? (
                   <BarChart data={chartData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#222222" />
-                    <XAxis dataKey="timestamp" stroke="#9CA3AF" fontSize={10} />
-                    <YAxis stroke="#9CA3AF" fontSize={10} />
-                    <Tooltip contentStyle={{ backgroundColor: '#111111', borderColor: '#222222', borderRadius: '8px' }} />
-                    {activeSeries.downlink && <Bar dataKey="downlink_mbps" fill="#00A8E8" radius={[4, 4, 0, 0]} />}
-                    {activeSeries.uplink && <Bar dataKey="uplink_mbps" fill="#10B981" radius={[4, 4, 0, 0]} />}
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
+                    <XAxis dataKey="timestamp" stroke="var(--color-text-muted)" fontSize={10} axisLine={false} tickLine={false} />
+                    <YAxis stroke="var(--color-text-muted)" fontSize={10} axisLine={false} tickLine={false} />
+                    <Tooltip contentStyle={{ backgroundColor: 'var(--color-bg-surface)', borderColor: 'var(--color-border)', color: 'var(--color-text-primary)', borderRadius: '12px', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)' }} />
+                    {activeSeries.downlink && <Bar dataKey="downlink_mbps" fill="#0F766E" radius={[4, 4, 0, 0]} />}
+                    {activeSeries.uplink && <Bar dataKey="uplink_mbps" fill="#2563EB" radius={[4, 4, 0, 0]} />}
                     {activeSeries.latency && <Bar dataKey="latency_ms" fill="#F59E0B" radius={[4, 4, 0, 0]} />}
                   </BarChart>
                 ) : (
                   <LineChart data={chartData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#222222" />
-                    <XAxis dataKey="timestamp" stroke="#9CA3AF" fontSize={10} />
-                    <YAxis stroke="#9CA3AF" fontSize={10} />
-                    <Tooltip contentStyle={{ backgroundColor: '#111111', borderColor: '#222222', borderRadius: '8px' }} />
-                    {activeSeries.downlink && <Line type="monotone" dataKey="downlink_mbps" stroke="#00A8E8" strokeWidth={2.5} dot={{ r: 2 }} />}
-                    {activeSeries.uplink && <Line type="monotone" dataKey="uplink_mbps" stroke="#10B981" strokeWidth={2.5} dot={{ r: 2 }} />}
-                    {activeSeries.latency && <Line type="monotone" dataKey="latency_ms" stroke="#F59E0B" strokeWidth={2.5} dot={{ r: 2 }} />}
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
+                    <XAxis dataKey="timestamp" stroke="var(--color-text-muted)" fontSize={10} axisLine={false} tickLine={false} />
+                    <YAxis stroke="var(--color-text-muted)" fontSize={10} axisLine={false} tickLine={false} />
+                    <Tooltip contentStyle={{ backgroundColor: 'var(--color-bg-surface)', borderColor: 'var(--color-border)', color: 'var(--color-text-primary)', borderRadius: '12px', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)' }} />
+                    {activeSeries.downlink && <Line connectNulls={false} type="monotone" dataKey="downlink_mbps" stroke="#0F766E" strokeWidth={2.5} dot={{ r: 2 }} />}
+                    {activeSeries.uplink && <Line connectNulls={false} type="monotone" dataKey="uplink_mbps" stroke="#2563EB" strokeWidth={2.5} dot={{ r: 2 }} />}
+                    {activeSeries.latency && <Line connectNulls={false} type="monotone" dataKey="latency_ms" stroke="#F59E0B" strokeWidth={2.5} dot={{ r: 2 }} />}
                   </LineChart>
                 )}
               </ResponsiveContainer>
@@ -406,7 +444,7 @@ const Dashboard: React.FC = () => {
         {/* Satellite Map/Radar Preview */}
         <div className="bg-st-surface border border-st-border rounded-xl p-5 flex flex-col space-y-4">
           <div>
-            <h2 className="text-base font-bold text-white leading-tight">Radar de Geolocalización</h2>
+            <h2 className="text-base font-bold text-st-primary leading-tight">Radar de Geolocalización</h2>
             <p className="text-[11px] text-st-muted font-sans">Ubicación satelital y estado actual de terminales.</p>
           </div>
 
@@ -439,17 +477,17 @@ const Dashboard: React.FC = () => {
                   style={{ left: `${constrainedX}%`, top: `${constrainedY}%` }}
                 >
                   <span className="relative flex h-3 w-3">
-                    <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-60 ${pt.estado === 'Online' ? 'bg-st-online' : 'bg-st-offline'}`} />
-                    <span className={`relative inline-flex rounded-full h-3 w-3 border border-white/20 ${pt.estado === 'Online' ? 'bg-st-online' : 'bg-st-offline'}`} />
+                    <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-60 ${pt.estado === 'Online' ? 'bg-client-success' : 'bg-client-danger'}`} />
+                    <span className={`relative inline-flex rounded-full h-3 w-3 border border-st-primary/20 ${pt.estado === 'Online' ? 'bg-client-success' : 'bg-client-danger'}`} />
                   </span>
                   
                   {/* Tooltip on hover */}
                   <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute bottom-5 left-1/2 -translate-x-1/2 w-36 bg-st-surface border border-st-border rounded p-2 text-[9px] shadow-2xl z-10 pointer-events-none">
-                    <p className="font-bold text-white truncate">{pt.nombre}</p>
+                    <p className="font-bold text-st-primary truncate">{pt.nombre}</p>
                     <p className="text-st-muted font-mono">{pt.device_id}</p>
                     <p className="text-st-muted">Lat: {pt.latitud.toFixed(4)}</p>
                     <p className="text-st-muted">Lon: {pt.longitud.toFixed(4)}</p>
-                    <p className={`font-semibold ${pt.estado === 'Online' ? 'text-st-online' : 'text-st-offline'}`}>{pt.estado}</p>
+                    <p className={`font-semibold ${pt.estado === 'Online' ? 'text-client-success' : 'text-client-danger'}`}>{pt.estado}</p>
                   </div>
                 </div>
               );
@@ -457,9 +495,9 @@ const Dashboard: React.FC = () => {
           </div>
 
           <div className="flex justify-between text-[10px] text-st-muted border-t border-st-border/50 pt-3">
-            <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-st-online block" /> Online</span>
-            <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-st-offline block" /> Offline</span>
-            <span className="flex items-center gap-1 font-mono uppercase"><Navigation className="w-3 h-3 text-st-accent animate-pulse" /> Radar Activo</span>
+            <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-client-success block" /> Online</span>
+            <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-client-danger block" /> Offline</span>
+            <span className="flex items-center gap-1 font-mono uppercase"><Navigation className="w-3 h-3 text-client-accent animate-pulse" /> Radar Activo</span>
           </div>
         </div>
       </div>
@@ -470,7 +508,7 @@ const Dashboard: React.FC = () => {
         <div className="bg-st-surface border border-st-border rounded-xl p-5 space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h2 className="text-base font-bold text-white leading-tight">Terminales de la Flota</h2>
+            <h2 className="text-base font-bold text-st-primary leading-tight">Terminales de la Flota</h2>
             <p className="text-[11px] text-st-muted font-sans">Administración de dispositivos activos y su telemetría asociada.</p>
           </div>
 
@@ -482,7 +520,7 @@ const Dashboard: React.FC = () => {
               placeholder="Buscar por ID, nombre o línea..."
               value={searchQuery}
               onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
-              className="w-full pl-9 pr-4 py-2 bg-st-bg border border-st-border rounded-lg text-sm text-white placeholder-st-muted/50 focus:outline-none focus:ring-1 focus:ring-st-accent focus:border-st-accent"
+              className="w-full pl-9 pr-4 py-2 bg-st-bg border border-st-border rounded-lg text-sm text-st-primary placeholder-st-muted/50 focus:outline-none focus:ring-1 focus:ring-st-accent focus:border-st-accent"
             />
           </div>
         </div>
@@ -491,7 +529,7 @@ const Dashboard: React.FC = () => {
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="border-b border-st-border text-[10px] font-bold text-st-muted uppercase tracking-wider">
+              <tr className="border-b border-st-border bg-client-bg-subtle text-[10px] font-bold text-client-text-secondary uppercase tracking-wider">
                 <th className="py-3 px-4">Dispositivo ID</th>
                 <th className="py-3 px-4">Nombre</th>
                 <th className="py-3 px-4">Línea de Servicio</th>
@@ -501,7 +539,7 @@ const Dashboard: React.FC = () => {
                 <th className="py-3 px-4 text-center">Estado</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-st-border/30 text-sm">
+            <tbody className="divide-y divide-st-border/30 text-sm bg-st-surface">
               {pagedDevices.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="py-8 text-center text-st-muted text-sm">
@@ -510,17 +548,19 @@ const Dashboard: React.FC = () => {
                 </tr>
               ) : (
                 pagedDevices.map(d => (
-                  <tr key={d.id} className="hover:bg-white/[0.02] transition-colors group">
-                    <td className="py-3 px-4 font-mono font-bold text-st-accent select-all">{d.device_id}</td>
-                    <td className="py-3 px-4 font-semibold text-white">{d.nombre}</td>
+                  <tr key={d.id} className="hover:bg-client-bg-soft transition-colors group">
+                    <td className="py-3 px-4 font-mono font-bold text-client-accent select-all">{d.device_id}</td>
+                    <td className="py-3 px-4 font-semibold text-st-primary">{d.nombre}</td>
                     <td className="py-3 px-4 font-mono text-st-muted">{d.numero_linea}</td>
                     <td className="py-3 px-4 text-st-muted max-w-[150px] truncate">{d.cuenta_nombre}</td>
-                    <td className="py-3 px-4 text-xs font-semibold text-white">{d.plan_contratado}</td>
+                    <td className="py-3 px-4 text-xs font-semibold text-st-primary">{d.plan_contratado}</td>
                     <td className="py-3 px-4 text-xs text-st-muted">{d.kit_starlink}</td>
                     <td className="py-3 px-4">
                       <div className="flex items-center justify-center gap-1.5">
-                        <span className={`w-2.5 h-2.5 rounded-full ${d.estado === 'Online' ? 'bg-st-online animate-pulse' : 'bg-st-offline'}`} />
-                        <span className={`text-xs font-bold uppercase ${d.estado === 'Online' ? 'text-st-online' : 'text-st-offline'}`}>{d.estado}</span>
+                        <span className={`px-2 py-1 rounded-[6px] text-xs font-bold uppercase tracking-wide flex items-center gap-1.5 ${d.estado === 'Online' ? 'bg-client-success-soft text-client-success' : 'bg-client-danger-soft text-client-danger'}`}>
+                           <span className={`w-1.5 h-1.5 rounded-full ${d.estado === 'Online' ? 'bg-client-success animate-pulse' : 'bg-client-danger'}`} />
+                           {d.estado}
+                        </span>
                       </div>
                     </td>
                   </tr>
@@ -538,14 +578,14 @@ const Dashboard: React.FC = () => {
               <button
                 disabled={currentPage === 1}
                 onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                className="p-1.5 rounded-lg border border-st-border bg-st-bg hover:text-white disabled:opacity-30 cursor-pointer"
+                className="p-1.5 rounded-lg border border-st-border bg-st-bg hover:text-st-primary disabled:opacity-30 cursor-pointer"
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
               <button
                 disabled={currentPage === totalPages}
                 onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                className="p-1.5 rounded-lg border border-st-border bg-st-bg hover:text-white disabled:opacity-30 cursor-pointer"
+                className="p-1.5 rounded-lg border border-st-border bg-st-bg hover:text-st-primary disabled:opacity-30 cursor-pointer"
               >
                 <ChevronRight className="w-4 h-4" />
               </button>

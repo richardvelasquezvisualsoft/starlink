@@ -27,12 +27,12 @@ def get_tenant_context(
 
     # Check if the requested role is valid for this user
     actual_role = "CLIENTE"
-    if is_reseller_or_admin and current_user.acceso_todos_tenants:
+    if is_reseller_or_admin:
         actual_role = "RESELLER"
         # Only resellers/admins can impersonate a client role
         if x_demo_role == "CLIENTE":
             actual_role = "CLIENTE"
-    elif is_client or not current_user.acceso_todos_tenants:
+    elif is_client:
         actual_role = "CLIENTE"
     else:
         raise HTTPException(status_code=403, detail="No access role found")
@@ -44,8 +44,8 @@ def get_tenant_context(
         except ValueError:
             pass
 
-    # Reseller has access to all tenants if flag is true
-    is_global_reseller = is_reseller_or_admin and current_user.acceso_todos_tenants
+    # Reseller has access to all tenants
+    is_global_reseller = is_reseller_or_admin
 
     user_tenant_ids = [tu.tenant_id for tu in getattr(current_user, 'tenant_usuarios', []) if getattr(tu, 'activo', False)]
 

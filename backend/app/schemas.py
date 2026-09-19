@@ -1,5 +1,6 @@
 from pydantic import BaseModel, EmailStr, Field
-from typing import Optional, List
+from typing import Optional, List, Any, Union
+from uuid import UUID
 from datetime import datetime
 from decimal import Decimal
 
@@ -10,6 +11,18 @@ class Token(BaseModel):
 
 class TokenData(BaseModel):
     user_id: Optional[int] = None
+
+class EntidadOrganizacional(BaseModel):
+    id: int
+    codigo: Optional[str] = None
+    nombre: Optional[str] = None
+
+class AsignacionOrganizacionalResponse(BaseModel):
+    unidadNivel1: Optional[EntidadOrganizacional] = None
+    unidadNivel2: Optional[EntidadOrganizacional] = None
+    unidadNivel3: Optional[EntidadOrganizacional] = None
+    centroCosto: Optional[EntidadOrganizacional] = None
+    vigenteDesde: Optional[datetime] = None
 
 class UserLogin(BaseModel):
     email: EmailStr
@@ -31,10 +44,28 @@ class UserResponse(BaseModel):
     zona_horaria: Optional[str] = None
     foto_url: Optional[str] = None
     fecha_creacion: Optional[datetime] = None
+    debe_cambiar_password: bool = False
+    asignacionOrganizacional: Optional[AsignacionOrganizacionalResponse] = None
+    colaboradorId: Optional[int] = Field(None, description="Deprecated")
+    colaboradorNombre: Optional[str] = Field(None, description="Deprecated")
     role_codes: List[str] = []
 
     class Config:
         from_attributes = True
+
+class AdminResetPasswordRequest(BaseModel):
+    nueva_password: Optional[str] = None
+    forzar_cambio: bool = True
+
+class ForgotPasswordRequest(BaseModel):
+    email: str
+
+class VerifyResetTokenRequest(BaseModel):
+    token: str
+
+class ResetPasswordWithTokenRequest(BaseModel):
+    token: str
+    nueva_password: str
 
 # Cuenta Schemas
 class CuentaBase(BaseModel):
@@ -51,11 +82,17 @@ class CuentaUpdate(BaseModel):
 class CuentaResponse(CuentaBase):
     id: int
     fecha_creacion: Optional[datetime] = None
+    asignacionOrganizacional: Optional[AsignacionOrganizacionalResponse] = None
+    colaboradorId: Optional[int] = Field(None, description="Deprecated")
+    colaboradorNombre: Optional[str] = Field(None, description="Deprecated")
 
     class Config:
         from_attributes = True
 
 # Dispositivo Schemas
+
+
+
 class DispositivoBase(BaseModel):
     device_id: str
     nombre: Optional[str] = None
@@ -69,9 +106,22 @@ class DispositivoUpdate(BaseModel):
     nombre: Optional[str] = None
     kit_starlink: Optional[str] = None
 
-class DispositivoResponse(DispositivoBase):
+class DispositivoResponseBasic(DispositivoBase):
     id: int
+    dish_serial_number: Optional[str] = None
+    software_version_actual: Optional[str] = None
+    h3_cell_id_actual: Optional[str] = None
+    ultima_telemetria: Optional[datetime] = None
     fecha_creacion: Optional[datetime] = None
+    asignacionOrganizacional: Optional[AsignacionOrganizacionalResponse] = None
+    colaboradorId: Optional[int] = Field(None, description="Deprecated")
+    colaboradorNombre: Optional[str] = Field(None, description="Deprecated")
+
+    class Config:
+        from_attributes = True
+
+class DispositivoResponse(DispositivoResponseBasic):
+    lineas_servicio: List['LineaServicioResponse'] = []
 
     class Config:
         from_attributes = True
@@ -127,12 +177,26 @@ class SaldosHistorialResponse(BaseModel):
     class Config:
         from_attributes = True
 
+class DireccionServicioResponse(BaseModel):
+    id: int
+    direccion_formateada: Optional[str] = None
+    localidad: Optional[str] = None
+    area_administrativa: Optional[str] = None
+    region: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
 class LineaServicioResponse(LineaServicioBase):
     id: int
-    dispositivo: Optional[DispositivoResponse] = None
+    dispositivo: Optional[DispositivoResponseBasic] = None
     cuenta: Optional[CuentaResponse] = None
     saldos: List[SaldosHistorialResponse] = []
+    direcciones_servicio: List[DireccionServicioResponse] = []
     fecha_creacion: Optional[datetime] = None
+    asignacionOrganizacional: Optional[AsignacionOrganizacionalResponse] = None
+    colaboradorId: Optional[int] = Field(None, description="Deprecated")
+    colaboradorNombre: Optional[str] = Field(None, description="Deprecated")
 
     class Config:
         from_attributes = True
@@ -185,6 +249,9 @@ class CatalogoAlertaUpdate(BaseModel):
 class CatalogoAlertaResponse(CatalogoAlertaBase):
     id: int
     fecha_creacion: Optional[datetime] = None
+    asignacionOrganizacional: Optional[AsignacionOrganizacionalResponse] = None
+    colaboradorId: Optional[int] = Field(None, description="Deprecated")
+    colaboradorNombre: Optional[str] = Field(None, description="Deprecated")
 
     class Config:
         from_attributes = True
@@ -234,6 +301,9 @@ class NivelOrganizacionConfigUpdate(BaseModel):
 class NivelOrganizacionConfigResponse(NivelOrganizacionConfigBase):
     tenant_id: int
     fecha_creacion: Optional[datetime] = None
+    asignacionOrganizacional: Optional[AsignacionOrganizacionalResponse] = None
+    colaboradorId: Optional[int] = Field(None, description="Deprecated")
+    colaboradorNombre: Optional[str] = Field(None, description="Deprecated")
 
     class Config:
         from_attributes = True
@@ -261,6 +331,9 @@ class UnidadOrganizacionalResponse(UnidadOrganizacionalBase):
     tenant_id: int
     parent_nombre: Optional[str] = None
     fecha_creacion: Optional[datetime] = None
+    asignacionOrganizacional: Optional[AsignacionOrganizacionalResponse] = None
+    colaboradorId: Optional[int] = Field(None, description="Deprecated")
+    colaboradorNombre: Optional[str] = Field(None, description="Deprecated")
 
     class Config:
         from_attributes = True
@@ -286,6 +359,9 @@ class CentroCostoResponse(CentroCostoBase):
     id: int
     tenant_id: int
     fecha_creacion: Optional[datetime] = None
+    asignacionOrganizacional: Optional[AsignacionOrganizacionalResponse] = None
+    colaboradorId: Optional[int] = Field(None, description="Deprecated")
+    colaboradorNombre: Optional[str] = Field(None, description="Deprecated")
 
     class Config:
         from_attributes = True
@@ -314,13 +390,13 @@ class TenantUsuarioResponse(BaseModel):
 class UsuarioMfaResponse(BaseModel):
     habilitado: bool
     tipo: Optional[str] = None
-    fecha_confirmacion: Optional[datetime] = None
+    confirmado_en: Optional[datetime] = None
 
     class Config:
         from_attributes = True
 
 class UsuarioSesionResponse(BaseModel):
-    id: int
+    id: Any
     ip_address: Optional[str] = None
     user_agent: Optional[str] = None
     fecha_inicio: datetime
@@ -365,6 +441,9 @@ class UsuarioAdminResponse(UsuarioBase):
     motivo_bloqueo: Optional[str] = None
     debe_cambiar_password: bool = False
     fecha_creacion: Optional[datetime] = None
+    asignacionOrganizacional: Optional[AsignacionOrganizacionalResponse] = None
+    colaboradorId: Optional[int] = Field(None, description="Deprecated")
+    colaboradorNombre: Optional[str] = Field(None, description="Deprecated")
     ultimo_intento_fallido_en: Optional[datetime] = None
 
     roles: List[UsuarioRolesResponse] = []
@@ -549,4 +628,111 @@ class TenantConfiguracionGlobalResponse(BaseModel):
     class Config:
         from_attributes = True
 
+# --- Geozonas ---
+
+class GeozonaCreate(BaseModel):
+    nombre: str
+    tipo_geozona: str
+    centro_latitud: Optional[float] = None
+    centro_longitud: Optional[float] = None
+    radio_metros: Optional[float] = None
+    geometria_geojson: Optional[dict] = None
+    tolerancia_borde_metros: Optional[float] = 0
+
+class GeozonaAsignar(BaseModel):
+    geozona_id: int
+
+
+# --- ASIGNACIONES DE EQUIPOS ---
+
+class UnidadJerarquia(BaseModel):
+    id: int
+    codigo: str
+    nombre: str
+
+class AsignacionItemResponse(BaseModel):
+    dispositivo_id: int
+    device_id: str
+    dispositivo_nombre: Optional[str] = None
+    kit_starlink: Optional[str] = None
+    kit_serial_number: Optional[str] = None
+    dish_serial_number: Optional[str] = None
+    cuenta_id: Optional[int] = None
+    numero_cuenta: Optional[str] = None
+    cuenta_nombre: Optional[str] = None
+    linea_servicio_id: Optional[int] = None
+    numero_linea: Optional[str] = None
+    linea_nombre: Optional[str] = None
+    asignacion_id: Optional[int] = None
+    unidad_organizacional_id: Optional[int] = None
+    unidad_codigo: Optional[str] = None
+    unidad_nombre: Optional[str] = None
+    numero_nivel: Optional[int] = None
+    unidad_nivel1: Optional[UnidadJerarquia] = None
+    unidad_nivel2: Optional[UnidadJerarquia] = None
+    unidad_nivel3: Optional[UnidadJerarquia] = None
+    centro_costo_id: Optional[int] = None
+    centro_costo_codigo: Optional[str] = None
+    centro_costo_nombre: Optional[str] = None
+    vigente_desde: Optional[datetime] = None
+    asignacion_motivo: Optional[str] = None
+    asignacion_origen: Optional[str] = None
+    asignado: bool = False
+
+class AsignacionKPIs(BaseModel):
+    total_equipos: int
+    equipos_asignados: int
+    equipos_sin_asignar: int
+    total_centros_costo: int
+    total_unidades: int
+
+class AsignacionListResponse(BaseModel):
+    kpis: AsignacionKPIs
+    items: List[AsignacionItemResponse]
+
+class AsignacionCreateRequest(BaseModel):
+    dispositivo_id: int
+    unidad_organizacional_id: int
+    centro_costo_id: int
+    motivo: Optional[str] = None
+    vigente_desde: Optional[datetime] = None
+
+class DesasignarRequest(BaseModel):
+    dispositivo_id: int
+    motivo: Optional[str] = "Desasignación desde portal de cliente"
+
+class AsignacionHistorialItemResponse(BaseModel):
+    id: int
+    dispositivo_id: int
+    unidad_organizacional_id: int
+    unidad_codigo: str
+    unidad_nombre: str
+    numero_nivel: int
+    centro_costo_id: int
+    centro_costo_codigo: str
+    centro_costo_nombre: str
+    vigente_desde: datetime
+    vigente_hasta: Optional[datetime] = None
+    motivo: Optional[str] = None
+    origen: str
+    fecha_registro_bd: datetime
+    registrado_por_nombre: Optional[str] = None
+
+class OpcionUnidad(BaseModel):
+    id: int
+    codigo: str
+    nombre: str
+    numero_nivel: int
+    parent_id: Optional[int] = None
+    centro_costo_sugerido_id: Optional[int] = None
+
+class OpcionCentroCosto(BaseModel):
+    id: int
+    codigo: str
+    nombre: str
+    moneda_referencia: Optional[str] = None
+
+class OpcionesAsignacionResponse(BaseModel):
+    unidades: List[OpcionUnidad]
+    centros_costos: List[OpcionCentroCosto]
 

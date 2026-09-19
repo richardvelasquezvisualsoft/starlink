@@ -42,18 +42,18 @@ export const ClienteContratadoVsFacturado: React.FC = () => {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-white font-sans uppercase">Contratado vs Facturado</h1>
-          <p className="text-xs text-st-muted mt-0.5">Comparativa detallada entre montos base y facturación real por terminal.</p>
+          <h1 className="text-2xl font-bold tracking-tight text-client-text-primary font-sans uppercase">Contratado vs Facturado</h1>
+          <p className="text-xs text-client-text-secondary mt-0.5">Comparativa detallada entre montos base y facturación real por terminal.</p>
         </div>
         
-        <div className="flex items-center gap-2 bg-st-surface border border-st-border rounded-lg p-1.5">
-          <div className="flex items-center pl-2 pr-1 border-r border-st-border">
-            <Calendar className="w-4 h-4 text-st-accent" />
+        <div className="flex items-center gap-2 bg-client-bg-surface border border-client-border rounded-lg p-1.5">
+          <div className="flex items-center pl-2 pr-1 border-r border-client-border">
+            <Calendar className="w-4 h-4 text-client-primary" />
           </div>
           <select 
             value={selectedMonth}
             onChange={e => setSelectedMonth(e.target.value)}
-            className="bg-transparent text-sm text-white focus:outline-none px-2"
+            className="bg-transparent text-sm text-client-text-primary focus:outline-none px-2"
           >
             {[
               { val: '01', label: 'Enero' },
@@ -69,76 +69,96 @@ export const ClienteContratadoVsFacturado: React.FC = () => {
               { val: '11', label: 'Noviembre' },
               { val: '12', label: 'Diciembre' },
             ].map(m => (
-              <option key={m.val} value={m.val} className="bg-st-surface">{m.label}</option>
+              <option key={m.val} value={m.val} className="bg-client-bg-surface">{m.label}</option>
             ))}
 
           </select>
           <select 
             value={selectedYear}
             onChange={e => setSelectedYear(e.target.value)}
-            className="bg-transparent text-sm text-white focus:outline-none px-2"
+            className="bg-transparent text-sm text-client-text-primary focus:outline-none px-2"
           >
-            <option value="2025" className="bg-st-surface">2025</option>
-            <option value="2026" className="bg-st-surface">2026</option>
+            <option value="2025" className="bg-client-bg-surface">2025</option>
+            <option value="2026" className="bg-client-bg-surface">2026</option>
           </select>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-st-surface border border-st-border rounded-xl p-6">
-          <div className="flex items-center justify-between mb-4">
-            <span className="text-sm font-medium text-st-muted uppercase tracking-wider">Total Contratado</span>
-            <CreditCard className="w-5 h-5 text-st-accent" />
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+        <div className="bg-[#111111] border border-[#222222] rounded-[16px] p-5 min-h-[140px] shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between">
+          <div className="flex items-start justify-between mb-2">
+            <div className="w-10 h-10 rounded-xl bg-[#00A8E8]/10 flex items-center justify-center text-[#00A8E8]">
+              <CreditCard className="w-5 h-5" />
+            </div>
           </div>
-          <div className="text-3xl font-bold text-white font-mono">${totalContratado.toLocaleString('en-US', {minimumFractionDigits: 2})}</div>
-          <p className="text-xs text-st-muted mt-2">Monto base según planes</p>
+          <div>
+            <p className="text-[13px] font-bold tracking-wide uppercase text-[#94A3B8]">Total Contratado</p>
+            <p className="text-[32px] font-bold text-white font-mono leading-none mt-1.5">${totalContratado.toLocaleString('en-US', {minimumFractionDigits: 2})}</p>
+            <p className="text-[13px] font-medium text-[#94A3B8] mt-1.5">Monto base según planes</p>
+          </div>
         </div>
 
-        <div className="bg-st-surface border border-st-border rounded-xl p-6">
-          <div className="flex items-center justify-between mb-4">
-            <span className="text-sm font-medium text-st-muted uppercase tracking-wider">Total Facturado</span>
-            <DollarSign className="w-5 h-5 text-emerald-400" />
+        <div className="bg-[#111111] border border-[#222222] rounded-[16px] p-5 min-h-[140px] shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between">
+          <div className="flex items-start justify-between mb-2">
+            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-[#22C55E]">
+              <DollarSign className="w-5 h-5" />
+            </div>
           </div>
-          <div className="text-3xl font-bold text-white font-mono">${totalFacturado.toLocaleString('en-US', {minimumFractionDigits: 2})}</div>
-          <p className="text-xs text-st-muted mt-2">Monto real facturado en el mes</p>
+          <div>
+            <p className="text-[13px] font-bold tracking-wide uppercase text-[#94A3B8]">Total Facturado</p>
+            <p className="text-[32px] font-bold text-white font-mono leading-none mt-1.5">${totalFacturado.toLocaleString('en-US', {minimumFractionDigits: 2})}</p>
+            <p className="text-[13px] font-medium text-[#94A3B8] mt-1.5">Monto real facturado en el mes</p>
+          </div>
         </div>
 
-        <div className="bg-st-surface border border-st-border rounded-xl p-6">
-          <div className="flex items-center justify-between mb-4">
-            <span className="text-sm font-medium text-st-muted uppercase tracking-wider">Diferencia (Excedentes)</span>
-            <Activity className="w-5 h-5 text-red-400" />
+        <div className="bg-[#111111] border border-[#222222] rounded-[16px] p-5 min-h-[140px] shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between">
+          <div className="flex items-start justify-between mb-2">
+            <div className={`w-10 h-10 rounded-xl ${diferencia > 0 ? 'bg-red-500/10 text-[#EF4444]' : 'bg-emerald-500/10 text-[#22C55E]'} flex items-center justify-center`}>
+              <Activity className="w-5 h-5" />
+            </div>
           </div>
-          <div className="text-3xl font-bold text-white font-mono">${diferencia.toLocaleString('en-US', {minimumFractionDigits: 2})}</div>
-          <p className="text-xs text-st-muted mt-2">Consumo fuera de plan</p>
+          <div>
+            <p className="text-[13px] font-bold tracking-wide uppercase text-[#94A3B8]">Diferencia (Excedentes)</p>
+            <p className={`text-[32px] font-bold font-mono leading-none mt-1.5 ${diferencia > 0 ? 'text-[#F87171]' : 'text-white'}`}>
+              ${diferencia.toLocaleString('en-US', {minimumFractionDigits: 2})}
+            </p>
+            <p className="text-[13px] font-medium text-[#94A3B8] mt-1.5">Consumo fuera de plan</p>
+          </div>
         </div>
       </div>
 
-      <div className="bg-st-surface border border-st-border rounded-xl p-6">
-        <h2 className="text-sm font-bold text-white uppercase tracking-wider mb-6 flex items-center gap-2">
-          <Filter className="w-4 h-4 text-st-accent" /> Comparativa por Terminal
+      <div className="bg-[#111111] border border-[#222222] rounded-xl p-6 shadow-sm">
+        <h2 className="text-[16px] font-bold text-white uppercase tracking-tight mb-6 flex items-center gap-2">
+          <Filter className="w-4 h-4 text-[#00A8E8]" /> Comparativa por Terminal
         </h2>
         <div className="h-80">
           {loading ? (
              <div className="flex h-full items-center justify-center">
-               <Activity className="w-8 h-8 animate-spin text-st-accent" />
+               <Activity className="w-8 h-8 animate-spin text-[#00A8E8]" />
              </div>
           ) : data.length > 0 ? (
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={data} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" vertical={false} />
-                <XAxis dataKey="terminal" stroke="#888" fontSize={12} tickLine={false} axisLine={false} />
-                <YAxis stroke="#888" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => `$${val}`} />
+                <CartesianGrid strokeDasharray="4 4" stroke="#222222" vertical={false} />
+                <XAxis dataKey="terminal" stroke="#94A3B8" fontSize={12} tickLine={false} axisLine={false} />
+                <YAxis stroke="#94A3B8" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => `$${val}`} />
                 <Tooltip 
-                  contentStyle={{ backgroundColor: '#18181b', borderColor: '#27272a', borderRadius: '8px' }}
-                  itemStyle={{ fontSize: '12px', fontWeight: 'bold' }}
+                  contentStyle={{ 
+                    backgroundColor: '#111111', 
+                    borderColor: '#222222', 
+                    borderRadius: '12px',
+                    boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.6)',
+                    color: '#FFFFFF'
+                  }}
+                  itemStyle={{ fontSize: '13px', fontWeight: 'bold' }}
                 />
-                <Legend iconType="circle" wrapperStyle={{ fontSize: '12px' }} />
-                <Bar dataKey="contratado" name="Monto Contratado ($)" fill="#3b82f6" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="facturado" name="Monto Facturado ($)" fill="#10b981" radius={[4, 4, 0, 0]} />
+                <Legend iconType="circle" wrapperStyle={{ fontSize: '12px', color: '#94A3B8' }} />
+                <Bar dataKey="contratado" name="Monto Contratado ($)" fill="#00A8E8" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="facturado" name="Monto Facturado ($)" fill="#22C55E" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           ) : (
-            <div className="flex h-full items-center justify-center text-st-muted text-sm">
+            <div className="flex h-full items-center justify-center text-[#94A3B8] text-sm">
               No hay datos para el periodo seleccionado.
             </div>
           )}

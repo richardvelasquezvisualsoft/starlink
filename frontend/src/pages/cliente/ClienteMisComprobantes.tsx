@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { FileText, Download, Search, Calendar } from 'lucide-react';
+import { useTableSort } from '../../hooks/useTableSort';
+import { SortableHeader } from '../../components/ui/SortableHeader';
 
 export const ClienteMisComprobantes: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -19,78 +21,86 @@ export const ClienteMisComprobantes: React.FC = () => {
     inv.date.startsWith(selectedYear)
   );
 
+  const { sortedData, sortColumn, sortDirection, handleSort } = useTableSort(filteredInvoices, {
+    initialSortColumn: 'date',
+    initialSortDirection: 'desc'
+  });
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-white font-sans uppercase">Mis Comprobantes</h1>
-          <p className="text-xs text-st-muted mt-0.5">Historial de facturación y comprobantes de pago.</p>
+          <h1 className="text-2xl font-bold tracking-tight text-client-text-primary font-sans uppercase">Mis Comprobantes</h1>
+          <p className="text-xs text-client-text-secondary mt-0.5">Historial de facturación y comprobantes de pago.</p>
         </div>
         
-        <div className="flex items-center gap-2 bg-st-surface border border-st-border rounded-lg p-1.5">
-          <div className="flex items-center pl-2 pr-1 border-r border-st-border">
-            <Calendar className="w-4 h-4 text-st-accent" />
-          </div>
+        <div className="flex items-center gap-2 bg-[#111111] border border-[#222222] rounded-xl px-3 py-1.5">
+          <Calendar className="w-4 h-4 text-[#00A8E8]" />
           <select 
             value={selectedYear}
             onChange={e => setSelectedYear(e.target.value)}
-            className="bg-transparent text-sm text-white focus:outline-none px-2"
+            className="bg-transparent text-sm font-semibold text-white focus:outline-none cursor-pointer"
           >
-            <option value="2026" className="bg-st-surface">2026</option>
-            <option value="2025" className="bg-st-surface">2025</option>
+            <option value="2026" className="bg-[#111111] text-white">2026</option>
+            <option value="2025" className="bg-[#111111] text-white">2025</option>
           </select>
         </div>
       </div>
 
-      <div className="bg-st-surface border border-st-border rounded-xl flex flex-col min-h-[400px]">
-        <div className="p-4 border-b border-st-border flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="bg-[#111111] border border-[#222222] rounded-xl flex flex-col min-h-[400px] shadow-sm overflow-hidden">
+        <div className="p-4 border-b border-[#222222] flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-[#111111]">
           <div className="relative max-w-sm w-full">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-st-muted" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#94A3B8]" />
             <input
               type="text"
               placeholder="Buscar por N° Factura..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-st-bg border border-st-border rounded-lg pl-9 pr-4 py-2 text-sm text-white focus:border-st-accent outline-none"
+              className="w-full bg-black border border-[#222222] rounded-lg pl-9 pr-4 py-2 text-sm text-white placeholder-[#94A3B8]/50 focus:border-[#00A8E8] outline-none transition-colors"
             />
           </div>
         </div>
 
-        <div className="flex-1 overflow-auto">
+        <div className="flex-1 overflow-auto custom-scrollbar">
           <table className="w-full text-left text-sm border-collapse">
             <thead>
-              <tr className="bg-st-bg/80 text-st-muted uppercase tracking-wider font-semibold border-b border-st-border">
-                <th className="py-3 px-4">Comprobante</th>
-                <th className="py-3 px-4">Fecha Emisión</th>
-                <th className="py-3 px-4">Monto ($)</th>
-                <th className="py-3 px-4">Estado</th>
-                <th className="py-3 px-4 text-right">Acciones</th>
+              <tr className="bg-[#1E293B] border-b border-[#222222]">
+                <SortableHeader label="Comprobante" column="id" currentSortColumn={sortColumn as string} currentSortDirection={sortDirection} onSort={handleSort as any} />
+                <SortableHeader label="Fecha Emisión" column="date" currentSortColumn={sortColumn as string} currentSortDirection={sortDirection} onSort={handleSort as any} />
+                <SortableHeader label="Monto ($)" column="amount" currentSortColumn={sortColumn as string} currentSortDirection={sortDirection} onSort={handleSort as any} />
+                <SortableHeader label="Estado" column="status" currentSortColumn={sortColumn as string} currentSortDirection={sortDirection} onSort={handleSort as any} />
+                <th className="py-3 px-4 text-right text-[11px] font-bold text-[#94A3B8] uppercase tracking-wider">Acciones</th>
               </tr>
             </thead>
-            <tbody>
-              {filteredInvoices.map((inv) => (
-                <tr key={inv.id} className="border-b border-st-border/50 hover:bg-white/5 transition-colors">
-                  <td className="py-3 px-4 text-white font-medium flex items-center gap-2">
-                    <FileText className="w-4 h-4 text-st-accent" />
-                    {inv.id}
+            <tbody className="divide-y divide-[#222222]/40 bg-[#111111]">
+              {sortedData.map((inv) => (
+                <tr key={inv.id} className="hover:bg-white/5 transition-colors group">
+                  <td className="py-3.5 px-4 whitespace-nowrap">
+                    <div className="flex items-center gap-2">
+                      <FileText className="w-4 h-4 text-[#00A8E8]" />
+                      <span className="font-mono font-bold text-[13px] text-[#00A8E8] group-hover:text-[#38BDF8] transition-colors">
+                        {inv.id}
+                      </span>
+                    </div>
                   </td>
-                  <td className="py-3 px-4 text-st-muted">{inv.date}</td>
-                  <td className="py-3 px-4 text-white font-mono">${inv.amount.toFixed(2)}</td>
-                  <td className="py-3 px-4">
-                    <span className="px-2 py-0.5 rounded text-[10px] uppercase font-bold bg-emerald-500/10 text-emerald-400">
+                  <td className="py-3.5 px-4 text-[#94A3B8] text-[13px] font-medium">{inv.date}</td>
+                  <td className="py-3.5 px-4 text-white font-mono font-bold text-[13px]">${inv.amount.toFixed(2)}</td>
+                  <td className="py-3.5 px-4">
+                    <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-[6px] text-xs font-bold uppercase tracking-wide bg-emerald-500/10 text-[#4ADE80] border border-emerald-500/20">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#22C55E]" />
                       {inv.status}
                     </span>
                   </td>
-                  <td className="py-3 px-4 text-right">
-                    <button className="p-1.5 hover:bg-white/10 rounded text-st-muted hover:text-white transition-colors" title="Descargar PDF">
+                  <td className="py-3.5 px-4 text-right">
+                    <button className="p-1.5 hover:bg-white/10 rounded-lg text-[#94A3B8] hover:text-white transition-colors" title="Descargar PDF">
                       <Download className="w-4 h-4" />
                     </button>
                   </td>
                 </tr>
               ))}
-              {filteredInvoices.length === 0 && (
+              {sortedData.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="py-12 text-center text-st-muted text-sm">
+                  <td colSpan={5} className="py-12 text-center text-[#94A3B8] text-sm">
                     No se encontraron comprobantes.
                   </td>
                 </tr>

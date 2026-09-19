@@ -6,7 +6,9 @@ import Layout from './components/Layout';
 
 import AccessDenied from './components/AccessDenied';
 import Login from './pages/Login';
+import ResetPassword from './pages/ResetPassword';
 import Dashboard from './pages/Dashboard';
+import DashboardClienteGlobal from './pages/DashboardClienteGlobal';
 import Maintenance from './pages/Maintenance';
 import Alerts from './pages/Alerts';
 import ConsumptionReport from './pages/ConsumptionReport';
@@ -40,15 +42,18 @@ import { ClienteContratadoVsFacturado } from './pages/cliente/ClienteContratadoV
 import { ClienteMisComprobantes } from './pages/cliente/ClienteMisComprobantes';
 import { ClienteControlDatos } from './pages/cliente/ClienteControlDatos';
 import { ClienteAccionesRemotas } from './pages/cliente/ClienteAccionesRemotas';
-import { ClienteColaboradores } from './pages/cliente/ClienteColaboradores';
 import { ClienteAsignaciones } from './pages/cliente/ClienteAsignaciones';
 import { ClienteConfiguracionGlobal } from './pages/cliente/ClienteConfiguracionGlobal';
 import { ClienteUnidadOrganizacional } from './pages/cliente/ClienteUnidadOrganizacional';
 
 import UsuariosAccesos from './pages/reseller/UsuariosAccesos';
 import Seguridad from './pages/reseller/Seguridad';
+import PermisosMenu from './pages/reseller/PermisosMenu';
+import ConfiguracionSLA from './pages/reseller/ConfiguracionSLA';
 import Perfil from './pages/reseller/Perfil';
+import ClientePerfil from './pages/cliente/ClientePerfil';
 import CambiarPassword from './pages/reseller/CambiarPassword';
+import ClienteCambiarPassword from './pages/cliente/ClienteCambiarPassword';
 import Solicitudes from './pages/reseller/Solicitudes';
 
 import { ContratosComercialesPage } from './pages/ContratosComercialesPage';
@@ -76,7 +81,8 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode, requiredRole?: 'CLIE
 
   // Enforce strictly role based routing
   if (requiredRole) {
-    if (!hasRole(requiredRole)) {
+    // Allow RESELLER and CLIENTE to see all options across the platform
+    if (!hasRole('RESELLER') && !hasRole('CLIENTE') && !hasRole(requiredRole)) {
        return <AccessDenied />;
     }
   }
@@ -97,13 +103,16 @@ const App: React.FC = () => {
       <TenantThemeProvider>
         <BrowserRouter>
           <Routes>
-            {/* Public Login Route */}
+            {/* Public Routes */}
             <Route path="/login" element={<Login />} />
+            <Route path="/restablecer-password" element={<ResetPassword />} />
+            <Route path="/recuperar-password" element={<ResetPassword />} />
 
             {/* ========================================================
                 1. RESELLER GLOBAL SCOPE
                 ======================================================== */}
             <Route path="/reseller/dashboard" element={<ProtectedRoute requiredRole="RESELLER"><Dashboard /></ProtectedRoute>} />
+            <Route path="/reseller/dashboard-cliente" element={<ProtectedRoute requiredRole="RESELLER"><DashboardClienteGlobal /></ProtectedRoute>} />
             <Route path="/reseller/clientes" element={<ProtectedRoute requiredRole="RESELLER"><ResellerClients /></ProtectedRoute>} />
             <Route path="/reseller/noc" element={<ProtectedRoute requiredRole="RESELLER"><NocGlobal /></ProtectedRoute>} />
             <Route path="/reseller/solicitudes" element={<ProtectedRoute requiredRole="RESELLER"><Solicitudes /></ProtectedRoute>} />
@@ -123,19 +132,21 @@ const App: React.FC = () => {
 
             {/* REPORTES RESELLER */}
             <Route path="/reseller/reportes/mantenimiento" element={<ProtectedRoute requiredRole="RESELLER"><Maintenance /></ProtectedRoute>} />
-            <Route path="/reseller/reportes/consumo" element={<ProtectedRoute requiredRole="RESELLER"><ConsumptionReport /></ProtectedRoute>} />
+            <Route path="/reseller/consumo" element={<ProtectedRoute requiredRole="RESELLER"><ConsumptionReport /></ProtectedRoute>} />
             <Route path="/reseller/reportes/telemetria" element={<ProtectedRoute requiredRole="RESELLER"><TelemetryReport /></ProtectedRoute>} />
             <Route path="/reseller/reportes/geolocalizacion" element={<ProtectedRoute requiredRole="RESELLER"><GeolocationMap /></ProtectedRoute>} />
-            <Route path="/reseller/reportes/facturacion" element={<ProtectedRoute requiredRole="RESELLER"><BillingReport /></ProtectedRoute>} />
+            <Route path="/reseller/facturacion" element={<ProtectedRoute requiredRole="RESELLER"><BillingReport /></ProtectedRoute>} />
 
             {/* MANTENIMIENTO RESELLER */}
-            <Route path="/reseller/mantenimiento/contratos" element={<ProtectedRoute requiredRole="RESELLER"><ContratosComercialesPage /></ProtectedRoute>} />
+            <Route path="/reseller/contratos" element={<ProtectedRoute requiredRole="RESELLER"><ContratosComercialesPage /></ProtectedRoute>} />
             <Route path="/reseller/mantenimiento/organizacion" element={<ProtectedRoute requiredRole="RESELLER"><Hierarchy /></ProtectedRoute>} />
             <Route path="/reseller/mantenimiento/centros-costos" element={<ProtectedRoute requiredRole="RESELLER"><CostCenters /></ProtectedRoute>} />
 
             {/* CONFIGURACIÓN RESELLER */}
-            <Route path="/reseller/configuracion/usuarios" element={<ProtectedRoute requiredRole="RESELLER"><UsuariosAccesos /></ProtectedRoute>} />
-            <Route path="/reseller/configuracion/seguridad" element={<ProtectedRoute requiredRole="RESELLER"><Seguridad /></ProtectedRoute>} />
+            <Route path="/reseller/usuarios" element={<ProtectedRoute requiredRole="RESELLER"><UsuariosAccesos /></ProtectedRoute>} />
+            <Route path="/reseller/seguridad" element={<ProtectedRoute requiredRole="RESELLER"><Seguridad /></ProtectedRoute>} />
+            <Route path="/reseller/configuracion/permisos" element={<ProtectedRoute requiredRole="RESELLER"><PermisosMenu /></ProtectedRoute>} />
+            <Route path="/reseller/configuracion/sla" element={<ProtectedRoute requiredRole="RESELLER"><ConfiguracionSLA /></ProtectedRoute>} />
 
             {/* MI PERFIL Y CONTRASEÑA RESELLER */}
             <Route path="/reseller/perfil" element={<ProtectedRoute requiredRole="RESELLER"><Perfil /></ProtectedRoute>} />
@@ -173,7 +184,6 @@ const App: React.FC = () => {
             {/* MANTENIMIENTO */}
             <Route path="/cliente/mantenimiento/organizacion" element={<ProtectedRoute requiredRole="CLIENTE"><ClienteUnidadOrganizacional levelNumProp={1} /></ProtectedRoute>} />
             <Route path="/cliente/mantenimiento/organizacion/nivel/:levelNum" element={<ProtectedRoute requiredRole="CLIENTE"><ClienteUnidadOrganizacional /></ProtectedRoute>} />
-            <Route path="/cliente/mantenimiento/colaboradores" element={<ProtectedRoute requiredRole="CLIENTE"><ClienteColaboradores /></ProtectedRoute>} />
             <Route path="/cliente/mantenimiento/centros-costos" element={<ProtectedRoute requiredRole="CLIENTE"><CostCenters /></ProtectedRoute>} />
             <Route path="/cliente/mantenimiento/asignaciones" element={<ProtectedRoute requiredRole="CLIENTE"><ClienteAsignaciones /></ProtectedRoute>} />
             
@@ -181,8 +191,8 @@ const App: React.FC = () => {
             <Route path="/cliente/configuracion/global" element={<ProtectedRoute requiredRole="CLIENTE"><ClienteConfiguracionGlobal /></ProtectedRoute>} />
 
             {/* MI PERFIL Y CONTRASEÑA */}
-            <Route path="/cliente/perfil" element={<ProtectedRoute requiredRole="CLIENTE"><Perfil /></ProtectedRoute>} />
-            <Route path="/cliente/perfil/password" element={<ProtectedRoute requiredRole="CLIENTE"><CambiarPassword /></ProtectedRoute>} />
+            <Route path="/cliente/perfil" element={<ProtectedRoute requiredRole="CLIENTE"><ClientePerfil /></ProtectedRoute>} />
+            <Route path="/cliente/perfil/password" element={<ProtectedRoute requiredRole="CLIENTE"><ClienteCambiarPassword /></ProtectedRoute>} />
 
             {/* Redirects */}
             <Route path="/" element={<Navigate to="/login" replace />} />

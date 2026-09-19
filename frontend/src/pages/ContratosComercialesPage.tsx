@@ -10,6 +10,9 @@ import {
   Shield,
   Briefcase,
   ChevronRight,
+  ChevronUp,
+  ChevronDown,
+  ArrowUpDown,
   X,
   Layers,
   DollarSign
@@ -146,12 +149,59 @@ export const ContratosComercialesPage: React.FC = () => {
     return true;
   });
 
+  const [sortBy, setSortBy] = useState<string>('dias_restantes');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+
+  const handleSort = (field: string) => {
+    if (sortBy === field) {
+      setSortDirection(prev => (prev === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortBy(field);
+      setSortDirection('asc');
+    }
+  };
+
+  const sortedContracts = React.useMemo(() => {
+    const list = [...filteredContracts];
+    list.sort((a, b) => {
+      let aVal = (a as any)[sortBy];
+      let bVal = (b as any)[sortBy];
+
+      if (sortBy === 'semaforo') {
+        const semaforoScore: Record<string, number> = { ROJO: 1, AMARILLO: 2, VERDE: 3 };
+        aVal = semaforoScore[a.semaforo] || 99;
+        bVal = semaforoScore[b.semaforo] || 99;
+      }
+
+      if (aVal === undefined || aVal === null) aVal = '';
+      if (bVal === undefined || bVal === null) bVal = '';
+
+      if (typeof aVal === 'string') {
+        const comp = aVal.localeCompare(String(bVal));
+        return sortDirection === 'asc' ? comp : -comp;
+      }
+      return sortDirection === 'asc' ? Number(aVal) - Number(bVal) : Number(bVal) - Number(aVal);
+    });
+    return list;
+  }, [filteredContracts, sortBy, sortDirection]);
+
   // Pagination logic
-  const totalPages = Math.ceil(filteredContracts.length / itemsPerPage);
-  const pagedContracts = filteredContracts.slice(
+  const totalPages = Math.ceil(sortedContracts.length / itemsPerPage);
+  const pagedContracts = sortedContracts.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
+
+  const renderSortIcon = (field: string) => {
+    if (sortBy === field) {
+      return sortDirection === 'asc' ? (
+        <ChevronUp className="w-3.5 h-3.5 text-st-accent flex-shrink-0" />
+      ) : (
+        <ChevronDown className="w-3.5 h-3.5 text-st-accent flex-shrink-0" />
+      );
+    }
+    return <ArrowUpDown className="w-3 h-3 text-st-muted/40 group-hover:text-st-muted flex-shrink-0 transition-colors" />;
+  };
 
   const handleOpenDetail = async (contract: ContractItem) => {
     try {
@@ -425,17 +475,62 @@ export const ContratosComercialesPage: React.FC = () => {
       <div className="bg-st-surface border border-st-border rounded-xl shadow-lg overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm text-st-muted">
-            <thead className="bg-st-bg/70 border-b border-st-border text-xs font-bold text-white uppercase tracking-wider">
+            <thead className="bg-st-bg/70 border-b border-st-border text-xs font-bold text-white uppercase tracking-wider select-none">
               <tr>
-                <th className="py-3.5 px-4 text-center">Semáforo</th>
-                <th className="py-3.5 px-4">Cliente / RUC</th>
-                <th className="py-3.5 px-4">Contrato</th>
-                <th className="py-3.5 px-4">Vencimiento</th>
-                <th className="py-3.5 px-4 text-center">Días Restantes</th>
-                <th className="py-3.5 px-4 text-center">Cobertura</th>
-                <th className="py-3.5 px-4">Planes Contratados</th>
-                <th className="py-3.5 px-4 text-right">Monto Referencial</th>
-                <th className="py-3.5 px-4 text-center">Renovación</th>
+                <th onClick={() => handleSort('semaforo')} className="py-3.5 px-4 text-center cursor-pointer hover:text-white transition-colors group">
+                  <div className="flex items-center justify-center gap-1">
+                    <span>Semáforo</span>
+                    {renderSortIcon('semaforo')}
+                  </div>
+                </th>
+                <th onClick={() => handleSort('cliente')} className="py-3.5 px-4 cursor-pointer hover:text-white transition-colors group">
+                  <div className="flex items-center gap-1.5">
+                    <span>Cliente / RUC</span>
+                    {renderSortIcon('cliente')}
+                  </div>
+                </th>
+                <th onClick={() => handleSort('codigo_contrato')} className="py-3.5 px-4 cursor-pointer hover:text-white transition-colors group">
+                  <div className="flex items-center gap-1.5">
+                    <span>Contrato</span>
+                    {renderSortIcon('codigo_contrato')}
+                  </div>
+                </th>
+                <th onClick={() => handleSort('fecha_vencimiento')} className="py-3.5 px-4 cursor-pointer hover:text-white transition-colors group">
+                  <div className="flex items-center gap-1.5">
+                    <span>Vencimiento</span>
+                    {renderSortIcon('fecha_vencimiento')}
+                  </div>
+                </th>
+                <th onClick={() => handleSort('dias_restantes')} className="py-3.5 px-4 text-center cursor-pointer hover:text-white transition-colors group">
+                  <div className="flex items-center justify-center gap-1.5">
+                    <span>Días Restantes</span>
+                    {renderSortIcon('dias_restantes')}
+                  </div>
+                </th>
+                <th onClick={() => handleSort('cobertura_pct')} className="py-3.5 px-4 text-center cursor-pointer hover:text-white transition-colors group">
+                  <div className="flex items-center justify-center gap-1.5">
+                    <span>Cobertura</span>
+                    {renderSortIcon('cobertura_pct')}
+                  </div>
+                </th>
+                <th onClick={() => handleSort('planes')} className="py-3.5 px-4 cursor-pointer hover:text-white transition-colors group">
+                  <div className="flex items-center gap-1.5">
+                    <span>Planes Contratados</span>
+                    {renderSortIcon('planes')}
+                  </div>
+                </th>
+                <th onClick={() => handleSort('monto_mensual_referencial')} className="py-3.5 px-4 text-right cursor-pointer hover:text-white transition-colors group">
+                  <div className="flex items-center justify-end gap-1.5">
+                    <span>Monto Referencial</span>
+                    {renderSortIcon('monto_mensual_referencial')}
+                  </div>
+                </th>
+                <th onClick={() => handleSort('renovacion_automatica')} className="py-3.5 px-4 text-center cursor-pointer hover:text-white transition-colors group">
+                  <div className="flex items-center justify-center gap-1.5">
+                    <span>Renovación</span>
+                    {renderSortIcon('renovacion_automatica')}
+                  </div>
+                </th>
                 <th className="py-3.5 px-4 text-right">Acción</th>
               </tr>
             </thead>

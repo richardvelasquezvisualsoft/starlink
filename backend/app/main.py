@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
 from app.core.config import settings
 from app.core.database import engine, Base
-from app.api.endpoints import auth, dashboard, crud, operation, billing, geozonas, reseller_dashboard, usuarios, seguridad, perfil
+from app.api.endpoints import auth, dashboard, crud, operation, billing, geozonas, reseller_dashboard, usuarios, seguridad, perfil, menus, asignaciones, solicitudes
 from app.scripts.seed import run_seed
 
 # Initialize Database tables
@@ -65,8 +65,9 @@ app.include_router(reseller_dashboard.router, prefix=f"{settings.API_V1_STR}/res
 app.include_router(usuarios.router, prefix=f"{settings.API_V1_STR}/usuarios", tags=["usuarios"])
 app.include_router(seguridad.router, prefix=f"{settings.API_V1_STR}/seguridad", tags=["seguridad"])
 app.include_router(perfil.router, prefix=f"{settings.API_V1_STR}/perfil", tags=["perfil"])
-from app.api.endpoints import solicitudes
 app.include_router(solicitudes.router, prefix=f"{settings.API_V1_STR}/solicitudes", tags=["solicitudes"])
+app.include_router(menus.router, prefix=f"{settings.API_V1_STR}/menus", tags=["menus"])
+app.include_router(asignaciones.router, prefix=f"{settings.API_V1_STR}/asignaciones", tags=["asignaciones"])
 
 @app.on_event("startup")
 def startup_event():

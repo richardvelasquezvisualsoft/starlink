@@ -72,6 +72,21 @@ export const ClienteDashboard: React.FC = () => {
     { periodo: 'Jun', criticas: 4, advertencias: 11 },
   ];
 
+  const calidadServicioData = [
+    { periodo: 'Oct', calidad: 99.9, latencia: 42 },
+    { periodo: 'Nov', calidad: 99.8, latencia: 45 },
+    { periodo: 'Dic', calidad: 98.5, latencia: 55 },
+    { periodo: 'Ene', calidad: 99.9, latencia: 38 },
+    { periodo: 'Feb', calidad: 100.0, latencia: 35 },
+    { periodo: 'Mar', calidad: 99.5, latencia: 48 },
+    { periodo: 'Abr', calidad: 99.2, latencia: 52 },
+    { periodo: 'May', calidad: 98.8, latencia: 60 },
+    { periodo: 'Jun', calidad: 99.7, latencia: 40 },
+    { periodo: 'Jul', calidad: 99.9, latencia: 37 },
+    { periodo: 'Ago', calidad: 100.0, latencia: 34 },
+    { periodo: 'Sep', calidad: 99.8, latencia: 39 },
+  ];
+
 
   if (loading) {
     return (
@@ -157,11 +172,20 @@ export const ClienteDashboard: React.FC = () => {
           <div className="h-[250px]">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={consumoData}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                <XAxis dataKey="periodo" fontSize={11} tickMargin={10} />
-                <YAxis fontSize={11} />
-                <Tooltip />
-                <Area type="monotone" dataKey="consumido_gb" name="Consumo (GB)" stroke="var(--color-brand-primary)" fill="var(--color-brand-primary-soft)" strokeWidth={2} />
+                <defs>
+                  <linearGradient id="colorConsumo" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#00A8E8" stopOpacity={0.8}/>
+                    <stop offset="95%" stopColor="#00A8E8" stopOpacity={0.1}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.2} />
+                <XAxis dataKey="periodo" fontSize={11} tickMargin={10} stroke="#888" />
+                <YAxis fontSize={11} stroke="#888" />
+                <Tooltip 
+                  contentStyle={{ backgroundColor: '#1f2937', borderColor: '#374151', color: '#fff' }}
+                  itemStyle={{ color: 'var(--color-brand-primary)' }}
+                />
+                <Area type="monotone" dataKey="consumido_gb" name="Consumo (GB)" stroke="var(--color-brand-primary)" fill="url(#colorConsumo)" strokeWidth={3} />
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -185,6 +209,31 @@ export const ClienteDashboard: React.FC = () => {
         </div>
       </div>
       
+      {/* Service Quality Trend */}
+      <div className="bg-st-surface border border-st-border rounded-xl p-5 mt-6">
+        <h2 className="text-sm font-bold text-st-primary uppercase tracking-wider mb-4">Variación de la Calidad de Servicio (12 Meses)</h2>
+        <div className="h-[250px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={calidadServicioData}>
+              <defs>
+                <linearGradient id="colorCalidad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.8}/>
+                  <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0.1}/>
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.2} />
+              <XAxis dataKey="periodo" fontSize={11} tickMargin={10} stroke="#888" />
+              <YAxis domain={['dataMin - 1', 100]} fontSize={11} stroke="#888" tickFormatter={(v) => `${v}%`} />
+              <Tooltip 
+                contentStyle={{ backgroundColor: '#1f2937', borderColor: '#374151', color: '#fff' }}
+                itemStyle={{ color: '#8b5cf6' }}
+              />
+              <Area type="monotone" dataKey="calidad" name="Uptime SLA (%)" stroke="#8b5cf6" fill="url(#colorCalidad)" strokeWidth={3} />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
     </div>
   );
 };

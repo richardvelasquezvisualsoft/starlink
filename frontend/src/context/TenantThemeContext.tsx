@@ -6,6 +6,7 @@ import {
   TenantThemeTokens,
   generateBrandTokens,
   normalizeHexColor,
+  applyThemeToCssVariables
 } from '../utils/themeUtils';
 
 export interface TenantConfig {
@@ -55,6 +56,7 @@ export const TenantThemeProvider: React.FC<{ children: React.ReactNode }> = ({ c
     setLivePrimary(p);
     setLiveSecondary(s);
     setLogoVersion(Date.now());
+    applyThemeToCssVariables(p, s);
   }, []);
 
   const fetchTenantConfig = useCallback(async () => {
@@ -87,6 +89,7 @@ export const TenantThemeProvider: React.FC<{ children: React.ReactNode }> = ({ c
     const s = normalizeHexColor(secondary, DEFAULT_SECONDARY_COLOR);
     setLivePrimary(p);
     setLiveSecondary(s);
+    applyThemeToCssVariables(p, s);
   };
 
   const resetLiveTheme = () => {

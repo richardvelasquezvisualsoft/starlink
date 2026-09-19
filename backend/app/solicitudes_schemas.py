@@ -99,6 +99,7 @@ class SolicitudClienteComentarioResponse(SolicitudClienteComentarioCreate):
     id: int
     solicitud_id: int
     usuario_id: Optional[int] = None
+    usuario_nombre: Optional[str] = None
     fecha_comentario: datetime
 
     class Config:
@@ -116,6 +117,7 @@ class SolicitudClienteDocumentoResponse(BaseModel):
     archivo_tamano_bytes: Optional[int] = None
     visibilidad: str
     subido_por_usuario_id: Optional[int] = None
+    usuario_nombre: Optional[str] = None
     fecha_subida: datetime
 
     class Config:

@@ -1,11 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Database,
   Search,
   Download,
   AlertCircle,
   TrendingUp,
-  FileText
+  FileText,
+  ChevronUp,
+  ChevronDown,
+  ArrowUpDown
 } from 'lucide-react';
 import {
   AreaChart,
@@ -61,80 +64,26 @@ export const ConsumptionReport: React.FC = () => {
     const fetchInitialData = async () => {
       try {
         setLoading(true);
-        // 1. Fetch accounts
-        const accRes = await client.get('/cuentas');
-        setAccounts(accRes.data);
-
-        // 2. Fetch chart data
         const kpiParams: any = {};
         if (selectedAccount) kpiParams.cuenta_id = selectedAccount;
         if (selectedYear) kpiParams.year = selectedYear;
         if (selectedMonth) kpiParams.month = selectedMonth;
-        const chartRes = await client.get('/dashboard/chart', { params: kpiParams });
-        setChartData(chartRes.data);
 
-        // 3. Fetch service lines
-        const linesRes = await client.get('/lineas-servicio');
-        
-        // Compile consumption metrics per line (reading from DB saldos history or fallback mock)
-        const compiledLines: ConsumptionLineItem[] = linesRes.data.map((l: any) => {
-          const plan = l.plan_contratado || 'Standard';
-          
-          let limit = 250;
-          let consumed = 0;
-          let excess = 0;
-          
-          // Filter saldos by selected year and month
-          let monthSaldos = l.saldos || [];
-          if (selectedYear && selectedMonth) {
-             monthSaldos = monthSaldos.filter((s: any) => {
-                const date = new Date(s.fecha_hora_lectura);
-                return date.getFullYear() === selectedYear && (date.getMonth() + 1) === selectedMonth;
-             });
-          }
-          
-          if (monthSaldos && monthSaldos.length > 0) {
-            // Get latest saldo sorted by date
-            const sortedSaldos = [...monthSaldos].sort((a: any, b: any) => 
-              new Date(b.fecha_hora_lectura).getTime() - new Date(a.fecha_hora_lectura).getTime()
-            );
-            const latestSaldo = sortedSaldos[0];
-            limit = latestSaldo.bolsa_contratada_gb ? parseFloat(latestSaldo.bolsa_contratada_gb) : limit;
-            consumed = latestSaldo.total_consumido_gb ? parseFloat(latestSaldo.total_consumido_gb) : 0;
-            excess = latestSaldo.consumo_excedente_opt_in_gb ? parseFloat(latestSaldo.consumo_excedente_opt_in_gb) : 0;
-          } else {
-            consumed = 0;
-            excess = 0;
-          }
+        const [accRes, chartRes, linesRes] = await Promise.all([
+          client.get('/cuentas'),
+          client.get('/dashboard/chart', { params: kpiParams }),
+          client.get('/dashboard/consumption/lines', { params: kpiParams })
+        ]);
 
-          const overuseCost = excess * 0.25; // $0.25 per GB over limit
+        setAccounts(accRes.data || []);
 
-          return {
-            id: l.id,
-            numero_linea: l.numero_linea,
-            nombre: l.nombre,
-            dispositivo_name: l.dispositivo?.nombre || 'Terminal',
-            device_id: l.dispositivo?.device_id || 'N/A',
-            cuenta_nombre: l.cuenta?.nombre || 'Sin cuenta',
-            plan_contratado: plan,
-            limite_gb: limit,
-            consumido_gb: consumed,
-            exceso_gb: excess,
-            costo_adicional: overuseCost,
-            permitir_excedentes_opt_in: l.permitir_excedentes_opt_in || false
-          };
-        });
+        const rawData = chartRes.data;
+        const dataArray = Array.isArray(rawData)
+          ? rawData
+          : (rawData?.legacyData || rawData?.trafficSeries || []);
+        setChartData(dataArray);
 
-        // Filter by selected account if needed
-        if (selectedAccount) {
-          const accountId = parseInt(selectedAccount);
-          setLines(compiledLines.filter((l: any) => {
-            const matchedLine = linesRes.data.find((orig: any) => orig.id === l.id);
-            return matchedLine?.cuenta_id === accountId;
-          }));
-        } else {
-          setLines(compiledLines);
-        }
+        setLines(linesRes.data || []);
       } catch (err) {
         console.error('Error fetching consumption data', err);
       } finally {
@@ -153,13 +102,59 @@ export const ConsumptionReport: React.FC = () => {
     l.cuenta_nombre.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const [sortBy, setSortBy] = useState<string>('numero_linea');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+
+  const handleSort = (field: string) => {
+    if (sortBy === field) {
+      setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortBy(field);
+      setSortDirection('asc');
+    }
+  };
+
+  const sortedLines = useMemo(() => {
+    const list = [...filteredLines];
+    list.sort((a: any, b: any) => {
+      let aVal = a[sortBy];
+      let bVal = b[sortBy];
+
+      if (sortBy === 'uso_pct') {
+        aVal = a.limite_gb ? (a.consumido_gb / a.limite_gb) * 100 : 0;
+        bVal = b.limite_gb ? (b.consumido_gb / b.limite_gb) * 100 : 0;
+      }
+
+      if (aVal === undefined || aVal === null) aVal = '';
+      if (bVal === undefined || bVal === null) bVal = '';
+
+      if (typeof aVal === 'string') {
+        const comp = aVal.localeCompare(String(bVal));
+        return sortDirection === 'asc' ? comp : -comp;
+      }
+      return sortDirection === 'asc' ? Number(aVal) - Number(bVal) : Number(bVal) - Number(aVal);
+    });
+    return list;
+  }, [filteredLines, sortBy, sortDirection]);
+
   // Pagination calculations
-  const totalItems = filteredLines.length;
+  const totalItems = sortedLines.length;
   const totalPages = Math.ceil(totalItems / itemsPerPage);
-  const pagedLines = filteredLines.slice(
+  const pagedLines = sortedLines.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
+
+  const renderSortIcon = (field: string) => {
+    if (sortBy === field) {
+      return sortDirection === 'asc' ? (
+        <ChevronUp className="w-3 h-3 text-st-accent flex-shrink-0" />
+      ) : (
+        <ChevronDown className="w-3 h-3 text-st-accent flex-shrink-0" />
+      );
+    }
+    return <ArrowUpDown className="w-2.5 h-2.5 text-st-muted/40 group-hover:text-st-muted flex-shrink-0 transition-colors" />;
+  };
 
   // Compute summary metrics
   const totalConsumed = lines.reduce((acc, l) => acc + l.consumido_gb, 0);
@@ -167,7 +162,19 @@ export const ConsumptionReport: React.FC = () => {
   const totalCost = lines.reduce((acc, l) => acc + l.costo_adicional, 0);
   const linesOverLimit = lines.filter((l) => l.consumido_gb > l.limite_gb).length;
 
-  const isGlobal = window.location.pathname === '/reseller/consumo';
+  const formatDayLabel = (dateStr: string) => {
+    if (!dateStr) return '';
+    try {
+      const parts = dateStr.split('-');
+      if (parts.length === 3) {
+        const d = parts[2].substring(0, 2);
+        const m = parseInt(parts[1], 10);
+        const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+        return `${parseInt(d, 10)} ${months[m - 1] || ''}`;
+      }
+    } catch {}
+    return dateStr;
+  };
 
   return (
     <div className="space-y-6 font-quicksand">
@@ -242,7 +249,7 @@ export const ConsumptionReport: React.FC = () => {
             <p className="text-2xl font-bold text-white font-sans">
               {totalConsumed.toLocaleString('es-CL', { maximumFractionDigits: 1 })} <span className="text-xs font-semibold text-st-muted">GB</span>
             </p>
-            <p className="text-[9px] text-st-accent font-semibold uppercase">Acumulado mes actual</p>
+            <p className="text-[9px] text-st-accent font-semibold uppercase">Acumulado mes seleccionado</p>
           </div>
           <div className="w-10 h-10 rounded-lg bg-st-accent/15 text-st-accent flex items-center justify-center flex-shrink-0">
             <TrendingUp className="w-5 h-5" />
@@ -294,7 +301,7 @@ export const ConsumptionReport: React.FC = () => {
         <div className="flex justify-between items-center">
           <div>
             <h2 className="text-sm font-bold text-white uppercase tracking-wider">Tendencia de Tráfico de Datos</h2>
-            <p className="text-[11px] text-st-muted">Consumo diario agregado (últimos 30 días) en la flota.</p>
+            <p className="text-[11px] text-st-muted">Consumo diario agregado en la flota.</p>
           </div>
           {/* Chart toggles */}
           <div className="flex bg-st-bg p-1 rounded-lg border border-st-border">
@@ -329,25 +336,37 @@ export const ConsumptionReport: React.FC = () => {
               {chartType === 'area' ? (
                 <AreaChart data={chartData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#222222" />
-                  <XAxis dataKey="timestamp" stroke="#9CA3AF" fontSize={9} />
+                  <XAxis dataKey="timestamp" stroke="#9CA3AF" fontSize={9} tickFormatter={formatDayLabel} />
                   <YAxis stroke="#9CA3AF" fontSize={9} unit=" GB" />
-                  <Tooltip contentStyle={{ backgroundColor: '#111111', borderColor: '#222222', borderRadius: '8px' }} />
+                  <Tooltip
+                    contentStyle={{ backgroundColor: '#111111', borderColor: '#222222', borderRadius: '8px', color: '#fff' }}
+                    formatter={(val: any) => [`${Number(val || 0).toLocaleString('es-CL', { maximumFractionDigits: 1 })} GB`, 'Consumo']}
+                    labelFormatter={(label: any) => `Fecha: ${label}`}
+                  />
                   <Area type="monotone" dataKey="data_usage_gb" stroke="#00A8E8" fill="#00A8E8" fillOpacity={0.15} strokeWidth={2} name="Datos (GB)" />
                 </AreaChart>
               ) : chartType === 'bar' ? (
                 <BarChart data={chartData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#222222" />
-                  <XAxis dataKey="timestamp" stroke="#9CA3AF" fontSize={9} />
+                  <XAxis dataKey="timestamp" stroke="#9CA3AF" fontSize={9} tickFormatter={formatDayLabel} />
                   <YAxis stroke="#9CA3AF" fontSize={9} unit=" GB" />
-                  <Tooltip contentStyle={{ backgroundColor: '#111111', borderColor: '#222222', borderRadius: '8px' }} />
+                  <Tooltip
+                    contentStyle={{ backgroundColor: '#111111', borderColor: '#222222', borderRadius: '8px', color: '#fff' }}
+                    formatter={(val: any) => [`${Number(val || 0).toLocaleString('es-CL', { maximumFractionDigits: 1 })} GB`, 'Consumo']}
+                    labelFormatter={(label: any) => `Fecha: ${label}`}
+                  />
                   <Bar dataKey="data_usage_gb" fill="#00A8E8" radius={[4, 4, 0, 0]} name="Datos (GB)" />
                 </BarChart>
               ) : (
                 <LineChart data={chartData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#222222" />
-                  <XAxis dataKey="timestamp" stroke="#9CA3AF" fontSize={9} />
+                  <XAxis dataKey="timestamp" stroke="#9CA3AF" fontSize={9} tickFormatter={formatDayLabel} />
                   <YAxis stroke="#9CA3AF" fontSize={9} unit=" GB" />
-                  <Tooltip contentStyle={{ backgroundColor: '#111111', borderColor: '#222222', borderRadius: '8px' }} />
+                  <Tooltip
+                    contentStyle={{ backgroundColor: '#111111', borderColor: '#222222', borderRadius: '8px', color: '#fff' }}
+                    formatter={(val: any) => [`${Number(val || 0).toLocaleString('es-CL', { maximumFractionDigits: 1 })} GB`, 'Consumo']}
+                    labelFormatter={(label: any) => `Fecha: ${label}`}
+                  />
                   <Line type="monotone" dataKey="data_usage_gb" stroke="#00A8E8" strokeWidth={2.5} dot={{ r: 2 }} name="Datos (GB)" />
                 </LineChart>
               )}
@@ -357,8 +376,7 @@ export const ConsumptionReport: React.FC = () => {
       </div>
 
       {/* Main Data Table */}
-      {!isGlobal && (
-        <div className="bg-st-surface border border-st-border rounded-xl p-5 space-y-4">
+      <div className="bg-st-surface border border-st-border rounded-xl p-5 space-y-4">
           <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
             <h2 className="text-sm font-bold text-white uppercase tracking-wider self-start sm:self-center">Detalle de Consumos por Línea</h2>
           {/* Search bar */}
@@ -377,18 +395,68 @@ export const ConsumptionReport: React.FC = () => {
         {/* Data Table */}
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="border-b border-st-border text-[10px] font-bold text-st-muted uppercase tracking-wider">
-                <th className="py-3 px-4">Línea</th>
-                <th className="py-3 px-4">Nombre Alías</th>
-                <th className="py-3 px-4">Device ID</th>
-                <th className="py-3 px-4">Cuenta</th>
-                <th className="py-3 px-4">Plan Starlink</th>
-                <th className="py-3 px-4 text-right">Límite</th>
-                <th className="py-3 px-4 text-right">Consumido</th>
-                <th className="py-3 px-4 text-center">Uso %</th>
-                <th className="py-3 px-4 text-center">Excedentes</th>
-                <th className="py-3 px-4 text-right">Cargos Extra</th>
+            <thead className="border-b border-st-border text-[10px] font-bold text-st-muted uppercase tracking-wider select-none bg-st-bg/50">
+              <tr>
+                <th onClick={() => handleSort('numero_linea')} className="py-3 px-4 cursor-pointer hover:text-white transition-colors group">
+                  <div className="flex items-center gap-1">
+                    <span>Línea</span>
+                    {renderSortIcon('numero_linea')}
+                  </div>
+                </th>
+                <th onClick={() => handleSort('nombre')} className="py-3 px-4 cursor-pointer hover:text-white transition-colors group">
+                  <div className="flex items-center gap-1">
+                    <span>Nombre Alías</span>
+                    {renderSortIcon('nombre')}
+                  </div>
+                </th>
+                <th onClick={() => handleSort('device_id')} className="py-3 px-4 cursor-pointer hover:text-white transition-colors group">
+                  <div className="flex items-center gap-1">
+                    <span>Device ID</span>
+                    {renderSortIcon('device_id')}
+                  </div>
+                </th>
+                <th onClick={() => handleSort('cuenta_nombre')} className="py-3 px-4 cursor-pointer hover:text-white transition-colors group">
+                  <div className="flex items-center gap-1">
+                    <span>Cuenta</span>
+                    {renderSortIcon('cuenta_nombre')}
+                  </div>
+                </th>
+                <th onClick={() => handleSort('plan_contratado')} className="py-3 px-4 cursor-pointer hover:text-white transition-colors group">
+                  <div className="flex items-center gap-1">
+                    <span>Plan Starlink</span>
+                    {renderSortIcon('plan_contratado')}
+                  </div>
+                </th>
+                <th onClick={() => handleSort('limite_gb')} className="py-3 px-4 text-right cursor-pointer hover:text-white transition-colors group">
+                  <div className="flex items-center justify-end gap-1">
+                    <span>Límite</span>
+                    {renderSortIcon('limite_gb')}
+                  </div>
+                </th>
+                <th onClick={() => handleSort('consumido_gb')} className="py-3 px-4 text-right cursor-pointer hover:text-white transition-colors group">
+                  <div className="flex items-center justify-end gap-1">
+                    <span>Consumido</span>
+                    {renderSortIcon('consumido_gb')}
+                  </div>
+                </th>
+                <th onClick={() => handleSort('uso_pct')} className="py-3 px-4 text-center cursor-pointer hover:text-white transition-colors group">
+                  <div className="flex items-center justify-center gap-1">
+                    <span>Uso %</span>
+                    {renderSortIcon('uso_pct')}
+                  </div>
+                </th>
+                <th onClick={() => handleSort('permitir_excedentes_opt_in')} className="py-3 px-4 text-center cursor-pointer hover:text-white transition-colors group">
+                  <div className="flex items-center justify-center gap-1">
+                    <span>Excedentes</span>
+                    {renderSortIcon('permitir_excedentes_opt_in')}
+                  </div>
+                </th>
+                <th onClick={() => handleSort('costo_adicional')} className="py-3 px-4 text-right cursor-pointer hover:text-white transition-colors group">
+                  <div className="flex items-center justify-end gap-1">
+                    <span>Cargos Extra</span>
+                    {renderSortIcon('costo_adicional')}
+                  </div>
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-st-border/30 text-xs">
@@ -480,7 +548,6 @@ export const ConsumptionReport: React.FC = () => {
           </div>
         )}
       </div>
-      )}
     </div>
   );
 };

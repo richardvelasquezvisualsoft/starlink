@@ -218,7 +218,7 @@ const ResellerClients: React.FC = () => {
         <div className="flex items-center gap-3">
           <button
             onClick={fetchData}
-            className="flex items-center gap-2 px-3.5 py-2 bg-st-surface border border-st-border rounded-lg text-xs font-semibold text-white hover:bg-white/5 active:scale-[0.98] transition-all cursor-pointer"
+            className="flex items-center gap-2 px-4 h-9 bg-st-surface border border-st-border rounded-lg text-xs font-semibold text-white hover:bg-white/5 active:scale-[0.98] transition-all cursor-pointer whitespace-nowrap"
           >
             <RefreshCw className={`w-3.5 h-3.5 text-st-muted ${loading ? 'animate-spin' : ''}`} />
             <span>Refrescar</span>
@@ -226,7 +226,7 @@ const ResellerClients: React.FC = () => {
 
           <button
             onClick={exportToCSV}
-            className="flex items-center gap-2 px-3.5 py-2 bg-st-surface border border-st-border rounded-lg text-xs font-semibold text-white hover:bg-white/5 active:scale-[0.98] transition-all cursor-pointer"
+            className="flex items-center gap-2 px-4 h-9 bg-st-surface border border-st-border rounded-lg text-xs font-semibold text-white hover:bg-white/5 active:scale-[0.98] transition-all cursor-pointer whitespace-nowrap"
           >
             <Download className="w-3.5 h-3.5 text-st-accent" />
             <span>Exportar</span>
@@ -234,10 +234,10 @@ const ResellerClients: React.FC = () => {
 
           <button
             onClick={() => navigate('/reseller/aprovisionamiento')}
-            className="flex items-center gap-2 px-4 py-2 bg-st-primary text-black text-xs font-bold uppercase rounded-lg hover:bg-white/90 active:scale-[0.98] transition-all cursor-pointer"
+            className="flex items-center gap-2 px-4 h-9 bg-st-primary text-black text-xs font-bold uppercase rounded-lg hover:bg-white/90 active:scale-[0.98] transition-all cursor-pointer whitespace-nowrap"
           >
             <Plus className="w-4 h-4 stroke-[3]" />
-            <span>Nuevo cliente</span>
+            <span>Nuevo</span>
           </button>
         </div>
       </div>
@@ -615,7 +615,7 @@ const ResellerClients: React.FC = () => {
                       onClick={() => navigate(`/reseller/clientes/${item.tenant_id}/dashboard`)}
                     >
                       <div className="space-y-0.5">
-                        <p className="font-bold text-white group-hover:text-st-accent transition-colors leading-tight">
+                        <p className="font-bold text-white group-hover:text-cyan-400 transition-colors leading-tight">
                           {item.cliente}
                         </p>
                         <p className="text-[10px] font-mono text-st-muted tracking-wide">
@@ -649,7 +649,7 @@ const ResellerClients: React.FC = () => {
                     {/* Plan Contratado */}
                     <td className="py-3 px-4">
                       {item.planes_contratados ? (
-                        <span className="inline-block bg-st-accent/15 border border-st-accent/30 text-st-accent font-mono text-[10px] font-semibold px-2 py-0.5 rounded truncate max-w-[160px]">
+                        <span className="inline-block bg-white/10 border border-white/20 text-white font-mono text-[11px] font-semibold px-2.5 py-1 rounded-md truncate max-w-[180px] shadow-sm tracking-wide">
                           {item.planes_contratados}
                         </span>
                       ) : (

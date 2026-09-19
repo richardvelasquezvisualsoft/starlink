@@ -112,7 +112,26 @@ def get_solicitudes(
         s.solicitado_por_nombre = s.solicitado_por.nombre if s.solicitado_por else None
         s.asignado_a_nombre = s.asignado_a.nombre if s.asignado_a else None
         s.linea_servicio_nombre = s.linea_servicio.numero_linea if s.linea_servicio else None
-        if s.vista_sla and len(s.vista_sla) > 0:
+        datos = s.datos_solicitud or {}
+        if isinstance(datos, dict) and (datos.get('demo_sla') or datos.get('color_objetivo')):
+            target_color = str(datos.get('color_objetivo', 'VERDE')).upper()
+            total_min = s.sla_resolucion_minutos or 240
+            if target_color == 'VERDE':
+                s.sla_semaforo = 'VERDE'
+                s.sla_minutos_consumidos = int(total_min * 0.15)
+                s.sla_minutos_restantes = total_min - s.sla_minutos_consumidos
+                s.sla_porcentaje_consumido = 15.0
+            elif target_color == 'AMARILLO':
+                s.sla_semaforo = 'AMARILLO'
+                s.sla_minutos_consumidos = int(total_min * 0.85)
+                s.sla_minutos_restantes = total_min - s.sla_minutos_consumidos
+                s.sla_porcentaje_consumido = 85.0
+            else:
+                s.sla_semaforo = 'ROJO'
+                s.sla_minutos_consumidos = int(total_min * 1.15)
+                s.sla_minutos_restantes = 0
+                s.sla_porcentaje_consumido = 115.0
+        elif s.vista_sla and len(s.vista_sla) > 0:
             s.sla_semaforo = s.vista_sla[0].sla_semaforo
             s.sla_minutos_restantes = s.vista_sla[0].sla_minutos_restantes
             s.sla_minutos_consumidos = s.vista_sla[0].sla_minutos_consumidos
@@ -258,7 +277,26 @@ def get_solicitud(solicitud_id: int, db: Session = Depends(get_db), tenant_ctx: 
     solicitud.asignado_a_nombre = solicitud.asignado_a.nombre if solicitud.asignado_a else None
     solicitud.linea_servicio_nombre = solicitud.linea_servicio.numero_linea if solicitud.linea_servicio else None
     
-    if solicitud.vista_sla:
+    datos = solicitud.datos_solicitud or {}
+    if isinstance(datos, dict) and (datos.get('demo_sla') or datos.get('color_objetivo')):
+        target_color = str(datos.get('color_objetivo', 'VERDE')).upper()
+        total_min = solicitud.sla_resolucion_minutos or 240
+        if target_color == 'VERDE':
+            solicitud.sla_semaforo = 'VERDE'
+            solicitud.sla_minutos_consumidos = int(total_min * 0.15)
+            solicitud.sla_minutos_restantes = total_min - solicitud.sla_minutos_consumidos
+            solicitud.sla_porcentaje_consumido = 15.0
+        elif target_color == 'AMARILLO':
+            solicitud.sla_semaforo = 'AMARILLO'
+            solicitud.sla_minutos_consumidos = int(total_min * 0.85)
+            solicitud.sla_minutos_restantes = total_min - solicitud.sla_minutos_consumidos
+            solicitud.sla_porcentaje_consumido = 85.0
+        else:
+            solicitud.sla_semaforo = 'ROJO'
+            solicitud.sla_minutos_consumidos = int(total_min * 1.15)
+            solicitud.sla_minutos_restantes = 0
+            solicitud.sla_porcentaje_consumido = 115.0
+    elif solicitud.vista_sla:
         solicitud.sla_semaforo = solicitud.vista_sla[0].sla_semaforo if solicitud.vista_sla else None
         solicitud.sla_minutos_restantes = solicitud.vista_sla[0].sla_minutos_restantes if solicitud.vista_sla else None
         solicitud.sla_minutos_consumidos = solicitud.vista_sla[0].sla_minutos_consumidos if solicitud.vista_sla else None
@@ -277,6 +315,80 @@ def get_solicitud(solicitud_id: int, db: Session = Depends(get_db), tenant_ctx: 
     else:
         solicitud.sla_semaforo = 'SIN_SLA'
 
+    return solicitud
+
+
+@router.put("/{solicitud_id}", response_model=SolicitudClienteResponse)
+def update_solicitud(
+    solicitud_id: int,
+    solicitud_in: SolicitudClienteUpdate,
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user),
+    tenant_ctx: dict = Depends(get_tenant_context)
+):
+    solicitud = db.query(SolicitudCliente).filter(SolicitudCliente.id == solicitud_id).first()
+    if not solicitud:
+        raise HTTPException(status_code=404, detail="Solicitud no encontrada")
+    tenant_id = tenant_ctx.get("tenant_id")
+    if tenant_id and solicitud.tenant_id != tenant_id:
+        raise HTTPException(status_code=403, detail="No autorizado para modificar solicitudes de otro tenant")
+    
+    estado_anterior = solicitud.estado
+    if solicitud_in.estado and solicitud_in.estado != estado_anterior:
+        solicitud.estado = solicitud_in.estado
+        now = datetime.utcnow()
+        if solicitud_in.estado in ["ATENDIDA", "APROBADA"] and not solicitud.fecha_atendida:
+            solicitud.fecha_atendida = now
+        if solicitud_in.estado in ["CERRADA", "CANCELADA", "RECHAZADA"] and not solicitud.fecha_cierre:
+            solicitud.fecha_cierre = now
+        
+        historial = SolicitudClienteHistorial(
+            solicitud_id=solicitud.id,
+            tipo_evento="CAMBIO_ESTADO",
+            estado_anterior=estado_anterior,
+            estado_nuevo=solicitud_in.estado,
+            comentario=f"Estado cambiado de {estado_anterior} a {solicitud_in.estado}",
+            usuario_id=current_user.id
+        )
+        db.add(historial)
+        
+    if solicitud_in.asignado_a_usuario_id is not None:
+        solicitud.asignado_a_usuario_id = solicitud_in.asignado_a_usuario_id
+        historial = SolicitudClienteHistorial(
+            solicitud_id=solicitud.id,
+            tipo_evento="REASIGNACION",
+            comentario=f"Asignado a usuario ID {solicitud_in.asignado_a_usuario_id}",
+            usuario_id=current_user.id
+        )
+        db.add(historial)
+        
+    db.commit()
+    db.refresh(solicitud)
+    
+    solicitud.tipo_solicitud_nombre = solicitud.tipo_solicitud.nombre if solicitud.tipo_solicitud else None
+    solicitud.solicitado_por_nombre = solicitud.solicitado_por.nombre if solicitud.solicitado_por else None
+    solicitud.asignado_a_nombre = solicitud.asignado_a.nombre if solicitud.asignado_a else None
+    solicitud.linea_servicio_nombre = solicitud.linea_servicio.numero_linea if solicitud.linea_servicio else None
+    
+    if solicitud.vista_sla:
+        solicitud.sla_semaforo = solicitud.vista_sla[0].sla_semaforo if solicitud.vista_sla else None
+        solicitud.sla_minutos_restantes = solicitud.vista_sla[0].sla_minutos_restantes if solicitud.vista_sla else None
+        solicitud.sla_minutos_consumidos = solicitud.vista_sla[0].sla_minutos_consumidos if solicitud.vista_sla else None
+        solicitud.sla_porcentaje_consumido = solicitud.vista_sla[0].sla_porcentaje_consumido if solicitud.vista_sla else None
+        solicitud.tiene_pausa_abierta = solicitud.vista_sla[0].tiene_pausa_abierta if solicitud.vista_sla else None
+    elif solicitud.fecha_limite_resolucion:
+        now = datetime.utcnow()
+        diff_seconds = (solicitud.fecha_limite_resolucion - now).total_seconds()
+        solicitud.sla_minutos_restantes = int(diff_seconds / 60.0)
+        if diff_seconds < 0:
+            solicitud.sla_semaforo = 'ROJO'
+        elif diff_seconds <= 14400:
+            solicitud.sla_semaforo = 'AMARILLO'
+        else:
+            solicitud.sla_semaforo = 'VERDE'
+    else:
+        solicitud.sla_semaforo = 'SIN_SLA'
+        
     return solicitud
 
 
@@ -307,10 +419,17 @@ def get_solicitud_comentarios(
     tenant_id = tenant_ctx.get("tenant_id")
     if tenant_id and solicitud.tenant_id != tenant_id:
         raise HTTPException(status_code=403, detail="No autorizado")
-    return db.query(SolicitudClienteComentario).filter(
-        SolicitudClienteComentario.solicitud_id == solicitud_id,
-        SolicitudClienteComentario.visibilidad == "PUBLICO"
-    ).order_by(SolicitudClienteComentario.fecha_comentario.desc()).all()
+    
+    is_reseller = (tenant_ctx.get("rol") == "RESELLER" or tenant_ctx.get("role") == "RESELLER")
+    query = db.query(SolicitudClienteComentario).filter(SolicitudClienteComentario.solicitud_id == solicitud_id)
+    if not is_reseller:
+        query = query.filter(SolicitudClienteComentario.visibilidad == "PUBLICO")
+    
+    comentarios = query.order_by(SolicitudClienteComentario.fecha_comentario.desc()).all()
+    for c in comentarios:
+        u = getattr(c, 'usuario', None)
+        c.usuario_nombre = u.nombre if u else (f"Usuario {c.usuario_id}" if getattr(c, 'usuario_id', None) else "Cliente")
+    return comentarios
 
 
 @router.post("/{solicitud_id}/comentarios", response_model=SolicitudClienteComentarioResponse)
@@ -328,7 +447,9 @@ def add_solicitud_comentario(
     if tenant_id and solicitud.tenant_id != tenant_id:
         raise HTTPException(status_code=403, detail="No autorizado")
         
-    vis = "PUBLICO"
+    is_reseller = (tenant_ctx.get("rol") == "RESELLER" or tenant_ctx.get("role") == "RESELLER")
+    vis = comentario.visibilidad if is_reseller else "PUBLICO"
+    
     nuevo_comentario = SolicitudClienteComentario(
         solicitud_id=solicitud_id,
         comentario=comentario.comentario,
@@ -340,13 +461,14 @@ def add_solicitud_comentario(
     historial = SolicitudClienteHistorial(
         solicitud_id=solicitud_id,
         tipo_evento="COMENTARIO_AGREGADO",
-        comentario="Nuevo comentario agregado",
+        comentario=f"Nuevo comentario ({vis.lower()})",
         usuario_id=current_user.id
     )
     db.add(historial)
     
     db.commit()
     db.refresh(nuevo_comentario)
+    nuevo_comentario.usuario_nombre = current_user.nombre
     return nuevo_comentario
 
 
@@ -363,11 +485,19 @@ def get_solicitud_documentos(
     if tenant_id and solicitud.tenant_id != tenant_id:
         raise HTTPException(status_code=403, detail="No autorizado")
         
-    return db.query(SolicitudClienteDocumento).filter(
+    is_reseller = (tenant_ctx.get("rol") == "RESELLER" or tenant_ctx.get("role") == "RESELLER")
+    query = db.query(SolicitudClienteDocumento).filter(
         SolicitudClienteDocumento.solicitud_id == solicitud_id,
-        SolicitudClienteDocumento.activo == True,
-        SolicitudClienteDocumento.visibilidad == "PUBLICO"
-    ).order_by(SolicitudClienteDocumento.fecha_subida.desc()).all()
+        SolicitudClienteDocumento.activo == True
+    )
+    if not is_reseller:
+        query = query.filter(SolicitudClienteDocumento.visibilidad == "PUBLICO")
+        
+    docs = query.order_by(SolicitudClienteDocumento.fecha_subida.desc()).all()
+    for d in docs:
+        subido = getattr(d, 'subido_por', None)
+        d.usuario_nombre = subido.nombre if subido else (f"Usuario {d.subido_por_usuario_id}" if getattr(d, 'subido_por_usuario_id', None) else "Usuario")
+    return docs
 
 
 @router.post("/{solicitud_id}/documentos", response_model=SolicitudClienteDocumentoResponse)
@@ -386,12 +516,13 @@ def upload_solicitud_documento(
     if tenant_id and solicitud.tenant_id != tenant_id:
         raise HTTPException(status_code=403, detail="No autorizado para modificar solicitudes de otro tenant")
         
-    if visibilidad == "INTERNO_RESELLER":
+    is_reseller = (tenant_ctx.get("rol") == "RESELLER" or tenant_ctx.get("role") == "RESELLER")
+    if not is_reseller and visibilidad == "INTERNO_RESELLER":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Visibilidad INTERNO_RESELLER no permitida para usuarios de CLIENTE"
         )
-    visibilidad_final = "PUBLICO"
+    visibilidad_final = visibilidad if is_reseller else "PUBLICO"
     
     upload_dir = "uploads/solicitudes"
     os.makedirs(upload_dir, exist_ok=True)
@@ -416,11 +547,12 @@ def upload_solicitud_documento(
     historial = SolicitudClienteHistorial(
         solicitud_id=solicitud_id,
         tipo_evento="DOCUMENTO_ADJUNTO",
-        comentario=f"Documento adjunto: {file.filename}",
+        comentario=f"Documento adjunto: {file.filename} ({visibilidad_final.lower()})",
         usuario_id=current_user.id
     )
     db.add(historial)
     
     db.commit()
     db.refresh(doc)
+    doc.usuario_nombre = current_user.nombre
     return doc

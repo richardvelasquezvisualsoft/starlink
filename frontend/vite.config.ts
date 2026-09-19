@@ -13,9 +13,15 @@ export default defineConfig({
   server: {
     port: 3050,
     host: '0.0.0.0',
-    allowedHosts: ['starlink.hospedajesvelasquez.com'],
+    allowedHosts: ['starlink.hospedajesvelasquez.com', 'localhost', '127.0.0.1'],
     watch: {
       usePolling: true,
+    },
+    proxy: {
+      '/api': {
+        target: 'http://backend:8050',
+        changeOrigin: true,
+      },
     },
   }
 })

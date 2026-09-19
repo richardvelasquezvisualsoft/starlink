@@ -129,10 +129,9 @@ export const GeolocationMap: React.FC = () => {
 
       L.control.zoom({ position: 'topright' }).addTo(map);
 
-      {/* CartoDB Dark Matter Fastly Tiles */}
-      L.tileLayer('https://cartodb-basemaps-{s}.global.ssl.fastly.net/dark_all/{z}/{x}/{y}.png', {
-        attribution: '&copy; OpenStreetMap &copy; CARTO',
-        subdomains: 'abcd',
+      {/* Google Maps Tiles */}
+      L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+        attribution: 'Map data &copy; Google',
         maxZoom: 19
       }).addTo(map);
 

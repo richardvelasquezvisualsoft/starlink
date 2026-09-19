@@ -1,14 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
 } from 'recharts';
 import { 
-  CreditCard, Calendar, Monitor, Filter, DollarSign, TrendingUp, AlertCircle, CheckCircle, XCircle, ShieldAlert
+  CreditCard, Calendar, Monitor, Filter, DollarSign, TrendingUp, AlertCircle, CheckCircle, XCircle, ShieldAlert,
+  ChevronUp, ChevronDown, ArrowUpDown
 } from 'lucide-react';
 import client from '../api/client';
-
-
-// Removed mock data
 
 const availableDevices = [
   { id: 'all', name: 'Todos los dispositivos' },
@@ -19,11 +17,51 @@ const BillingReport: React.FC = () => {
   const [selectedMonth, setSelectedMonth] = useState('08');
   const [selectedDevice, setSelectedDevice] = useState('all');
   
-
   const [validations, setValidations] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [billingData, setBillingData] = useState<any[]>([]);
+  const [sortBy, setSortBy] = useState<string>('fecha');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+
   const isGlobal = window.location.pathname === '/reseller/facturacion';
+
+  const handleSort = (field: string) => {
+    if (sortBy === field) {
+      setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortBy(field);
+      setSortDirection('desc');
+    }
+  };
+
+  const sortedValidations = useMemo(() => {
+    const list = [...validations];
+    list.sort((a, b) => {
+      let aVal = a[sortBy];
+      let bVal = b[sortBy];
+
+      if (aVal === undefined || aVal === null) aVal = '';
+      if (bVal === undefined || bVal === null) bVal = '';
+
+      if (typeof aVal === 'string') {
+        const comp = aVal.localeCompare(String(bVal));
+        return sortDirection === 'asc' ? comp : -comp;
+      }
+      return sortDirection === 'asc' ? Number(aVal) - Number(bVal) : Number(bVal) - Number(aVal);
+    });
+    return list;
+  }, [validations, sortBy, sortDirection]);
+
+  const renderSortIcon = (field: string) => {
+    if (sortBy === field) {
+      return sortDirection === 'asc' ? (
+        <ChevronUp className="w-3.5 h-3.5 text-st-accent flex-shrink-0" />
+      ) : (
+        <ChevronDown className="w-3.5 h-3.5 text-st-accent flex-shrink-0" />
+      );
+    }
+    return <ArrowUpDown className="w-3 h-3 text-st-muted/40 group-hover:text-st-muted flex-shrink-0 transition-colors" />;
+  };
 
   useEffect(() => {
     if (isGlobal) {
@@ -45,7 +83,6 @@ const BillingReport: React.FC = () => {
         const url = `/billing/details?year=${selectedYear}&month=${selectedMonth}`;
         const res = await client.get(url);
         
-        // Map backend details to billingData format expected by the frontend
         const mappedData = res.data.map((item: any) => ({
           mes: `${selectedYear}-${selectedMonth}`,
           contratado: item.mrc_usd || 250,
@@ -82,29 +119,59 @@ const BillingReport: React.FC = () => {
                 <ShieldAlert className="w-5 h-5 text-st-accent" /> Regla de Facturación al 100%
               </h2>
               <p className="text-xs text-st-muted mt-1">
-                Valida que el monto facturado por Starlink coincida exactamente con la suma asignada a los clientes y consumo interno.
+                Valida que el monto facturado por Starlink coincida exactamente con la suma asignada a los clientes y consumo interno. Haz clic en las cabeceras para ordenar.
               </p>
             </div>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm text-left">
-              <thead className="text-xs uppercase bg-black/20 text-st-muted">
+              <thead className="text-xs uppercase bg-black/20 text-st-muted select-none">
                 <tr>
-                  <th className="px-6 py-4 font-semibold tracking-wider">Factura Starlink</th>
-                  <th className="px-6 py-4 font-semibold tracking-wider">Fecha</th>
-                  <th className="px-6 py-4 font-semibold tracking-wider text-right">Monto Starlink</th>
-                  <th className="px-6 py-4 font-semibold tracking-wider text-right">Monto Asignado (Clientes)</th>
-                  <th className="px-6 py-4 font-semibold tracking-wider text-right">Diferencia</th>
-                  <th className="px-6 py-4 font-semibold tracking-wider text-center">Estado 100%</th>
+                  <th onClick={() => handleSort('invoice_id_externo')} className="px-6 py-4 font-semibold tracking-wider cursor-pointer hover:text-white transition-colors group">
+                    <div className="flex items-center gap-1.5">
+                      <span>Factura Starlink</span>
+                      {renderSortIcon('invoice_id_externo')}
+                    </div>
+                  </th>
+                  <th onClick={() => handleSort('fecha')} className="px-6 py-4 font-semibold tracking-wider cursor-pointer hover:text-white transition-colors group">
+                    <div className="flex items-center gap-1.5">
+                      <span>Fecha</span>
+                      {renderSortIcon('fecha')}
+                    </div>
+                  </th>
+                  <th onClick={() => handleSort('monto_total_facturado')} className="px-6 py-4 font-semibold tracking-wider text-right cursor-pointer hover:text-white transition-colors group">
+                    <div className="flex items-center justify-end gap-1.5">
+                      <span>Monto Starlink</span>
+                      {renderSortIcon('monto_total_facturado')}
+                    </div>
+                  </th>
+                  <th onClick={() => handleSort('monto_total_asignado')} className="px-6 py-4 font-semibold tracking-wider text-right cursor-pointer hover:text-white transition-colors group">
+                    <div className="flex items-center justify-end gap-1.5">
+                      <span>Monto Asignado (Clientes)</span>
+                      {renderSortIcon('monto_total_asignado')}
+                    </div>
+                  </th>
+                  <th onClick={() => handleSort('diferencia')} className="px-6 py-4 font-semibold tracking-wider text-right cursor-pointer hover:text-white transition-colors group">
+                    <div className="flex items-center justify-end gap-1.5">
+                      <span>Diferencia</span>
+                      {renderSortIcon('diferencia')}
+                    </div>
+                  </th>
+                  <th onClick={() => handleSort('valido_100_porciento')} className="px-6 py-4 font-semibold tracking-wider text-center cursor-pointer hover:text-white transition-colors group">
+                    <div className="flex items-center justify-center gap-1.5">
+                      <span>Estado 100%</span>
+                      {renderSortIcon('valido_100_porciento')}
+                    </div>
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5">
                 {loading ? (
                   <tr><td colSpan={6} className="text-center py-6 text-st-muted">Cargando...</td></tr>
-                ) : validations.length === 0 ? (
+                ) : sortedValidations.length === 0 ? (
                   <tr><td colSpan={6} className="text-center py-6 text-st-muted">No se encontraron facturas registradas.</td></tr>
                 ) : (
-                  validations.map((v) => (
+                  sortedValidations.map((v) => (
                     <tr key={v.factura_id} className="hover:bg-white/[0.02] transition-colors">
                       <td className="px-6 py-4 font-medium text-white">{v.invoice_id_externo}</td>
                       <td className="px-6 py-4 text-st-muted">{v.fecha}</td>

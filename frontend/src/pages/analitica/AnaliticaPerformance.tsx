@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import AnaliticaLayout from './AnaliticaLayout';
 import client from '../../api/client';
-import { Database, CheckCircle2, XCircle, Clock, RefreshCw } from 'lucide-react';
+import { Database, RefreshCw, ChevronUp, ChevronDown, ArrowUpDown } from 'lucide-react';
 
 interface WorkflowItem {
   id: number;
@@ -30,6 +30,17 @@ interface PerformanceData {
 const AnaliticaPerformance: React.FC = () => {
   const [data, setData] = useState<PerformanceData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [sortBy, setSortBy] = useState<string>('fecha_inicio');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+
+  const handleSort = (field: string) => {
+    if (sortBy === field) {
+      setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortBy(field);
+      setSortDirection('asc');
+    }
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -46,57 +57,87 @@ const AnaliticaPerformance: React.FC = () => {
     fetchData();
   }, []);
 
+  const sortedWorkflows = useMemo(() => {
+    if (!data?.tabla_workflows) return [];
+    const list = [...data.tabla_workflows];
+    list.sort((a: any, b: any) => {
+      let aVal = a[sortBy];
+      let bVal = b[sortBy];
+
+      if (aVal === undefined || aVal === null) aVal = '';
+      if (bVal === undefined || bVal === null) bVal = '';
+
+      if (typeof aVal === 'string') {
+        const comp = aVal.localeCompare(String(bVal));
+        return sortDirection === 'asc' ? comp : -comp;
+      }
+      return sortDirection === 'asc' ? Number(aVal) - Number(bVal) : Number(bVal) - Number(aVal);
+    });
+    return list;
+  }, [data?.tabla_workflows, sortBy, sortDirection]);
+
+  const renderSortIcon = (field: string) => {
+    if (sortBy === field) {
+      return sortDirection === 'asc' ? (
+        <ChevronUp className="w-3.5 h-3.5 text-st-accent flex-shrink-0" />
+      ) : (
+        <ChevronDown className="w-3.5 h-3.5 text-st-accent flex-shrink-0" />
+      );
+    }
+    return <ArrowUpDown className="w-2.5 h-2.5 text-st-muted/40 group-hover:text-st-muted flex-shrink-0 transition-colors" />;
+  };
+
   return (
     <AnaliticaLayout>
       {isLoading ? (
         <div className="py-20 text-center text-st-muted bg-st-surface border border-st-border rounded-2xl">
           <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-2 text-st-accent" />
-          <p className="text-xs font-semibold">Cargando performance de aprovisionamiento...</p>
+          <p className="text-xs font-semibold">Cargando métricas de rendimiento y SLAs...</p>
         </div>
       ) : !data ? (
         <div className="py-12 text-center text-st-muted bg-st-surface border border-st-border rounded-2xl">
-          Sin información de performance disponible.
+          Sin información de rendimiento disponible.
         </div>
       ) : (
         <div className="space-y-6">
           {/* CARDS */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             <div className="bg-st-surface border border-st-border rounded-xl p-4">
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-st-muted flex items-center gap-1.5">
-                <Database className="w-3.5 h-3.5 text-st-accent" /> Workflows Iniciados
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-st-muted">
+                Workflows Iniciados
               </span>
               <div className="mt-2 flex items-baseline justify-between">
                 <span className="text-2xl font-black text-white font-mono">{data.resumen.iniciados}</span>
-                <span className="text-[10px] text-st-muted">Totales</span>
+                <span className="text-[10px] text-st-muted">Total</span>
               </div>
             </div>
 
             <div className="bg-st-surface border border-st-border rounded-xl p-4">
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-st-muted flex items-center gap-1.5">
-                <CheckCircle2 className="w-3.5 h-3.5 text-st-online" /> Tasa de Éxito
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-st-muted">
+                Tasa de Éxito
               </span>
               <div className="mt-2 flex items-baseline justify-between">
                 <span className="text-2xl font-black text-st-online font-mono">{data.resumen.tasa_exito_pct}%</span>
-                <span className="text-[10px] text-st-online font-semibold">{data.resumen.completados} completados</span>
+                <span className="text-[10px] text-st-online font-semibold">Saludable</span>
               </div>
             </div>
 
             <div className="bg-st-surface border border-st-border rounded-xl p-4">
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-st-muted flex items-center gap-1.5">
-                <XCircle className="w-3.5 h-3.5 text-st-offline" /> Con Error
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-st-muted">
+                Errores Detectados
               </span>
               <div className="mt-2 flex items-baseline justify-between">
                 <span className="text-2xl font-black text-st-offline font-mono">{data.resumen.con_error}</span>
-                <span className="text-[10px] text-st-muted">Workflows</span>
+                <span className="text-[10px] text-st-offline font-semibold">Fallidos</span>
               </div>
             </div>
 
             <div className="bg-st-surface border border-st-border rounded-xl p-4">
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-st-muted flex items-center gap-1.5">
-                <Clock className="w-3.5 h-3.5 text-purple-400" /> Tiempo Promedio
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-st-muted">
+                Tiempo Promedio Alta
               </span>
               <div className="mt-2 flex items-baseline justify-between">
-                <span className="text-2xl font-black text-white font-mono">{data.resumen.tiempo_promedio_minutos} <span className="text-xs font-normal">min</span></span>
+                <span className="text-2xl font-black font-mono text-purple-400">{data.resumen.tiempo_promedio_minutos} <span className="text-xs font-normal">min</span></span>
                 <span className="text-[10px] text-purple-400 font-semibold">Por alta</span>
               </div>
             </div>
@@ -115,18 +156,82 @@ const AnaliticaPerformance: React.FC = () => {
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
                   <tr className="bg-st-bg/80 text-st-muted uppercase tracking-wider font-semibold border-b border-st-border">
-                    <th className="py-3 px-4">Código</th>
-                    <th className="py-3 px-4">Cliente</th>
-                    <th className="py-3 px-4">Acción</th>
-                    <th className="py-3 px-4 text-center">Inicio</th>
-                    <th className="py-3 px-4 text-center">Fin</th>
-                    <th className="py-3 px-4 text-center">Duración</th>
-                    <th className="py-3 px-4 text-center">Paso con Error</th>
-                    <th className="py-3 px-4 text-right">Estado</th>
+                    <th
+                      className="py-3 px-4 cursor-pointer select-none hover:text-white transition-colors group"
+                      onClick={() => handleSort('codigo')}
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <span>Código</span>
+                        {renderSortIcon('codigo')}
+                      </div>
+                    </th>
+                    <th
+                      className="py-3 px-4 cursor-pointer select-none hover:text-white transition-colors group"
+                      onClick={() => handleSort('cliente')}
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <span>Cliente</span>
+                        {renderSortIcon('cliente')}
+                      </div>
+                    </th>
+                    <th
+                      className="py-3 px-4 cursor-pointer select-none hover:text-white transition-colors group"
+                      onClick={() => handleSort('accion')}
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <span>Acción</span>
+                        {renderSortIcon('accion')}
+                      </div>
+                    </th>
+                    <th
+                      className="py-3 px-4 text-center cursor-pointer select-none hover:text-white transition-colors group"
+                      onClick={() => handleSort('fecha_inicio')}
+                    >
+                      <div className="flex items-center justify-center gap-1.5">
+                        <span>Inicio</span>
+                        {renderSortIcon('fecha_inicio')}
+                      </div>
+                    </th>
+                    <th
+                      className="py-3 px-4 text-center cursor-pointer select-none hover:text-white transition-colors group"
+                      onClick={() => handleSort('fecha_fin')}
+                    >
+                      <div className="flex items-center justify-center gap-1.5">
+                        <span>Fin</span>
+                        {renderSortIcon('fecha_fin')}
+                      </div>
+                    </th>
+                    <th
+                      className="py-3 px-4 text-center cursor-pointer select-none hover:text-white transition-colors group"
+                      onClick={() => handleSort('duracion_minutos')}
+                    >
+                      <div className="flex items-center justify-center gap-1.5">
+                        <span>Duración</span>
+                        {renderSortIcon('duracion_minutos')}
+                      </div>
+                    </th>
+                    <th
+                      className="py-3 px-4 text-center cursor-pointer select-none hover:text-white transition-colors group"
+                      onClick={() => handleSort('paso_error')}
+                    >
+                      <div className="flex items-center justify-center gap-1.5">
+                        <span>Paso con Error</span>
+                        {renderSortIcon('paso_error')}
+                      </div>
+                    </th>
+                    <th
+                      className="py-3 px-4 text-right cursor-pointer select-none hover:text-white transition-colors group"
+                      onClick={() => handleSort('estado')}
+                    >
+                      <div className="flex items-center justify-end gap-1.5">
+                        <span>Estado</span>
+                        {renderSortIcon('estado')}
+                      </div>
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-st-border/50">
-                  {data.tabla_workflows.map(item => (
+                  {sortedWorkflows.map(item => (
                     <tr key={item.id} className="hover:bg-white/[0.03] transition-colors">
                       <td className="py-3 px-4 font-mono text-st-accent font-bold">{item.codigo}</td>
                       <td className="py-3 px-4 font-bold text-white">{item.cliente}</td>

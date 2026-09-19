@@ -6,7 +6,7 @@ import os
 import uuid
 
 from app.core.database import get_db
-from app.models import Usuario, AuditoriaSeguridad
+from app.models import Usuario, AuditoriaSeguridad, PoliticasSeguridad, UsuarioPasswordHistorial
 from app.schemas import UsuarioAdminResponse, PerfilUpdate, PerfilPasswordUpdate
 from app.core.security import verify_password, get_password_hash
 from app.api.endpoints.auth import get_current_user
@@ -140,17 +140,106 @@ def delete_foto(db: Session = Depends(get_db), current_user: Usuario = Depends(g
                 except Exception as e:
                     logger.warning(f"Could not remove avatar file {old_file_path}: {e}")
                     
-    return {"status": "ok", "foto_url": ""}
+@router.get("/password-policy")
+def get_password_policy(db: Session = Depends(get_db), current_user: Usuario = Depends(get_current_user)):
+    user_tenant_id = None
+    if current_user.tenant_usuarios:
+        active_tu = next((tu for tu in current_user.tenant_usuarios if tu.activo), None)
+        if active_tu:
+            user_tenant_id = active_tu.tenant_id
+
+    policy = None
+    if user_tenant_id:
+        policy = db.query(PoliticasSeguridad).filter(
+            PoliticasSeguridad.tenant_id == user_tenant_id,
+            PoliticasSeguridad.activo == True
+        ).first()
+
+    if not policy:
+        policy = db.query(PoliticasSeguridad).filter(
+            PoliticasSeguridad.tenant_id.is_(None),
+            PoliticasSeguridad.activo == True
+        ).first()
+
+    return {
+        "longitud_minima": policy.longitud_minima_password if policy else 8,
+        "longitud_maxima": policy.longitud_maxima_password if policy else 128,
+        "historial_passwords": policy.historial_passwords if policy else 5
+    }
 
 @router.post("/password")
 def change_password(pass_in: PerfilPasswordUpdate, db: Session = Depends(get_db), current_user: Usuario = Depends(get_current_user)):
     if not verify_password(pass_in.password_actual, current_user.password_hash):
         raise HTTPException(status_code=400, detail="La contraseña actual es incorrecta")
         
-    current_user.password_hash = get_password_hash(pass_in.nueva_password)
+    if pass_in.nueva_password == pass_in.password_actual:
+        raise HTTPException(status_code=400, detail="La nueva contraseña no puede ser igual a la contraseña actual")
+
+    # Fetch applicable security policy (tenant policy or global fallback)
+    user_tenant_id = None
+    if current_user.tenant_usuarios:
+        active_tu = next((tu for tu in current_user.tenant_usuarios if tu.activo), None)
+        if active_tu:
+            user_tenant_id = active_tu.tenant_id
+
+    policy = None
+    if user_tenant_id:
+        policy = db.query(PoliticasSeguridad).filter(
+            PoliticasSeguridad.tenant_id == user_tenant_id,
+            PoliticasSeguridad.activo == True
+        ).first()
+
+    if not policy:
+        policy = db.query(PoliticasSeguridad).filter(
+            PoliticasSeguridad.tenant_id.is_(None),
+            PoliticasSeguridad.activo == True
+        ).first()
+
+    min_len = policy.longitud_minima_password if policy else 8
+    max_len = policy.longitud_maxima_password if policy else 128
+    historial_count = policy.historial_passwords if policy else 5
+
+    if len(pass_in.nueva_password) < min_len:
+        raise HTTPException(status_code=400, detail=f"La nueva contraseña debe tener al menos {min_len} caracteres")
+
+    if len(pass_in.nueva_password) > max_len:
+        raise HTTPException(status_code=400, detail=f"La nueva contraseña no puede superar los {max_len} caracteres")
+
+    # Check password history
+    if historial_count > 0:
+        recent_passwords = (
+            db.query(UsuarioPasswordHistorial)
+            .filter(UsuarioPasswordHistorial.usuario_id == current_user.id)
+            .order_by(UsuarioPasswordHistorial.fecha_creacion.desc())
+            .limit(historial_count)
+            .all()
+        )
+        for p_hist in recent_passwords:
+            if verify_password(pass_in.nueva_password, p_hist.password_hash):
+                raise HTTPException(
+                    status_code=400, 
+                    detail=f"Por políticas de seguridad, no puedes reutilizar tus últimas {historial_count} contraseñas"
+                )
+
+    new_hash = get_password_hash(pass_in.nueva_password)
+    now = datetime.utcnow()
+
+    # Save to history
+    hist_entry = UsuarioPasswordHistorial(
+        usuario_id=current_user.id,
+        password_hash=new_hash,
+        fecha_creacion=now
+    )
+    db.add(hist_entry)
+
+    # Update user record
+    current_user.password_hash = new_hash
+    current_user.password_cambiado_en = now
     current_user.debe_cambiar_password = False
+    current_user.intentos_fallidos = 0
+    current_user.bloqueado_hasta = None
     current_user.modificado_por = current_user.id
-    current_user.fecha_modificacion = datetime.utcnow()
+    current_user.fecha_modificacion = now
     
     log_audit(db, "PASSWORD_CHANGED", current_user.id, descripcion="User changed their own password")
     db.commit()

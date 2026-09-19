@@ -238,27 +238,27 @@ const Layout: React.FC<{ children: React.ReactNode; type?: 'CLIENTE' | 'RESELLER
       icon: Satellite,
       items: [
         { id: 'c-servicios', name: 'Mis Servicios', path: `/cliente/servicios`, icon: Radio },
-        { id: 'c-equipos', name: 'Mis Equipos', path: `/cliente/equipos`, icon: Database },
-        { id: 'c-planes', name: 'Mis Planes', path: `/cliente/planes`, icon: Briefcase },
-        { id: 'c-alertas', name: 'Alertas', path: `/cliente/alertas`, icon: AlertTriangle },
-        { id: 'c-estado', name: 'Estado y Ubicación', path: `/cliente/estado-ubicacion`, icon: MapPin },
+        { id: 'c-equipos', name: 'Mis Equipos', path: `/cliente/servicios/equipos`, icon: Database },
+        { id: 'c-planes', name: 'Mis Planes', path: `/cliente/servicios/planes`, icon: Briefcase },
+        { id: 'c-alertas', name: 'Alertas', path: `/cliente/calidad/alertas`, icon: AlertTriangle },
+        { id: 'c-estado', name: 'Estado y Ubicación', path: `/cliente/calidad/estado-ubicacion`, icon: MapPin },
       ]
     });
     sections.push({
       title: 'ANALÍTICA',
       icon: Activity,
       items: [
-        { id: 'c-calidad', name: 'Calidad de Servicio', path: `/cliente/analitica/calidad`, icon: Activity },
-        { id: 'c-telemetria', name: 'Telemetría', path: `/cliente/telemetria`, icon: BarChart3 },
-        { id: 'c-consumo', name: 'Consumo', path: `/cliente/consumo`, icon: Database },
-        { id: 'c-reportes', name: 'Reportes', path: `/cliente/analitica/reportes`, icon: BarChart3 },
+        { id: 'c-calidad', name: 'Calidad de Servicio', path: `/cliente/calidad/calidad-servicio`, icon: Activity },
+        { id: 'c-telemetria', name: 'Telemetría', path: `/cliente/calidad/telemetria`, icon: BarChart3 },
+        // { id: 'c-consumo', name: 'Consumo', path: `/cliente/consumo`, icon: Database }, // No implementado en cliente
+        { id: 'c-reportes', name: 'Reportes', path: `/cliente/facturacion/reportes`, icon: BarChart3 },
       ]
     });
     sections.push({
       title: 'FACTURACIÓN',
       icon: CreditCard,
       items: [
-        { id: 'c-resumen-gasto', name: 'Resumen de Gasto', path: `/cliente/facturacion/resumen`, icon: CreditCard },
+        { id: 'c-resumen-gasto', name: 'Resumen de Gasto', path: `/cliente/facturacion/reportes`, icon: CreditCard },
         { id: 'c-comparativo', name: 'Contratado vs Facturado', path: `/cliente/facturacion/comparativo`, icon: Briefcase },
         { id: 'c-comprobantes', name: 'Mis Comprobantes', path: `/cliente/facturacion/comprobantes`, icon: FileText },
       ]
@@ -286,7 +286,7 @@ const Layout: React.FC<{ children: React.ReactNode; type?: 'CLIENTE' | 'RESELLER
         { id: 'c-org-n1', name: n1.nombre_nivel_plural || n1.nombre_nivel || 'Nivel 1', path: `/cliente/mantenimiento/organizacion/nivel/1`, icon: Users },
         { id: 'c-org-n2', name: n2.nombre_nivel_plural || n2.nombre_nivel || 'Nivel 2', path: `/cliente/mantenimiento/organizacion/nivel/2`, icon: Users },
         { id: 'c-org-n3', name: n3.nombre_nivel_plural || n3.nombre_nivel || 'Nivel 3', path: `/cliente/mantenimiento/organizacion/nivel/3`, icon: Users },
-        { id: 'c-colaboradores', name: 'Colaboradores', path: `/cliente/mantenimiento/colaboradores`, icon: Users },
+        // { id: 'c-colaboradores', name: 'Colaboradores', path: `/cliente/mantenimiento/colaboradores`, icon: Users },
         { id: 'c-centros-costos', name: 'Centros de Costos', path: `/cliente/mantenimiento/centros-costos`, icon: Database },
         { id: 'c-asignaciones', name: 'Asignaciones', path: `/cliente/mantenimiento/asignaciones`, icon: Users },
       ]
@@ -451,7 +451,7 @@ const Layout: React.FC<{ children: React.ReactNode; type?: 'CLIENTE' | 'RESELLER
         <div className="p-3 border-t border-white/10">
           <button
             onClick={handleLogout}
-            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[#EF4444] hover:bg-red-500/10 transition-colors cursor-pointer text-left font-semibold"
+            className="w-full flex items-center justify-center gap-2.5 px-3 py-2 rounded-lg text-white hover:bg-white/10 transition-colors cursor-pointer font-semibold"
           >
             <LogOut className="w-4 h-4 flex-shrink-0" />
             {!isSidebarCollapsed && <span className="text-sm">Cerrar Sesión</span>}

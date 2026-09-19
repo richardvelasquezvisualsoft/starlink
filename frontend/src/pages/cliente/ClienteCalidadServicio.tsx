@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Activity, 
-  ArrowUpDown, 
   RefreshCw, 
   Wifi, 
   CheckCircle2, 
@@ -22,6 +21,8 @@ import {
   Bar
 } from 'recharts';
 import client from '../../api/client';
+import { useTableSort } from '../../hooks/useTableSort';
+import { SortableHeader } from '../../components/ui/SortableHeader';
 
 interface TelemetryItem {
   dispositivo_id: number;
@@ -53,7 +54,6 @@ export const ClienteCalidadServicio: React.FC = () => {
   const [chartData, setChartData] = useState<any[]>([]);
   const [terminals, setTerminals] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [sortBy, setSortBy] = useState<'latency' | 'loss' | 'name'>('latency');
   const [chartMetric, setChartMetric] = useState<'latency' | 'bandwidth' | 'usage'>('latency');
 
   const fetchData = async () => {
@@ -128,10 +128,9 @@ export const ClienteCalidadServicio: React.FC = () => {
     t.device_id.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const sortedTerminals = [...filteredTerminals].sort((a, b) => {
-    if (sortBy === 'latency') return b.latency_ms - a.latency_ms;
-    if (sortBy === 'loss') return b.packet_loss_pct - a.packet_loss_pct;
-    return a.dispositivo_nombre.localeCompare(b.dispositivo_nombre);
+  const { sortedData: sortedTerminals, sortColumn, sortDirection, handleSort } = useTableSort(filteredTerminals, {
+    initialSortColumn: 'latency_ms',
+    initialSortDirection: 'desc'
   });
 
   const handleExportCSV = () => {
@@ -155,8 +154,8 @@ export const ClienteCalidadServicio: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-white font-sans uppercase">CALIDAD DE SERVICIO</h1>
-          <p className="text-xs text-st-muted mt-0.5">
+          <h1 className="text-[20px] font-bold tracking-tight text-client-text-primary uppercase">CALIDAD DE SERVICIO</h1>
+          <p className="text-[13px] text-client-text-secondary mt-0.5">
             Monitoreo histórico de disponibilidad, latencia, pérdida de paquetes y estabilidad de señal.
           </p>
         </div>
@@ -164,17 +163,17 @@ export const ClienteCalidadServicio: React.FC = () => {
           <button
             onClick={handleExportCSV}
             disabled={terminals.length === 0}
-            className="flex items-center gap-2 px-3 py-1.5 bg-st-surface border border-st-border hover:bg-white/5 text-xs text-white rounded-lg transition-colors disabled:opacity-50"
+            className="flex items-center gap-2 px-3 py-1.5 bg-client-bg-surface border border-client-border hover:bg-client-bg-subtle text-[13px] font-semibold text-client-text-primary rounded-[8px] transition-colors disabled:opacity-50"
           >
-            <Download className="w-3.5 h-3.5" />
-            <span>Exportar CSV</span>
+            <Download className="w-4 h-4" />
+            <span className="hidden sm:inline">Exportar CSV</span>
           </button>
           <button
             onClick={fetchData}
             disabled={loading}
-            className="flex items-center gap-2 px-3 py-1.5 bg-st-surface border border-st-border hover:bg-white/5 text-xs text-white rounded-lg transition-colors"
+            className="flex items-center gap-2 px-3 py-1.5 bg-client-bg-surface border border-client-border hover:bg-client-bg-subtle text-[13px] font-semibold text-client-text-primary rounded-[8px] transition-colors"
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
             <span>Actualizar</span>
           </button>
         </div>
@@ -182,20 +181,20 @@ export const ClienteCalidadServicio: React.FC = () => {
 
       {/* Loading State */}
       {loading && terminals.length === 0 && (
-        <div className="flex h-64 items-center justify-center bg-st-surface border border-st-border rounded-xl">
-          <Activity className="w-8 h-8 animate-spin text-st-accent" />
+        <div className="flex h-64 items-center justify-center bg-client-bg-surface border border-client-border rounded-xl">
+          <Activity className="w-8 h-8 animate-spin text-client-primary" />
         </div>
       )}
 
       {/* Error State */}
       {error && (
-        <div className="flex flex-col items-center justify-center p-8 bg-st-surface border border-red-500/20 rounded-xl text-center space-y-4">
-          <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-full text-red-500">
+        <div className="flex flex-col items-center justify-center p-8 bg-client-bg-surface border border-client-danger rounded-xl text-center space-y-4">
+          <div className="p-3 bg-client-danger-soft border border-client-danger rounded-full text-red-500">
             <Activity className="w-8 h-8" />
           </div>
           <div>
-            <h3 className="text-lg font-semibold text-white">No se pudo cargar la analítica de calidad</h3>
-            <p className="text-sm text-st-muted mt-1 max-w-md">{error}</p>
+            <h3 className="text-lg font-semibold text-client-text-primary">No se pudo cargar la analítica de calidad</h3>
+            <p className="text-sm text-client-text-secondary mt-1 max-w-md">{error}</p>
           </div>
           <button 
             onClick={fetchData}
@@ -211,60 +210,76 @@ export const ClienteCalidadServicio: React.FC = () => {
       {!loading && !error && (
         <>
           {/* Top KPIs Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="bg-st-surface border border-st-border rounded-xl p-4 flex flex-col justify-between">
-              <div className="flex items-center justify-between text-st-muted mb-2">
-                <span className="text-xs font-semibold uppercase tracking-wider">Disponibilidad Promedio</span>
-                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            <div className="bg-[#111111] border border-[#222222] rounded-[16px] p-5 flex flex-col justify-between shadow-sm min-h-[140px] hover:shadow-md transition-shadow">
+              <div className="flex items-start justify-between mb-2">
+                <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-[#22C55E]">
+                  <CheckCircle2 className="w-5 h-5" />
+                </div>
               </div>
-              <div className="text-2xl font-bold text-emerald-400">{avgAvailability}%</div>
-              <div className="text-[11px] text-st-muted mt-1">Disponibilidad de red Starlink</div>
+              <div>
+                <p className="text-[13px] font-bold tracking-wide uppercase text-[#94A3B8]">Disponibilidad Promedio</p>
+                <p className="text-[32px] font-bold text-[#4ADE80] font-sans leading-none mt-1.5">{avgAvailability}%</p>
+                <p className="text-[13px] font-medium text-[#94A3B8] mt-1.5">Disponibilidad de red Starlink</p>
+              </div>
             </div>
 
-            <div className="bg-st-surface border border-st-border rounded-xl p-4 flex flex-col justify-between">
-              <div className="flex items-center justify-between text-st-muted mb-2">
-                <span className="text-xs font-semibold uppercase tracking-wider">Latencia Promedio</span>
-                <Zap className="w-4 h-4 text-cyan-400" />
+            <div className="bg-[#111111] border border-[#222222] rounded-[16px] p-5 flex flex-col justify-between shadow-sm min-h-[140px] hover:shadow-md transition-shadow">
+              <div className="flex items-start justify-between mb-2">
+                <div className="w-10 h-10 rounded-xl bg-[#00A8E8]/10 flex items-center justify-center text-[#00A8E8]">
+                  <Zap className="w-5 h-5" />
+                </div>
               </div>
-              <div className="text-2xl font-bold text-white">{avgLatency} <span className="text-xs text-st-muted font-normal">ms</span></div>
-              <div className="text-[11px] text-st-accent font-semibold mt-1">Saludable (&lt; 50ms)</div>
+              <div>
+                <p className="text-[13px] font-bold tracking-wide uppercase text-[#94A3B8]">Latencia Promedio</p>
+                <p className="text-[32px] font-bold text-white font-sans leading-none mt-1.5">{avgLatency} <span className="text-[14px] font-semibold text-[#94A3B8]">ms</span></p>
+                <p className="text-[13px] font-medium text-[#38BDF8] mt-1.5">Saludable (&lt; 50ms)</p>
+              </div>
             </div>
 
-            <div className="bg-st-surface border border-st-border rounded-xl p-4 flex flex-col justify-between">
-              <div className="flex items-center justify-between text-st-muted mb-2">
-                <span className="text-xs font-semibold uppercase tracking-wider">Pérdida de Paquetes</span>
-                <Wifi className="w-4 h-4 text-purple-400" />
+            <div className="bg-[#111111] border border-[#222222] rounded-[16px] p-5 flex flex-col justify-between shadow-sm min-h-[140px] hover:shadow-md transition-shadow">
+              <div className="flex items-start justify-between mb-2">
+                <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center text-[#F59E0B]">
+                  <Wifi className="w-5 h-5" />
+                </div>
               </div>
-              <div className="text-2xl font-bold text-white">{avgLoss}%</div>
-              <div className="text-[11px] text-st-muted mt-1">Packet loss acumulado</div>
+              <div>
+                <p className="text-[13px] font-bold tracking-wide uppercase text-[#94A3B8]">Pérdida de Paquetes</p>
+                <p className="text-[32px] font-bold text-white font-sans leading-none mt-1.5">{avgLoss}%</p>
+                <p className="text-[13px] font-medium text-[#94A3B8] mt-1.5">Packet loss acumulado</p>
+              </div>
             </div>
 
-            <div className="bg-st-surface border border-st-border rounded-xl p-4 flex flex-col justify-between">
-              <div className="flex items-center justify-between text-st-muted mb-2">
-                <span className="text-xs font-semibold uppercase tracking-wider">Equipos Operativos</span>
-                <Activity className="w-4 h-4 text-blue-400" />
+            <div className="bg-[#111111] border border-[#222222] rounded-[16px] p-5 flex flex-col justify-between shadow-sm min-h-[140px] hover:shadow-md transition-shadow">
+              <div className="flex items-start justify-between mb-2">
+                <div className="w-10 h-10 rounded-xl bg-[#00A8E8]/10 flex items-center justify-center text-[#00A8E8]">
+                  <Activity className="w-5 h-5" />
+                </div>
               </div>
-              <div className="text-2xl font-bold text-white">{onlineCount} <span className="text-xs text-st-muted font-normal">/ {totalEquipos}</span></div>
-              <div className="text-[11px] text-st-muted mt-1">Terminales en línea</div>
+              <div>
+                <p className="text-[13px] font-bold tracking-wide uppercase text-[#94A3B8]">Equipos Operativos</p>
+                <p className="text-[32px] font-bold text-white font-sans leading-none mt-1.5">{onlineCount} <span className="text-[14px] font-semibold text-[#94A3B8]">/ {totalEquipos}</span></p>
+                <p className="text-[13px] font-medium text-[#94A3B8] mt-1.5">Terminales en línea</p>
+              </div>
             </div>
           </div>
 
           {/* Historical Trend Chart Section */}
           {chartData.length > 0 && (
-            <div className="bg-st-surface border border-st-border rounded-xl p-5 space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-st-border">
+            <div className="bg-[#111111] border border-[#222222] rounded-xl p-5 sm:p-6 space-y-4 shadow-sm">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#222222]">
                 <div className="flex items-center gap-2">
-                  <TrendingUp className="w-5 h-5 text-st-accent" />
-                  <h3 className="text-sm font-bold text-white uppercase tracking-wider">
+                  <TrendingUp className="w-5 h-5 text-[#00A8E8]" />
+                  <h3 className="text-[16px] font-bold text-white uppercase tracking-tight">
                     Evolución Histórica de Calidad
                   </h3>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-st-muted">Métrica:</span>
+                  <span className="text-[12px] font-medium text-[#94A3B8]">Métrica:</span>
                   <select
                     value={chartMetric}
                     onChange={(e) => setChartMetric(e.target.value as any)}
-                    className="bg-st-bg border border-st-border rounded-lg px-3 py-1 text-xs text-white outline-none focus:border-st-accent cursor-pointer"
+                    className="bg-black border border-[#222222] rounded-lg px-3 py-1.5 text-[12px] font-semibold text-white outline-none focus:border-[#00A8E8] cursor-pointer transition-colors"
                   >
                     <option value="latency">Latencia (ms)</option>
                     <option value="bandwidth">Velocidad (Mbps)</option>
@@ -273,43 +288,91 @@ export const ClienteCalidadServicio: React.FC = () => {
                 </div>
               </div>
 
-              <div className="h-64 w-full pt-2">
+              <div className="h-72 w-full pt-2">
                 <ResponsiveContainer width="100%" height="100%">
                   {chartMetric === 'latency' ? (
                     <AreaChart data={chartData}>
                       <defs>
                         <linearGradient id="latencyGrad" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#00A8E8" stopOpacity={0.3}/>
+                          <stop offset="5%" stopColor="#00A8E8" stopOpacity={0.15}/>
                           <stop offset="95%" stopColor="#00A8E8" stopOpacity={0.0}/>
                         </linearGradient>
                       </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#262626" />
-                      <XAxis dataKey="timestamp" stroke="#737373" fontSize={11} />
-                      <YAxis stroke="#737373" fontSize={11} unit=" ms" />
-                      <Tooltip contentStyle={{ backgroundColor: '#171717', borderColor: '#262626', color: '#fff', fontSize: '12px' }} />
-                      <Area type="monotone" dataKey="latency_ms" name="Latencia" stroke="#00A8E8" fillOpacity={1} fill="url(#latencyGrad)" />
+                      <CartesianGrid strokeDasharray="4 4" stroke="#222222" vertical={false} />
+                      <XAxis dataKey="timestamp" stroke="#94A3B8" fontSize={12} fontWeight={500} axisLine={false} tickLine={false} />
+                      <YAxis stroke="#94A3B8" fontSize={12} fontWeight={500} axisLine={false} tickLine={false} unit=" ms" />
+                      <Tooltip 
+                        contentStyle={{ 
+                          backgroundColor: '#111111', 
+                          borderColor: '#222222', 
+                          borderRadius: '12px', 
+                          boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.6)', 
+                          color: '#FFFFFF' 
+                        }}
+                        itemStyle={{ color: '#00A8E8', fontWeight: 700, fontSize: '13px' }}
+                        labelStyle={{ color: '#94A3B8', fontSize: '12px' }}
+                      />
+                      <Area 
+                        type="monotone" 
+                        dataKey="latency_ms" 
+                        name="Latencia" 
+                        stroke="#00A8E8" 
+                        strokeWidth={2.5} 
+                        fillOpacity={1} 
+                        fill="url(#latencyGrad)"
+                        activeDot={{ r: 6, fill: "#00A8E8", stroke: "#FFFFFF", strokeWidth: 2 }}
+                      />
                     </AreaChart>
                   ) : chartMetric === 'bandwidth' ? (
                     <AreaChart data={chartData}>
                       <defs>
                         <linearGradient id="downGrad" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#10B981" stopOpacity={0.3}/>
-                          <stop offset="95%" stopColor="#10B981" stopOpacity={0.0}/>
+                          <stop offset="5%" stopColor="#22C55E" stopOpacity={0.15}/>
+                          <stop offset="95%" stopColor="#22C55E" stopOpacity={0.0}/>
                         </linearGradient>
                       </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#262626" />
-                      <XAxis dataKey="timestamp" stroke="#737373" fontSize={11} />
-                      <YAxis stroke="#737373" fontSize={11} unit=" Mbps" />
-                      <Tooltip contentStyle={{ backgroundColor: '#171717', borderColor: '#262626', color: '#fff', fontSize: '12px' }} />
-                      <Area type="monotone" dataKey="downlink_mbps" name="Downlink" stroke="#10B981" fillOpacity={1} fill="url(#downGrad)" />
+                      <CartesianGrid strokeDasharray="4 4" stroke="#222222" vertical={false} />
+                      <XAxis dataKey="timestamp" stroke="#94A3B8" fontSize={12} fontWeight={500} axisLine={false} tickLine={false} />
+                      <YAxis stroke="#94A3B8" fontSize={12} fontWeight={500} axisLine={false} tickLine={false} unit=" Mbps" />
+                      <Tooltip 
+                        contentStyle={{ 
+                          backgroundColor: '#111111', 
+                          borderColor: '#222222', 
+                          borderRadius: '12px', 
+                          boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.6)', 
+                          color: '#FFFFFF' 
+                        }}
+                        itemStyle={{ color: '#22C55E', fontWeight: 700, fontSize: '13px' }}
+                        labelStyle={{ color: '#94A3B8', fontSize: '12px' }}
+                      />
+                      <Area 
+                        type="monotone" 
+                        dataKey="downlink_mbps" 
+                        name="Downlink" 
+                        stroke="#22C55E" 
+                        strokeWidth={2.5} 
+                        fillOpacity={1} 
+                        fill="url(#downGrad)"
+                        activeDot={{ r: 6, fill: "#22C55E", stroke: "#FFFFFF", strokeWidth: 2 }}
+                      />
                     </AreaChart>
                   ) : (
                     <BarChart data={chartData}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#262626" />
-                      <XAxis dataKey="timestamp" stroke="#737373" fontSize={11} />
-                      <YAxis stroke="#737373" fontSize={11} unit=" GB" />
-                      <Tooltip contentStyle={{ backgroundColor: '#171717', borderColor: '#262626', color: '#fff', fontSize: '12px' }} />
-                      <Bar dataKey="data_usage_gb" name="Consumo (GB)" fill="#A855F7" radius={[4, 4, 0, 0]} />
+                      <CartesianGrid strokeDasharray="4 4" stroke="#222222" vertical={false} />
+                      <XAxis dataKey="timestamp" stroke="#94A3B8" fontSize={12} fontWeight={500} axisLine={false} tickLine={false} />
+                      <YAxis stroke="#94A3B8" fontSize={12} fontWeight={500} axisLine={false} tickLine={false} unit=" GB" />
+                      <Tooltip 
+                        contentStyle={{ 
+                          backgroundColor: '#111111', 
+                          borderColor: '#222222', 
+                          borderRadius: '12px', 
+                          boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.6)', 
+                          color: '#FFFFFF' 
+                        }}
+                        itemStyle={{ color: '#00A8E8', fontWeight: 700, fontSize: '13px' }}
+                        labelStyle={{ color: '#94A3B8', fontSize: '12px' }}
+                      />
+                      <Bar dataKey="data_usage_gb" name="Consumo (GB)" fill="#00A8E8" radius={[4, 4, 0, 0]} />
                     </BarChart>
                   )}
                 </ResponsiveContainer>
@@ -318,94 +381,89 @@ export const ClienteCalidadServicio: React.FC = () => {
           )}
 
           {/* Quality Matrix Table Container */}
-          <div className="bg-st-surface border border-st-border rounded-xl flex flex-col">
+          <div className="bg-[#111111] border border-[#222222] rounded-xl flex flex-col shadow-sm overflow-hidden">
             {/* Toolbar */}
-            <div className="p-4 border-b border-st-border flex flex-col sm:flex-row gap-4 justify-between items-center">
-              <div className="relative flex-1 max-w-md w-full">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-st-muted" />
+            <div className="px-5 py-3 border-b border-[#222222] flex flex-col sm:flex-row gap-4 justify-between items-center bg-[#111111]">
+              <div className="relative flex-1 max-w-xs w-full">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#94A3B8]" />
                 <input
                   type="text"
-                  placeholder="Buscar por servicio, dispositivo o ID..."
+                  placeholder="Buscar por servicio, ID..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full bg-st-bg border border-st-border rounded-lg pl-9 pr-4 py-2 text-sm text-white focus:border-st-accent outline-none"
+                  className="w-full pl-9 pr-4 py-2 bg-black border border-[#222222] rounded-lg text-sm text-white placeholder-[#94A3B8]/50 focus:border-[#00A8E8] outline-none transition-colors"
                 />
-              </div>
-
-              <div className="flex items-center gap-2 text-xs">
-                <span className="text-st-muted flex items-center gap-1">
-                  <ArrowUpDown className="w-3.5 h-3.5" /> Ordenar por:
-                </span>
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value as any)}
-                  className="bg-st-bg border border-st-border rounded-lg px-3 py-1.5 text-xs text-white outline-none focus:border-st-accent cursor-pointer"
-                >
-                  <option value="latency">Mayor Latencia</option>
-                  <option value="loss">Mayor Packet Loss</option>
-                  <option value="name">Nombre Terminal</option>
-                </select>
               </div>
             </div>
 
             {/* Table */}
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto custom-scrollbar">
               <table className="w-full text-left border-collapse min-w-max">
-                <thead className="bg-st-bg sticky top-0 z-10">
+                <thead className="bg-[#1E293B] border-b border-[#222222] sticky top-0 z-10 shadow-sm">
                   <tr>
-                    <th className="p-4 text-xs font-bold text-st-muted uppercase tracking-wider border-b border-st-border">Servicio / Terminal</th>
-                    <th className="p-4 text-xs font-bold text-st-muted uppercase tracking-wider border-b border-st-border">Plan Contratado</th>
-                    <th className="p-4 text-xs font-bold text-st-muted uppercase tracking-wider border-b border-st-border text-center">Latencia</th>
-                    <th className="p-4 text-xs font-bold text-st-muted uppercase tracking-wider border-b border-st-border text-center">Packet Loss</th>
-                    <th className="p-4 text-xs font-bold text-st-muted uppercase tracking-wider border-b border-st-border text-center">Disponibilidad</th>
-                    <th className="p-4 text-xs font-bold text-st-muted uppercase tracking-wider border-b border-st-border text-center">Estado</th>
-                    <th className="p-4 text-xs font-bold text-st-muted uppercase tracking-wider border-b border-st-border text-center">Calidad</th>
+                    <SortableHeader label="Servicio / Terminal" column="dispositivo_nombre" currentSortColumn={sortColumn as string} currentSortDirection={sortDirection} onSort={handleSort as any} />
+                    <SortableHeader label="Plan Contratado" column="plan_contratado" currentSortColumn={sortColumn as string} currentSortDirection={sortDirection} onSort={handleSort as any} />
+                    <SortableHeader label="Latencia" column="latency_ms" currentSortColumn={sortColumn as string} currentSortDirection={sortDirection} onSort={handleSort as any} align="center" />
+                    <SortableHeader label="Packet Loss" column="packet_loss_pct" currentSortColumn={sortColumn as string} currentSortDirection={sortDirection} onSort={handleSort as any} align="center" />
+                    <SortableHeader label="Disponibilidad" column="disponibilidad_pct" currentSortColumn={sortColumn as string} currentSortDirection={sortDirection} onSort={handleSort as any} align="center" />
+                    <SortableHeader label="Estado" column="estado" currentSortColumn={sortColumn as string} currentSortDirection={sortDirection} onSort={handleSort as any} align="center" />
+                    <SortableHeader label="Calidad" column="calidad_rating" currentSortColumn={sortColumn as string} currentSortDirection={sortDirection} onSort={handleSort as any} align="center" />
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className="divide-y divide-[#222222]/40 bg-[#111111]">
                   {sortedTerminals.map((item) => (
-                    <tr key={item.id} className="border-b border-st-border/50 hover:bg-white/5 transition-colors">
-                      <td className="p-4">
-                        <div className="font-semibold text-white text-sm">{item.dispositivo_nombre}</div>
-                        <div className="text-[11px] text-st-muted flex items-center gap-2">
-                          <span>{item.numero_linea}</span>
+                    <tr key={item.id} className="hover:bg-white/5 transition-colors group">
+                      <td className="px-5 py-3.5">
+                        <div className="font-bold text-white text-[13px]">{item.dispositivo_nombre}</div>
+                        <div className="text-sm text-[#94A3B8] font-medium flex items-center gap-2">
+                          <span className="font-mono">{item.numero_linea}</span>
                           <span>•</span>
-                          <span>{item.device_id}</span>
+                          <span className="font-mono font-bold text-[#00A8E8]">{item.device_id}</span>
                         </div>
                       </td>
 
-                      <td className="p-4 text-sm text-st-muted font-medium">
+                      <td className="px-5 py-3.5 text-[13px] text-[#94A3B8] font-medium">
                         {item.plan_contratado}
                       </td>
 
-                      <td className="p-4 text-center font-mono font-bold text-white text-sm">
+                      <td className="px-5 py-3.5 text-center font-mono font-bold text-white text-[13px]">
                         {item.latency_ms} ms
                       </td>
 
-                      <td className="p-4 text-center font-mono text-st-muted text-sm">
+                      <td className="px-5 py-3.5 text-center font-mono text-[#94A3B8] text-[13px]">
                         {item.packet_loss_pct}%
                       </td>
 
-                      <td className="p-4 text-center font-mono font-bold text-emerald-400 text-sm">
+                      <td className="px-5 py-3.5 text-center font-mono font-bold text-[#4ADE80] text-[13px]">
                         {item.disponibilidad_pct}%
                       </td>
 
-                      <td className="p-4 text-center">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold ${
-                          item.estado === 'OPERATIVO' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
-                          item.estado === 'INCIDENCIA' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' :
-                          'bg-red-500/10 text-red-400 border border-red-500/20'
+                      <td className="px-5 py-3.5 text-center">
+                        <span className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-[6px] text-xs font-bold uppercase tracking-wide ${
+                          item.estado === 'OPERATIVO' ? 'bg-emerald-500/10 text-[#4ADE80] border border-emerald-500/20' :
+                          item.estado === 'INCIDENCIA' ? 'bg-amber-500/10 text-[#FBBF24] border border-amber-500/20' :
+                          'bg-red-500/10 text-[#F87171] border border-red-500/20'
                         }`}>
+                          <span className={`w-1.5 h-1.5 rounded-full ${
+                            item.estado === 'OPERATIVO' ? 'bg-[#22C55E]' :
+                            item.estado === 'INCIDENCIA' ? 'bg-[#F59E0B]' :
+                            'bg-[#EF4444]'
+                          }`} />
                           {item.estado}
                         </span>
                       </td>
 
-                      <td className="p-4 text-center">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded text-xs font-semibold ${
-                          item.calidad_rating === 'Excelente' ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20' :
-                          item.calidad_rating === 'Saludable' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
-                          'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+                      <td className="px-5 py-3.5 text-center">
+                        <span className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-[6px] text-xs font-bold uppercase tracking-wide ${
+                          item.calidad_rating === 'Excelente' ? 'bg-[#00A8E8]/10 text-[#38BDF8] border border-[#00A8E8]/20' :
+                          item.calidad_rating === 'Saludable' ? 'bg-emerald-500/10 text-[#4ADE80] border border-emerald-500/20' :
+                          'bg-amber-500/10 text-[#FBBF24] border border-amber-500/20'
                         }`}>
+                          <span className={`w-1.5 h-1.5 rounded-full ${
+                            item.calidad_rating === 'Excelente' ? 'bg-[#00A8E8]' :
+                            item.calidad_rating === 'Saludable' ? 'bg-[#22C55E]' :
+                            'bg-[#F59E0B]'
+                          }`} />
                           {item.calidad_rating}
                         </span>
                       </td>
@@ -414,7 +472,7 @@ export const ClienteCalidadServicio: React.FC = () => {
 
                   {sortedTerminals.length === 0 && (
                     <tr>
-                      <td colSpan={7} className="p-8 text-center text-st-muted">
+                      <td colSpan={7} className="p-8 text-center text-[13px] font-medium text-client-text-secondary bg-client-bg-subtle">
                         No se encontraron registros de calidad.
                       </td>
                     </tr>

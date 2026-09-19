@@ -72,12 +72,12 @@ export function calculateContrastRatio(hex1: string, hex2: string): number {
 }
 
 /**
- * Returns accessible contrast text color (#FFFFFF or #111827) for a given background HEX.
+ * Returns accessible contrast text color (#FFFFFF or #0F172A) for a given background HEX.
  */
 export function getContrastTextColor(bgHex: string): string {
   const ratioWhite = calculateContrastRatio(bgHex, '#FFFFFF');
-  const ratioDark = calculateContrastRatio(bgHex, '#111827');
-  return ratioWhite >= ratioDark ? '#FFFFFF' : '#111827';
+  const ratioDark = calculateContrastRatio(bgHex, '#0F172A');
+  return ratioWhite >= ratioDark ? '#FFFFFF' : '#0F172A';
 }
 
 /**
@@ -135,23 +135,24 @@ export function applyThemeToCssVariables(primaryHex?: string, secondaryHex?: str
   const tokens = generateBrandTokens(primaryHex, secondaryHex);
   const root = document.documentElement;
 
-  root.style.setProperty('--color-brand-primary', tokens.primary.base);
-  root.style.setProperty('--color-brand-primary-hover', tokens.primary.hover);
-  root.style.setProperty('--color-brand-primary-active', tokens.primary.active);
-  root.style.setProperty('--color-brand-primary-soft', tokens.primary.soft);
-  root.style.setProperty('--color-brand-primary-border', tokens.primary.border);
-  root.style.setProperty('--color-brand-primary-contrast', tokens.primary.contrast);
-  root.style.setProperty('--color-brand-primary-hover-contrast', tokens.primary.hoverContrast);
-  root.style.setProperty('--color-brand-primary-active-contrast', tokens.primary.activeContrast);
+  // Set client-scoped custom properties
+  root.style.setProperty('--client-primary', tokens.primary.base);
+  root.style.setProperty('--client-primary-hover', tokens.primary.hover);
+  root.style.setProperty('--client-primary-active', tokens.primary.active);
+  root.style.setProperty('--client-primary-soft', tokens.primary.soft);
+  root.style.setProperty('--client-primary-border', tokens.primary.border);
+  root.style.setProperty('--client-primary-contrast', tokens.primary.contrast);
+  root.style.setProperty('--client-primary-hover-contrast', tokens.primary.hoverContrast);
+  root.style.setProperty('--client-primary-active-contrast', tokens.primary.activeContrast);
 
-  root.style.setProperty('--color-brand-secondary', tokens.secondary.base);
-  root.style.setProperty('--color-brand-secondary-hover', tokens.secondary.hover);
-  root.style.setProperty('--color-brand-secondary-active', tokens.secondary.active);
-  root.style.setProperty('--color-brand-secondary-soft', tokens.secondary.soft);
-  root.style.setProperty('--color-brand-secondary-border', tokens.secondary.border);
-  root.style.setProperty('--color-brand-secondary-contrast', tokens.secondary.contrast);
-  root.style.setProperty('--color-brand-secondary-hover-contrast', tokens.secondary.hoverContrast);
-  root.style.setProperty('--color-brand-secondary-active-contrast', tokens.secondary.activeContrast);
+  root.style.setProperty('--client-accent', tokens.secondary.base);
+  root.style.setProperty('--client-accent-hover', tokens.secondary.hover);
+  root.style.setProperty('--client-accent-active', tokens.secondary.active);
+  root.style.setProperty('--client-accent-soft', tokens.secondary.soft);
+  root.style.setProperty('--client-accent-border', tokens.secondary.border);
+  root.style.setProperty('--client-accent-contrast', tokens.secondary.contrast);
+  root.style.setProperty('--client-accent-hover-contrast', tokens.secondary.hoverContrast);
+  root.style.setProperty('--client-accent-active-contrast', tokens.secondary.activeContrast);
 
   return tokens;
 }

@@ -113,7 +113,7 @@ const NocGlobal: React.FC = () => {
   const navigate = useNavigate();
 
   // State
-  const [summary, setSummary] = useState<NocSummary | null>(null);
+  const [summary, setSummary] = useState<NocSummary & { clientes_disponibles?: any[] } | null>(null);
   const [clientesAfectados, setClientesAfectados] = useState<ClienteAfectado[]>([]);
   const [servicios, setServicios] = useState<NocServicio[]>([]);
   const [totalServicios, setTotalServicios] = useState(0);
@@ -121,9 +121,15 @@ const NocGlobal: React.FC = () => {
   const [eventos, setEventos] = useState<NocEvento[]>([]);
   const [geozonas, setGeozonas] = useState<NocGeozona[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isBackgroundRefreshing, setIsBackgroundRefreshing] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<string>('');
 
+  // Auto-refresh state (Default: 900s = 15min cadencia Starlink API)
+  const [autoRefreshInterval, setAutoRefreshInterval] = useState<number>(900);
+  const [countdown, setCountdown] = useState<number>(900);
+
   // Filters & Pagination State
+  const [selectedClienteId, setSelectedClienteId] = useState<number | ''>('');
   const [searchTerm, setSearchTerm] = useState('');
   const [filterEstado, setFilterEstado] = useState('TODOS');
   const [page, setPage] = useState(1);
@@ -132,15 +138,21 @@ const NocGlobal: React.FC = () => {
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
   // Fetch Data
-  const fetchData = useCallback(async () => {
-    setLoading(true);
+  const fetchData = useCallback(async (isBackground: boolean = false) => {
+    if (isBackground) {
+      setIsBackgroundRefreshing(true);
+    } else {
+      setLoading(true);
+    }
     try {
+      const cliParam = selectedClienteId !== '' ? selectedClienteId : undefined;
       const [sumRes, cliRes, servRes, aleRes, eveRes, geoRes] = await Promise.all([
-        client.get('/reseller/noc/summary'),
-        client.get('/reseller/noc/clientes-afectados'),
+        client.get('/reseller/noc/summary', { params: { cliente_id: cliParam } }),
+        client.get('/reseller/noc/clientes-afectados', { params: { cliente_id: cliParam } }),
         client.get('/reseller/noc/servicios', {
           params: {
             q: searchTerm || undefined,
+            cliente_id: cliParam,
             estado_operativo: filterEstado,
             page,
             pageSize,
@@ -148,9 +160,9 @@ const NocGlobal: React.FC = () => {
             sortDirection
           }
         }),
-        client.get('/reseller/noc/alertas'),
-        client.get('/reseller/noc/eventos'),
-        client.get('/reseller/noc/geozonas')
+        client.get('/reseller/noc/alertas', { params: { cliente_id: cliParam } }),
+        client.get('/reseller/noc/eventos', { params: { cliente_id: cliParam } }),
+        client.get('/reseller/noc/geozonas', { params: { cliente_id: cliParam } })
       ]);
 
       setSummary(sumRes.data);
@@ -165,12 +177,40 @@ const NocGlobal: React.FC = () => {
       console.error('Error loading NOC data:', err);
     } finally {
       setLoading(false);
+      setIsBackgroundRefreshing(false);
     }
-  }, [searchTerm, filterEstado, page, pageSize, sortBy, sortDirection]);
+  }, [searchTerm, selectedClienteId, filterEstado, page, pageSize, sortBy, sortDirection]);
 
   useEffect(() => {
-    fetchData();
+    fetchData(false);
   }, [fetchData]);
+
+  // Auto-refresh interval effect
+  useEffect(() => {
+    if (autoRefreshInterval === 0) {
+      setCountdown(0);
+      return;
+    }
+    setCountdown(autoRefreshInterval);
+    const timer = setInterval(() => {
+      setCountdown((prev) => {
+        if (prev <= 1) {
+          fetchData(true);
+          return autoRefreshInterval;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [autoRefreshInterval, fetchData]);
+
+  const formatCountdown = (seconds: number) => {
+    if (seconds <= 0) return '00:00';
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  };
 
   const handleSort = (field: string) => {
     if (sortBy === field) {
@@ -186,38 +226,103 @@ const NocGlobal: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* 1. ENCABEZADO */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <Radio className="w-6 h-6 text-st-accent animate-pulse" />
-            <h1 className="text-2xl font-bold tracking-tight text-white font-sans">NOC Global</h1>
+      {/* 1. ENCABEZADO Y CONTROLES DEL NOC */}
+      <div className="bg-st-surface border border-st-border rounded-2xl p-4 shadow-lg shadow-black/20">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2">
+              <Radio className="w-6 h-6 text-st-accent animate-pulse" />
+              <h1 className="text-2xl font-bold tracking-tight text-white font-sans">NOC Global</h1>
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-st-accent/15 text-st-accent border border-st-accent/30 font-bold uppercase tracking-wider">
+                Tiempo Real
+              </span>
+            </div>
+            <p className="text-xs text-st-muted mt-0.5">
+              Centro de operaciones de red en tiempo real para la cartera de terminales Starlink.
+            </p>
           </div>
-          <p className="text-xs text-st-muted mt-0.5">
-            Centro de operaciones de red en tiempo real para la cartera de terminales Starlink.
-          </p>
-        </div>
 
-        <div className="flex items-center gap-3">
-          {lastUpdated && (
-            <span className="text-xs text-st-muted font-mono bg-white/5 px-2.5 py-1 rounded border border-white/10">
-              Última actualización: {lastUpdated}
-            </span>
-          )}
-          <button
-            onClick={fetchData}
-            disabled={loading}
-            className="flex items-center gap-2 px-3 py-2 bg-st-surface border border-st-border rounded-lg text-xs font-semibold text-white hover:bg-white/10 active:scale-95 transition-all cursor-pointer"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 text-st-accent ${loading ? 'animate-spin' : ''}`} />
-            <span>Refrescar</span>
-          </button>
+          {/* CONTROLES: FILTRO CLIENTE + AUTO-REFRESCO + MANUAL */}
+          <div className="flex flex-wrap items-center gap-3">
+            {/* SELECTOR DE CLIENTE */}
+            <div className="flex items-center gap-2 bg-st-bg px-3 py-1.5 rounded-xl border border-st-border">
+              <Building2 className="w-3.5 h-3.5 text-st-accent" />
+              <select
+                value={selectedClienteId}
+                onChange={(e) => {
+                  setSelectedClienteId(e.target.value ? Number(e.target.value) : '');
+                  setPage(1);
+                }}
+                className="bg-transparent text-white text-xs font-semibold focus:outline-none cursor-pointer"
+              >
+                <option value="" className="bg-st-surface text-white">Todos los clientes ({summary?.clientes_disponibles?.length || 0})</option>
+                {summary?.clientes_disponibles?.map((c: any) => (
+                  <option key={c.tenant_id} value={c.tenant_id} className="bg-st-surface text-white">
+                    {c.cliente} ({c.codigo})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* SELECTOR DE AUTO-REFRESCO */}
+            <div className="flex items-center gap-2 bg-st-bg px-3 py-1.5 rounded-xl border border-st-border">
+              <Clock className="w-3.5 h-3.5 text-st-muted" />
+              <select
+                value={autoRefreshInterval}
+                onChange={(e) => {
+                  const val = Number(e.target.value);
+                  setAutoRefreshInterval(val);
+                  setCountdown(val);
+                }}
+                className="bg-transparent text-white text-xs font-semibold focus:outline-none cursor-pointer"
+              >
+                <option value={900} className="bg-st-surface text-white">Cada 15 min (Telemetría)</option>
+                <option value={300} className="bg-st-surface text-white">Cada 5 min</option>
+                <option value={60} className="bg-st-surface text-white">Cada 1 min</option>
+                <option value={30} className="bg-st-surface text-white">Cada 30 seg</option>
+                <option value={0} className="bg-st-surface text-white">Manual / Pausado</option>
+              </select>
+            </div>
+
+            {/* BADGE DE ESTADO DE REFRESCO Y CUENTA REGRESIVA */}
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-1.5 bg-st-surface border border-st-border rounded-xl px-3 py-1.5 text-xs font-semibold">
+                <div className={`w-2 h-2 rounded-full ${autoRefreshInterval > 0 ? 'bg-st-online animate-ping' : 'bg-st-muted'}`} />
+                <span className="text-st-muted">
+                  {autoRefreshInterval > 0 ? (
+                    <>Auto: <strong className="text-white">{formatCountdown(countdown)}</strong></>
+                  ) : (
+                    'Pausado'
+                  )}
+                </span>
+                {lastUpdated && (
+                  <span className="text-[10px] text-st-muted/70 pl-1 border-l border-white/10">
+                    {lastUpdated}
+                  </span>
+                )}
+              </div>
+
+              <button
+                onClick={() => { setCountdown(autoRefreshInterval); fetchData(false); }}
+                disabled={loading || isBackgroundRefreshing}
+                className="flex items-center gap-2 px-4 h-9 bg-st-surface border border-st-border rounded-lg text-xs font-semibold text-white hover:bg-white/5 active:scale-[0.98] transition-all cursor-pointer whitespace-nowrap disabled:opacity-50"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 text-st-muted ${(loading && !isBackgroundRefreshing) || isBackgroundRefreshing ? 'animate-spin' : ''}`} />
+                <span>Refrescar</span>
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* 2. KPI SUPERIORES (7 CARDS) */}
+      {/* 2. KPI SUPERIORES (7 CARDS CON FILTRO INTERACTIVO) */}
       <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
-        <div className="bg-st-surface border border-st-border rounded-xl p-3 flex flex-col justify-between">
+        <div 
+          onClick={() => { setFilterEstado('TODOS'); setPage(1); }}
+          className={`bg-st-surface border rounded-xl p-3 flex flex-col justify-between cursor-pointer transition-all hover:border-st-accent/40 ${
+            filterEstado === 'TODOS' ? 'ring-2 ring-st-accent border-transparent shadow-lg shadow-st-accent/10' : 'border-st-border'
+          }`}
+        >
           <div className="flex justify-between items-start">
             <span className="text-[10px] font-bold text-st-muted uppercase">Servicios Totales</span>
             <Activity className="w-4 h-4 text-st-accent" />
@@ -228,7 +333,12 @@ const NocGlobal: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-st-surface border border-st-border rounded-xl p-3 flex flex-col justify-between">
+        <div 
+          onClick={() => { setFilterEstado('OPERATIVO'); setPage(1); }}
+          className={`bg-st-surface border rounded-xl p-3 flex flex-col justify-between cursor-pointer transition-all hover:border-green-400/40 ${
+            filterEstado === 'OPERATIVO' ? 'ring-2 ring-green-400 border-transparent shadow-lg shadow-green-500/10' : 'border-st-border'
+          }`}
+        >
           <div className="flex justify-between items-start">
             <span className="text-[10px] font-bold text-st-muted uppercase">Operativos</span>
             <CheckCircle2 className="w-4 h-4 text-green-400" />
@@ -239,7 +349,12 @@ const NocGlobal: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-st-surface border border-st-border rounded-xl p-3 flex flex-col justify-between">
+        <div 
+          onClick={() => { setFilterEstado('OFFLINE'); setPage(1); }}
+          className={`bg-st-surface border rounded-xl p-3 flex flex-col justify-between cursor-pointer transition-all hover:border-red-500/40 ${
+            filterEstado === 'OFFLINE' ? 'ring-2 ring-red-500 border-transparent shadow-lg shadow-red-500/10' : 'border-st-border'
+          }`}
+        >
           <div className="flex justify-between items-start">
             <span className="text-[10px] font-bold text-st-muted uppercase">Offline</span>
             <XCircle className="w-4 h-4 text-red-500" />
@@ -250,7 +365,12 @@ const NocGlobal: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-st-surface border border-st-border rounded-xl p-3 flex flex-col justify-between">
+        <div 
+          onClick={() => { setFilterEstado('SIN_TELEMETRIA'); setPage(1); }}
+          className={`bg-st-surface border rounded-xl p-3 flex flex-col justify-between cursor-pointer transition-all hover:border-gray-400/40 ${
+            filterEstado === 'SIN_TELEMETRIA' ? 'ring-2 ring-gray-400 border-transparent shadow-lg shadow-white/10' : 'border-st-border'
+          }`}
+        >
           <div className="flex justify-between items-start">
             <span className="text-[10px] font-bold text-st-muted uppercase">Sin Telemetría</span>
             <WifiOff className="w-4 h-4 text-gray-400" />
@@ -261,7 +381,13 @@ const NocGlobal: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-st-surface border border-st-border rounded-xl p-3 flex flex-col justify-between" title="Calculado por STARMONITOR cuando latencia > 100ms, pérdida > 2% u obstrucción > 0.5%">
+        <div 
+          onClick={() => { setFilterEstado('DEGRADADO'); setPage(1); }}
+          className={`bg-st-surface border rounded-xl p-3 flex flex-col justify-between cursor-pointer transition-all hover:border-amber-400/40 ${
+            filterEstado === 'DEGRADADO' ? 'ring-2 ring-amber-400 border-transparent shadow-lg shadow-amber-500/10' : 'border-st-border'
+          }`}
+          title="Calculado por STARMONITOR cuando latencia > 100ms, pérdida > 2% u obstrucción > 0.5%"
+        >
           <div className="flex justify-between items-start">
             <span className="text-[10px] font-bold text-st-muted uppercase">Degradados</span>
             <AlertTriangle className="w-4 h-4 text-amber-400" />
@@ -279,7 +405,7 @@ const NocGlobal: React.FC = () => {
           </div>
           <div className="mt-2">
             <span className="text-xl font-bold font-mono text-red-400">{summary?.alertas_criticas_activas || 0}</span>
-            <p className="text-[10px] text-st-muted mt-0.5">En flota global</p>
+            <p className="text-[10px] text-st-muted mt-0.5">En flota</p>
           </div>
         </div>
 

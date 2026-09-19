@@ -1,12 +1,16 @@
-import { useState, useEffect } from 'react';
-import { Shield, Lock, Search, Key, UserCheck, User, Unlock, Ban, RefreshCw, X } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { Shield, Lock, Search, Key, UserCheck, User, Unlock, Ban, RefreshCw, X, ChevronUp, ChevronDown, ArrowUpDown, Trash2, AlertTriangle, KeyRound, Copy, Check, Eye, EyeOff, Sparkles } from 'lucide-react';
 import client from '../../api/client';
+import AlertPopup from '../../components/AlertPopup';
 
 export default function UsuariosAccesos() {
   const [loading, setLoading] = useState(true);
   const [usuarios, setUsuarios] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   
+  // Current user info
+  const [currentUser, setCurrentUser] = useState<any>(null);
+
   // Drawer state
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -17,9 +21,86 @@ export default function UsuariosAccesos() {
   const [userAuditoria, setUserAuditoria] = useState<any[]>([]);
   const [loadingDetails, setLoadingDetails] = useState(false);
 
+  // Delete modal state
+  const [userToDelete, setUserToDelete] = useState<any | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  // Reset Password modal state
+  const [resetPasswordModal, setResetPasswordModal] = useState<{
+    isOpen: boolean;
+    user: any;
+    password: string;
+    forceChange: boolean;
+    showPassword: boolean;
+    loading: boolean;
+    isSuccess: boolean;
+    copied: boolean;
+  }>({
+    isOpen: false,
+    user: null,
+    password: '',
+    forceChange: true,
+    showPassword: true,
+    loading: false,
+    isSuccess: false,
+    copied: false
+  });
+
+  // Alert popup state
+  const [alertData, setAlertData] = useState<{
+    isOpen: boolean;
+    type: 'success' | 'error' | 'info' | 'warning';
+    title?: string;
+    message: string;
+  }>({
+    isOpen: false,
+    type: 'info',
+    message: ''
+  });
+
+  const [passwordPolicy, setPasswordPolicy] = useState<{ longitud_minima: number; longitud_maxima: number }>({
+    longitud_minima: 12,
+    longitud_maxima: 128
+  });
+
+  const [sortBy, setSortBy] = useState<string>('nombre');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+
+  const handleSort = (field: string) => {
+    if (sortBy === field) {
+      setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortBy(field);
+      setSortDirection('asc');
+    }
+  };
+
   useEffect(() => {
     fetchUsuarios();
+    fetchPasswordPolicy();
+    try {
+      const stored = localStorage.getItem('starlink_user');
+      if (stored) {
+        setCurrentUser(JSON.parse(stored));
+      }
+    } catch (e) {
+      console.error(e);
+    }
   }, []);
+
+  const fetchPasswordPolicy = async () => {
+    try {
+      const res = await client.get('/perfil/password-policy');
+      if (res.data) {
+        setPasswordPolicy({
+          longitud_minima: res.data.longitud_minima || 12,
+          longitud_maxima: res.data.longitud_maxima || 128
+        });
+      }
+    } catch (e) {
+      console.error('Error fetching password policy:', e);
+    }
+  };
 
   const fetchUsuarios = async () => {
     try {
@@ -27,7 +108,12 @@ export default function UsuariosAccesos() {
       setUsuarios(res.data);
     } catch (error) {
       console.error(error);
-      alert('Error al cargar usuarios');
+      setAlertData({
+        isOpen: true,
+        type: 'error',
+        title: 'Error de Carga',
+        message: 'No se pudieron cargar los usuarios del sistema.'
+      });
     } finally {
       setLoading(false);
     }
@@ -80,18 +166,66 @@ export default function UsuariosAccesos() {
     }
   };
 
-  const handleResetPassword = async () => {
-    if (!selectedUser) return;
-    if (!confirm(`¿Forzar reseteo de contraseña para ${selectedUser.email}?`)) return;
+  const generateRandomPassword = () => {
+    const randNum = Math.floor(1000 + Math.random() * 9000);
+    return `TempStarlink#${randNum}`;
+  };
+
+  const handleOpenResetPassword = (user: any) => {
+    if (!user) return;
+    const generated = generateRandomPassword();
+    setResetPasswordModal({
+      isOpen: true,
+      user,
+      password: generated,
+      forceChange: true,
+      showPassword: true,
+      loading: false,
+      isSuccess: false,
+      copied: false
+    });
+  };
+
+  const handleConfirmResetPassword = async () => {
+    if (!resetPasswordModal.user || !resetPasswordModal.password.trim()) return;
+    setResetPasswordModal(prev => ({ ...prev, loading: true }));
     try {
-      await client.post(`/usuarios/${selectedUser.id}/reset_password`);
-      alert('Reseteo de contraseña iniciado. El usuario deberá cambiar su clave en el próximo login.');
-      fetchUsuarios();
-      setSelectedUser({ ...selectedUser, debe_cambiar_password: true });
-    } catch (error) {
+      const res = await client.post(`/usuarios/${resetPasswordModal.user.id}/reset_password`, {
+        nueva_password: resetPasswordModal.password.trim(),
+        forzar_cambio: resetPasswordModal.forceChange
+      });
+      
+      setResetPasswordModal(prev => ({
+        ...prev,
+        loading: false,
+        isSuccess: true,
+        password: res.data.password_temporal || prev.password
+      }));
+
+      if (selectedUser?.id === resetPasswordModal.user.id) {
+        setSelectedUser({ ...selectedUser, debe_cambiar_password: resetPasswordModal.forceChange });
+      }
+
+      await fetchUsuarios();
+    } catch (error: any) {
       console.error(error);
-      alert('Error al reiniciar contraseña');
+      setResetPasswordModal(prev => ({ ...prev, loading: false }));
+      const msg = error.response?.data?.detail || 'Error al restablecer la contraseña.';
+      setAlertData({
+        isOpen: true,
+        type: 'error',
+        title: 'Error de Restablecimiento',
+        message: msg
+      });
     }
+  };
+
+  const handleCopyPassword = () => {
+    navigator.clipboard.writeText(resetPasswordModal.password);
+    setResetPasswordModal(prev => ({ ...prev, copied: true }));
+    setTimeout(() => {
+      setResetPasswordModal(prev => ({ ...prev, copied: false }));
+    }, 2500);
   };
 
   const handleRevocarSesion = async (sesionId: number) => {
@@ -106,10 +240,100 @@ export default function UsuariosAccesos() {
     }
   };
 
+  const handleInitiateDelete = (user: any) => {
+    if (!user) return;
+    if (currentUser && (currentUser.id === user.id || currentUser.email === user.email)) {
+      setAlertData({
+        isOpen: true,
+        type: 'error',
+        title: 'Acción No Permitida',
+        message: 'No puedes eliminar tu propia cuenta de usuario en sesión activa.'
+      });
+      return;
+    }
+    setUserToDelete(user);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!userToDelete) return;
+    setDeleting(true);
+    try {
+      await client.delete(`/usuarios/${userToDelete.id}`);
+      if (selectedUser?.id === userToDelete.id) {
+        setIsDrawerOpen(false);
+        setSelectedUser(null);
+      }
+      setAlertData({
+        isOpen: true,
+        type: 'success',
+        title: 'Usuario Eliminado',
+        message: `El usuario ${userToDelete.nombre} (${userToDelete.email}) ha sido eliminado permanentemente.`
+      });
+      setUserToDelete(null);
+      await fetchUsuarios();
+    } catch (error: any) {
+      console.error(error);
+      let msg = error.response?.data?.detail || 'Error al eliminar el usuario. Inténtalo nuevamente.';
+      if (typeof msg === 'string' && (msg.includes('psycopg2') || msg.includes('SQL:') || msg.includes('ForeignKeyViolation'))) {
+        msg = 'No se pudo eliminar el usuario debido a restricciones de seguridad en la base de datos.';
+      }
+      setAlertData({
+        isOpen: true,
+        type: 'error',
+        title: 'Error al Eliminar',
+        message: msg
+      });
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   const filtered = usuarios.filter(u => 
     u.nombre.toLowerCase().includes(searchTerm.toLowerCase()) || 
     u.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const sortedUsers = useMemo(() => {
+    const list = [...filtered];
+    list.sort((a: any, b: any) => {
+      let aVal = a[sortBy];
+      let bVal = b[sortBy];
+
+      if (sortBy === 'rol') {
+        aVal = a.roles?.[0]?.rol?.codigo || '';
+        bVal = b.roles?.[0]?.rol?.codigo || '';
+      } else if (sortBy === 'estado') {
+        const aBlocked = a.bloqueado_manual || (a.bloqueado_hasta && new Date(a.bloqueado_hasta) > new Date());
+        const bBlocked = b.bloqueado_manual || (b.bloqueado_hasta && new Date(b.bloqueado_hasta) > new Date());
+        aVal = aBlocked ? 'BLOQUEADO' : (!a.activo ? 'INACTIVO' : 'ACTIVO');
+        bVal = bBlocked ? 'BLOQUEADO' : (!b.activo ? 'INACTIVO' : 'ACTIVO');
+      } else if (sortBy === 'mfa') {
+        aVal = a.mfa_habilitado ? 1 : 0;
+        bVal = b.mfa_habilitado ? 1 : 0;
+      }
+
+      if (aVal === undefined || aVal === null) aVal = '';
+      if (bVal === undefined || bVal === null) bVal = '';
+
+      if (typeof aVal === 'string') {
+        const comp = aVal.localeCompare(String(bVal));
+        return sortDirection === 'asc' ? comp : -comp;
+      }
+      return sortDirection === 'asc' ? Number(aVal) - Number(bVal) : Number(bVal) - Number(aVal);
+    });
+    return list;
+  }, [filtered, sortBy, sortDirection]);
+
+  const renderSortIcon = (field: string) => {
+    if (sortBy === field) {
+      return sortDirection === 'asc' ? (
+        <ChevronUp className="w-3.5 h-3.5 text-st-accent flex-shrink-0" />
+      ) : (
+        <ChevronDown className="w-3.5 h-3.5 text-st-accent flex-shrink-0" />
+      );
+    }
+    return <ArrowUpDown className="w-2.5 h-2.5 text-st-muted/40 group-hover:text-st-muted flex-shrink-0 transition-colors" />;
+  };
 
   return (
     <div className="p-8 space-y-6 h-full flex flex-col">
@@ -141,21 +365,61 @@ export default function UsuariosAccesos() {
           <table className="w-full text-left text-sm text-st-muted">
             <thead className="text-xs uppercase bg-black/40 border-b border-st-border sticky top-0 z-10">
               <tr>
-                <th className="px-6 py-4 font-bold tracking-wider">Usuario</th>
-                <th className="px-6 py-4 font-bold tracking-wider">Rol / Alcance</th>
-                <th className="px-6 py-4 font-bold tracking-wider">Estado</th>
-                <th className="px-6 py-4 font-bold tracking-wider text-center">MFA</th>
-                <th className="px-6 py-4 font-bold tracking-wider text-center">Intentos Fallidos</th>
+                <th
+                  className="px-6 py-4 font-bold tracking-wider cursor-pointer select-none hover:text-white transition-colors group"
+                  onClick={() => handleSort('nombre')}
+                >
+                  <div className="flex items-center gap-1.5">
+                    <span>Usuario</span>
+                    {renderSortIcon('nombre')}
+                  </div>
+                </th>
+                <th
+                  className="px-6 py-4 font-bold tracking-wider cursor-pointer select-none hover:text-white transition-colors group"
+                  onClick={() => handleSort('rol')}
+                >
+                  <div className="flex items-center gap-1.5">
+                    <span>Rol / Alcance</span>
+                    {renderSortIcon('rol')}
+                  </div>
+                </th>
+                <th
+                  className="px-6 py-4 font-bold tracking-wider cursor-pointer select-none hover:text-white transition-colors group"
+                  onClick={() => handleSort('estado')}
+                >
+                  <div className="flex items-center gap-1.5">
+                    <span>Estado</span>
+                    {renderSortIcon('estado')}
+                  </div>
+                </th>
+                <th
+                  className="px-6 py-4 font-bold tracking-wider text-center cursor-pointer select-none hover:text-white transition-colors group"
+                  onClick={() => handleSort('mfa')}
+                >
+                  <div className="flex items-center justify-center gap-1.5">
+                    <span>MFA</span>
+                    {renderSortIcon('mfa')}
+                  </div>
+                </th>
+                <th
+                  className="px-6 py-4 font-bold tracking-wider text-center cursor-pointer select-none hover:text-white transition-colors group"
+                  onClick={() => handleSort('intentos_fallidos')}
+                >
+                  <div className="flex items-center justify-center gap-1.5">
+                    <span>Intentos Fallidos</span>
+                    {renderSortIcon('intentos_fallidos')}
+                  </div>
+                </th>
                 <th className="px-6 py-4 font-bold tracking-wider text-right">Acción</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-st-border">
               {loading ? (
                 <tr><td colSpan={6} className="text-center py-12">Cargando usuarios...</td></tr>
-              ) : filtered.length === 0 ? (
+              ) : sortedUsers.length === 0 ? (
                 <tr><td colSpan={6} className="text-center py-12 text-st-muted">No se encontraron usuarios.</td></tr>
               ) : (
-                filtered.map(u => {
+                sortedUsers.map(u => {
                   const isBlocked = u.bloqueado_manual || (u.bloqueado_hasta && new Date(u.bloqueado_hasta) > new Date());
                   return (
                     <tr key={u.id} className="hover:bg-white/5 transition-colors group cursor-pointer" onClick={() => openDrawer(u)}>
@@ -208,9 +472,21 @@ export default function UsuariosAccesos() {
                         <span className={`font-bold ${u.intentos_fallidos > 0 ? 'text-amber-500' : 'text-st-muted'}`}>{u.intentos_fallidos}</span>
                       </td>
                       <td className="px-6 py-4 text-right">
-                        <button className="text-st-primary hover:text-white px-3 py-1 border border-st-primary/50 rounded hover:bg-st-primary hover:border-st-primary transition-colors text-xs font-bold" onClick={(e) => { e.stopPropagation(); openDrawer(u); }}>
-                          Ver Detalles
-                        </button>
+                        <div className="flex items-center justify-end gap-2">
+                          <button 
+                            className="text-st-primary hover:text-white px-3 py-1 border border-st-primary/50 rounded hover:bg-st-primary hover:border-st-primary transition-colors text-xs font-bold" 
+                            onClick={(e) => { e.stopPropagation(); openDrawer(u); }}
+                          >
+                            Ver Detalles
+                          </button>
+                          <button 
+                            className="p-1.5 text-st-muted hover:text-red-400 hover:bg-red-500/10 border border-transparent hover:border-red-500/30 rounded transition-colors" 
+                            title="Eliminar Usuario"
+                            onClick={(e) => { e.stopPropagation(); handleInitiateDelete(u); }}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   )
@@ -334,14 +610,14 @@ export default function UsuariosAccesos() {
                     <h3 className="font-bold text-white uppercase text-xs tracking-wider">Acciones Administrativas</h3>
                     
                     <button 
-                      onClick={handleResetPassword}
-                      className="w-full flex items-center justify-between p-4 bg-st-bg hover:bg-white/5 border border-st-border rounded-xl transition-colors group"
+                      onClick={() => handleOpenResetPassword(selectedUser)}
+                      className="w-full flex items-center justify-between p-4 bg-st-bg hover:bg-white/5 border border-st-border hover:border-amber-500/40 rounded-xl transition-colors group cursor-pointer"
                     >
                       <div className="flex items-center gap-3">
                         <div className="p-2 bg-amber-500/10 text-amber-500 rounded-lg group-hover:bg-amber-500/20"><Key className="w-5 h-5"/></div>
                         <div className="text-left">
-                          <p className="text-sm font-bold text-white">Forzar Reseteo de Contraseña</p>
-                          <p className="text-xs text-st-muted">El usuario deberá cambiar su clave en su próximo login.</p>
+                          <p className="text-sm font-bold text-white group-hover:text-amber-400">Restablecer / Forzar Cambio de Clave</p>
+                          <p className="text-xs text-st-muted">Asigna una clave temporal y exige el cambio al iniciar sesión.</p>
                         </div>
                       </div>
                       <RefreshCw className="w-4 h-4 text-st-muted group-hover:text-amber-500" />
@@ -374,6 +650,21 @@ export default function UsuariosAccesos() {
                         </div>
                       </button>
                     )}
+
+                    {/* Botón Eliminar Usuario */}
+                    <button 
+                      onClick={() => handleInitiateDelete(selectedUser)}
+                      className="w-full flex items-center justify-between p-4 bg-red-500/5 hover:bg-red-500/15 border border-red-500/30 hover:border-red-500/60 rounded-xl transition-colors group"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-red-500/10 text-red-400 rounded-lg group-hover:bg-red-500/20"><Trash2 className="w-5 h-5"/></div>
+                        <div className="text-left">
+                          <p className="text-sm font-bold text-red-400 group-hover:text-red-300">Eliminar Usuario</p>
+                          <p className="text-xs text-st-muted">Elimina permanentemente la cuenta, roles y accesos.</p>
+                        </div>
+                      </div>
+                      <Trash2 className="w-4 h-4 text-red-400/60 group-hover:text-red-400" />
+                    </button>
                   </div>
                 </div>
               )}
@@ -463,6 +754,240 @@ export default function UsuariosAccesos() {
           </div>
         </div>
       )}
+
+      {/* MODAL DE CONFIRMACIÓN DE ELIMINACIÓN */}
+      {userToDelete && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/75 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="bg-st-surface border border-red-500/30 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-6">
+            <div className="flex items-start gap-4">
+              <div className="p-3 bg-red-500/10 text-red-500 rounded-xl border border-red-500/20 shrink-0">
+                <AlertTriangle className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-white">¿Eliminar Usuario?</h3>
+                <p className="text-sm text-st-muted mt-1">
+                  Estás a punto de eliminar permanentemente al usuario <strong className="text-white">{userToDelete.nombre}</strong> (<span className="text-st-accent">{userToDelete.email}</span>).
+                </p>
+                <div className="mt-3 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-xs text-red-300 leading-relaxed">
+                  ⚠️ Esta acción no se puede deshacer. Se revocarán todas sus sesiones activas, asignaciones de roles y credenciales de acceso.
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 pt-2">
+              <button
+                type="button"
+                disabled={deleting}
+                onClick={() => setUserToDelete(null)}
+                className="px-4 py-2 bg-st-bg hover:bg-white/10 text-white rounded-lg text-sm font-semibold border border-st-border transition-colors disabled:opacity-50 cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                disabled={deleting}
+                onClick={handleConfirmDelete}
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-bold flex items-center gap-2 transition-colors disabled:opacity-50 shadow-lg shadow-red-600/30 cursor-pointer"
+              >
+                {deleting ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    <span>Eliminando...</span>
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-4 h-4" />
+                    <span>Sí, Eliminar</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL DE RESTABLECIMIENTO / FORZAR CAMBIO DE CONTRASEÑA */}
+      {resetPasswordModal.isOpen && resetPasswordModal.user && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/75 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="bg-st-surface border border-amber-500/30 rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-6">
+            <div className="flex justify-between items-start border-b border-st-border pb-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-amber-500/10 text-amber-400 rounded-xl border border-amber-500/20">
+                  <KeyRound className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-white">Restablecer Contraseña</h3>
+                  <p className="text-xs text-st-muted">Usuario: <span className="text-white font-semibold">{resetPasswordModal.user.nombre}</span> ({resetPasswordModal.user.email})</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setResetPasswordModal(prev => ({ ...prev, isOpen: false }))} 
+                className="p-1.5 text-st-muted hover:text-white hover:bg-white/10 rounded-lg transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {!resetPasswordModal.isSuccess ? (
+              <div className="space-y-5">
+                <div>
+                  <div className="flex justify-between items-center mb-1.5">
+                    <label className="block text-xs font-bold text-st-muted uppercase">Contraseña Temporal</label>
+                    <button 
+                      type="button" 
+                      onClick={() => setResetPasswordModal(prev => ({ ...prev, password: generateRandomPassword() }))}
+                      className="text-xs text-st-accent hover:underline flex items-center gap-1 cursor-pointer font-medium"
+                    >
+                      <Sparkles className="w-3.5 h-3.5" /> Generar otra
+                    </button>
+                  </div>
+                  <div className="relative">
+                    <input 
+                      type={resetPasswordModal.showPassword ? "text" : "password"}
+                      value={resetPasswordModal.password}
+                      onChange={(e) => setResetPasswordModal(prev => ({ ...prev, password: e.target.value }))}
+                      style={{ color: '#FFFFFF', WebkitTextFillColor: '#FFFFFF', caretColor: '#FFFFFF', backgroundColor: '#1e2024' }}
+                      className={`dark-input w-full px-4 py-3 bg-[#1e2024] text-white border rounded-lg text-sm focus:outline-none font-mono pr-12 transition-colors ${
+                        resetPasswordModal.password.length >= passwordPolicy.longitud_minima 
+                          ? 'border-emerald-500/60 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500' 
+                          : 'border-amber-500/60 focus:border-amber-500 focus:ring-1 focus:ring-amber-500'
+                      }`}
+                      placeholder="Ingresa o genera una contraseña"
+                    />
+                    <button 
+                      type="button"
+                      onClick={() => setResetPasswordModal(prev => ({ ...prev, showPassword: !prev.showPassword }))}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 text-gray-400 hover:text-white transition-colors cursor-pointer"
+                      title={resetPasswordModal.showPassword ? "Ocultar" : "Mostrar"}
+                    >
+                      {resetPasswordModal.showPassword ? <EyeOff className="w-5 h-5 text-amber-400" /> : <Eye className="w-5 h-5" />}
+                    </button>
+                  </div>
+                  <div className="flex items-center justify-between mt-2 text-xs">
+                    <div className="flex items-center gap-1.5">
+                      {resetPasswordModal.password.length >= passwordPolicy.longitud_minima ? (
+                        <span className="text-emerald-400 font-medium flex items-center gap-1">
+                          <Check className="w-3.5 h-3.5" /> Cumple con la política corporativa
+                        </span>
+                      ) : (
+                        <span className="text-amber-400 font-medium flex items-center gap-1">
+                          <AlertTriangle className="w-3.5 h-3.5" /> Mínimo requerido: {passwordPolicy.longitud_minima} caracteres
+                        </span>
+                      )}
+                    </div>
+                    <span className={`font-mono font-bold px-2 py-0.5 rounded text-[11px] ${
+                      resetPasswordModal.password.length >= passwordPolicy.longitud_minima 
+                        ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' 
+                        : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                    }`}>
+                      {resetPasswordModal.password.length} / {passwordPolicy.longitud_minima}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="p-3.5 bg-amber-500/5 border border-amber-500/20 rounded-xl space-y-2">
+                  <label className="flex items-start gap-3 cursor-pointer select-none">
+                    <input 
+                      type="checkbox"
+                      checked={resetPasswordModal.forceChange}
+                      onChange={(e) => setResetPasswordModal(prev => ({ ...prev, forceChange: e.target.checked }))}
+                      className="mt-1 w-4 h-4 rounded border-gray-600 text-amber-500 focus:ring-amber-500 accent-amber-500 cursor-pointer"
+                    />
+                    <div>
+                      <p className="text-sm font-bold text-white">Forzar cambio en el próximo inicio de sesión</p>
+                      <p className="text-xs text-st-muted mt-0.5">El usuario deberá crear una nueva contraseña obligatoria antes de acceder al portal.</p>
+                    </div>
+                  </label>
+                </div>
+
+                <div className="flex justify-end gap-3 pt-2">
+                  <button
+                    type="button"
+                    disabled={resetPasswordModal.loading}
+                    onClick={() => setResetPasswordModal(prev => ({ ...prev, isOpen: false }))}
+                    className="px-4 py-2 bg-st-bg hover:bg-white/10 text-white rounded-lg text-sm font-semibold border border-st-border transition-colors disabled:opacity-50 cursor-pointer"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="button"
+                    disabled={resetPasswordModal.loading || resetPasswordModal.password.length < passwordPolicy.longitud_minima}
+                    onClick={handleConfirmResetPassword}
+                    className="px-5 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-sm font-bold flex items-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-amber-600/30 cursor-pointer"
+                  >
+                    {resetPasswordModal.loading ? (
+                      <>
+                        <RefreshCw className="w-4 h-4 animate-spin" />
+                        <span>Guardando...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Key className="w-4 h-4" />
+                        <span>Aplicar Contraseña</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-5 text-center py-2">
+                <div className="w-12 h-12 bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 rounded-full flex items-center justify-center mx-auto">
+                  <Check className="w-6 h-6" />
+                </div>
+                <div>
+                  <h4 className="text-base font-bold text-white">¡Contraseña Asignada Exitosamente!</h4>
+                  <p className="text-xs text-st-muted mt-1 max-w-sm mx-auto">
+                    Comparte la contraseña temporal con el usuario. {resetPasswordModal.forceChange ? "El sistema le solicitará cambiarla inmediatamente al iniciar sesión." : ""}
+                  </p>
+                </div>
+
+                <div className="bg-[#1e2024] border border-st-border rounded-xl p-4 flex items-center justify-between gap-3 text-left">
+                  <div>
+                    <span className="text-[10px] text-st-muted uppercase font-bold block">Contraseña Temporal:</span>
+                    <span className="font-mono text-base font-bold text-white tracking-wide">{resetPasswordModal.password}</span>
+                  </div>
+                  <button 
+                    type="button"
+                    onClick={handleCopyPassword}
+                    className={`px-3 py-2 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${resetPasswordModal.copied ? 'bg-emerald-600 text-white' : 'bg-st-bg hover:bg-white/10 text-st-accent border border-st-border'}`}
+                  >
+                    {resetPasswordModal.copied ? (
+                      <>
+                        <Check className="w-4 h-4" />
+                        <span>¡Copiado!</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-4 h-4" />
+                        <span>Copiar</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                <div className="pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setResetPasswordModal(prev => ({ ...prev, isOpen: false }))}
+                    className="w-full py-2.5 bg-st-primary hover:bg-st-primary/90 text-white font-bold rounded-lg text-sm transition-colors cursor-pointer"
+                  >
+                    Entendido / Cerrar
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* POPUP DE ALERTAS / FEEDBACK */}
+      <AlertPopup
+        isOpen={alertData.isOpen}
+        type={alertData.type}
+        title={alertData.title}
+        message={alertData.message}
+        onClose={() => setAlertData(prev => ({ ...prev, isOpen: false }))}
+      />
 
     </div>
   );

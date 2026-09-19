@@ -26,26 +26,27 @@ export const ClienteHierarchy: React.FC = () => {
     if (children.length === 0) return null;
 
     return (
-      <div className={`space-y-2 ${parentId !== null ? 'pl-8 mt-2 border-l border-white/10' : ''}`}>
+      <div className={`space-y-2 ${parentId !== null ? 'pl-8 mt-2 border-l border-[#222222]' : ''}`}>
         {children.map(unit => (
           <div key={unit.id} className="group">
-            <div className="flex items-center justify-between p-3 rounded-lg bg-white/[0.02] border border-white/5 hover:bg-white/[0.05] transition-colors cursor-pointer">
+            <div className="flex items-center justify-between p-3 rounded-lg bg-black border border-[#222222] hover:bg-white/5 transition-colors cursor-pointer">
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-md bg-white/5 flex items-center justify-center text-st-accent">
+                <div className="w-8 h-8 rounded-md bg-[#00A8E8]/10 flex items-center justify-center text-[#00A8E8] border border-[#00A8E8]/20">
                   {getIconForLevel(unit.numero_nivel)}
                 </div>
                 <div>
-                  <h4 className="text-white font-medium group-hover:text-st-accent transition-colors">{unit.nombre}</h4>
-                  <p className="text-xs text-st-muted">Código: {unit.codigo}</p>
+                  <h4 className="text-white font-medium group-hover:text-[#00A8E8] transition-colors">{unit.nombre}</h4>
+                  <p className="text-xs text-[#94A3B8]">Código: <span className="font-mono text-[#00A8E8]">{unit.codigo}</span></p>
                 </div>
               </div>
               <div className="flex items-center gap-3">
-                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                  unit.activo ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'
+                <span className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-[6px] text-xs font-bold uppercase tracking-wide ${
+                  unit.activo ? 'bg-emerald-500/10 text-[#4ADE80] border border-emerald-500/20' : 'bg-red-500/10 text-[#F87171] border border-red-500/20'
                 }`}>
+                  <span className={`w-1.5 h-1.5 rounded-full ${unit.activo ? 'bg-[#22C55E]' : 'bg-[#EF4444]'}`} />
                   {unit.activo ? 'Activo' : 'Inactivo'}
                 </span>
-                <ChevronRight className="w-4 h-4 text-st-muted opacity-0 group-hover:opacity-100 transition-opacity" />
+                <ChevronRight className="w-4 h-4 text-[#94A3B8] opacity-0 group-hover:opacity-100 transition-opacity" />
               </div>
             </div>
             {renderUnitsTree(unit.id, currentLevel + 1)}
@@ -59,14 +60,14 @@ export const ClienteHierarchy: React.FC = () => {
     <div className="space-y-6 animate-in fade-in duration-500">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-white flex items-center gap-2">
-            <LayoutList className="w-6 h-6 text-st-accent" />
+          <h1 className="text-2xl font-bold tracking-tight text-client-text-primary flex items-center gap-2">
+            <LayoutList className="w-6 h-6 text-client-primary" />
             Jerarquía Organizacional
           </h1>
-          <p className="text-st-muted mt-1 text-sm">Configuración de niveles y estructura organizativa de la empresa.</p>
+          <p className="text-client-text-secondary mt-1 text-sm">Configuración de niveles y estructura organizativa de la empresa.</p>
         </div>
         <div className="flex gap-2 w-full md:w-auto">
-          <button className="flex items-center gap-2 px-4 py-2 bg-st-accent text-white rounded-lg text-sm font-bold hover:bg-blue-500 transition-colors">
+          <button className="flex items-center gap-2 px-5 py-2.5 bg-[#00A8E8] hover:bg-[#38BDF8] text-white rounded-xl text-xs font-bold uppercase tracking-wider shadow-lg shadow-[#00A8E8]/20 transition-all">
             <Plus className="w-4 h-4" /> Agregar Unidad
           </button>
         </div>
@@ -74,29 +75,30 @@ export const ClienteHierarchy: React.FC = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-1 space-y-4">
-          <div className="card">
-            <div className="p-4 border-b border-white/5">
-              <h2 className="text-lg font-bold text-white">Niveles de Jerarquía</h2>
+          <div className="bg-[#111111] border border-[#222222] rounded-xl overflow-hidden shadow-sm">
+            <div className="p-4 border-b border-[#222222] bg-[#1E293B]">
+              <h2 className="text-base font-bold text-white">Niveles de Jerarquía</h2>
             </div>
             <div className="p-4 space-y-3">
               {niveles.map(nivel => (
-                <div key={nivel.numero_nivel} className="flex items-center justify-between p-3 rounded-lg bg-white/5 border border-white/5">
+                <div key={nivel.numero_nivel} className="flex items-center justify-between p-3 rounded-lg bg-black border border-[#222222]">
                   <div className="flex items-center gap-3">
-                    <div className="w-6 h-6 rounded bg-st-accent/20 text-st-accent flex items-center justify-center font-bold text-xs">
+                    <div className="w-6 h-6 rounded bg-[#00A8E8]/15 text-[#00A8E8] border border-[#00A8E8]/30 flex items-center justify-center font-bold text-xs">
                       {nivel.numero_nivel}
                     </div>
                     <div>
                       <p className="text-sm font-bold text-white">{nivel.nombre_nivel}</p>
                     </div>
                   </div>
-                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                    nivel.activo ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'
+                  <span className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-[6px] text-xs font-bold uppercase tracking-wide ${
+                    nivel.activo ? 'bg-emerald-500/10 text-[#4ADE80] border border-emerald-500/20' : 'bg-red-500/10 text-[#F87171] border border-red-500/20'
                   }`}>
+                    <span className={`w-1.5 h-1.5 rounded-full ${nivel.activo ? 'bg-[#22C55E]' : 'bg-[#EF4444]'}`} />
                     {nivel.activo ? 'ACTIVO' : 'INACTIVO'}
                   </span>
                 </div>
               ))}
-              <div className="mt-4 p-3 border border-dashed border-white/20 rounded-lg text-center text-st-muted text-sm cursor-not-allowed">
+              <div className="mt-4 p-3 border border-dashed border-[#222222] rounded-lg text-center text-[#94A3B8] text-sm cursor-not-allowed">
                 Límite máximo de niveles alcanzado
               </div>
             </div>
@@ -104,9 +106,9 @@ export const ClienteHierarchy: React.FC = () => {
         </div>
 
         <div className="lg:col-span-2">
-          <div className="card h-full">
-            <div className="p-4 border-b border-white/5 flex items-center justify-between">
-              <h2 className="text-lg font-bold text-white">Estructura Organizacional</h2>
+          <div className="bg-[#111111] border border-[#222222] rounded-xl overflow-hidden shadow-sm h-full">
+            <div className="p-4 border-b border-[#222222] bg-[#1E293B] flex items-center justify-between">
+              <h2 className="text-base font-bold text-white">Estructura Organizacional</h2>
             </div>
             <div className="p-6">
               {renderUnitsTree(null, 1)}

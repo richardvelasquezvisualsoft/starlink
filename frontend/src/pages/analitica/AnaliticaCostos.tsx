@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import AnaliticaLayout from './AnaliticaLayout';
 import client from '../../api/client';
-import { CreditCard, DollarSign, RefreshCw } from 'lucide-react';
+import { CreditCard, DollarSign, RefreshCw, ChevronUp, ChevronDown, ArrowUpDown } from 'lucide-react';
 
 interface CostoItem {
   tenant_id: number;
@@ -28,6 +28,18 @@ const AnaliticaCostos: React.FC = () => {
   const [data, setData] = useState<CostosData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  const [sortBy, setSortBy] = useState<string>('costo_total');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+
+  const handleSort = (field: string) => {
+    if (sortBy === field) {
+      setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortBy(field);
+      setSortDirection('asc');
+    }
+  };
+
   useEffect(() => {
     const fetchData = async () => {
       setIsLoading(true);
@@ -42,6 +54,36 @@ const AnaliticaCostos: React.FC = () => {
     };
     fetchData();
   }, []);
+
+  const sortedCostos = useMemo(() => {
+    if (!data?.tabla_costos) return [];
+    const list = [...data.tabla_costos];
+    list.sort((a: any, b: any) => {
+      let aVal = a[sortBy];
+      let bVal = b[sortBy];
+
+      if (aVal === undefined || aVal === null) aVal = '';
+      if (bVal === undefined || bVal === null) bVal = '';
+
+      if (typeof aVal === 'string') {
+        const comp = aVal.localeCompare(String(bVal));
+        return sortDirection === 'asc' ? comp : -comp;
+      }
+      return sortDirection === 'asc' ? Number(aVal) - Number(bVal) : Number(bVal) - Number(aVal);
+    });
+    return list;
+  }, [data?.tabla_costos, sortBy, sortDirection]);
+
+  const renderSortIcon = (field: string) => {
+    if (sortBy === field) {
+      return sortDirection === 'asc' ? (
+        <ChevronUp className="w-3.5 h-3.5 text-st-accent flex-shrink-0" />
+      ) : (
+        <ChevronDown className="w-3.5 h-3.5 text-st-accent flex-shrink-0" />
+      );
+    }
+    return <ArrowUpDown className="w-2.5 h-2.5 text-st-muted/40 group-hover:text-st-muted flex-shrink-0 transition-colors" />;
+  };
 
   return (
     <AnaliticaLayout>
@@ -96,16 +138,64 @@ const AnaliticaCostos: React.FC = () => {
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
                   <tr className="bg-st-bg/80 text-st-muted uppercase tracking-wider font-semibold border-b border-st-border">
-                    <th className="py-3 px-4">Cliente</th>
-                    <th className="py-3 px-4 text-center">Service Lines</th>
-                    <th className="py-3 px-4 text-right">Costo Total Starlink</th>
-                    <th className="py-3 px-4 text-center">% del Costo Total</th>
-                    <th className="py-3 px-4 text-right">Costo Promedio / Terminal</th>
-                    <th className="py-3 px-4 text-right">Costo Estimado / GB</th>
+                    <th
+                      className="py-3 px-4 cursor-pointer select-none hover:text-white transition-colors group"
+                      onClick={() => handleSort('cliente')}
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <span>Cliente</span>
+                        {renderSortIcon('cliente')}
+                      </div>
+                    </th>
+                    <th
+                      className="py-3 px-4 text-center cursor-pointer select-none hover:text-white transition-colors group"
+                      onClick={() => handleSort('cantidad_lineas')}
+                    >
+                      <div className="flex items-center justify-center gap-1.5">
+                        <span>Service Lines</span>
+                        {renderSortIcon('cantidad_lineas')}
+                      </div>
+                    </th>
+                    <th
+                      className="py-3 px-4 text-right cursor-pointer select-none hover:text-white transition-colors group"
+                      onClick={() => handleSort('costo_total')}
+                    >
+                      <div className="flex items-center justify-end gap-1.5">
+                        <span>Costo Total Starlink</span>
+                        {renderSortIcon('costo_total')}
+                      </div>
+                    </th>
+                    <th
+                      className="py-3 px-4 text-center cursor-pointer select-none hover:text-white transition-colors group"
+                      onClick={() => handleSort('pct_costo_total')}
+                    >
+                      <div className="flex items-center justify-center gap-1.5">
+                        <span>% del Costo Total</span>
+                        {renderSortIcon('pct_costo_total')}
+                      </div>
+                    </th>
+                    <th
+                      className="py-3 px-4 text-right cursor-pointer select-none hover:text-white transition-colors group"
+                      onClick={() => handleSort('costo_promedio_por_starlink')}
+                    >
+                      <div className="flex items-center justify-end gap-1.5">
+                        <span>Costo Promedio / Terminal</span>
+                        {renderSortIcon('costo_promedio_por_starlink')}
+                      </div>
+                    </th>
+                    <th
+                      className="py-3 px-4 text-right cursor-pointer select-none hover:text-white transition-colors group"
+                      onClick={() => handleSort('costo_por_gb')}
+                    >
+                      <div className="flex items-center justify-end gap-1.5">
+                        <span>Costo Estimado / GB</span>
+                        {renderSortIcon('costo_por_gb')}
+                      </div>
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-st-border/50">
-                  {data.tabla_costos.map(c => (
+                  {sortedCostos.map(c => (
                     <tr key={c.tenant_id} className="hover:bg-white/[0.03] transition-colors">
                       <td className="py-3 px-4 font-bold text-white">
                         <div>{c.cliente}</div>

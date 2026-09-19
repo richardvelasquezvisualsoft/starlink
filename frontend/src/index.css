@@ -1,101 +1,73 @@
+[data-theme-scope="cliente"] {
+  /* Neutrales - Mismo estilo y contraste que Reseller Dark */
+  --client-bg-app:        #000000;
+  --client-bg-surface:    #111111;
+  --client-bg-soft:       #1A1A1A;
+  --client-bg-subtle:     #1E293B;
+
+  --client-border:        #222222;
+  --client-border-strong: #334155;
+
+  --client-text-primary:   #FFFFFF;
+  --client-text-secondary: #F1F5F9;
+  --client-text-muted:     #94A3B8;
+  --client-text-disabled:  #64748B;
+
+  /* Marca / interacción (Cian / Azul Starmonitor) */
+  --client-primary:        #00A8E8;
+  --client-primary-hover:  #38BDF8;
+  --client-primary-active: #0284C7;
+  --client-primary-soft:   rgba(0, 168, 232, 0.15);
+  --client-primary-contrast: #FFFFFF;
+  --client-primary-hover-contrast: #FFFFFF;
+  --client-primary-active-contrast: #FFFFFF;
+
+  --client-accent:         #00A8E8;
+  --client-accent-hover:   #38BDF8;
+  --client-accent-soft:    rgba(0, 168, 232, 0.15);
+  --client-accent-contrast: #FFFFFF;
+  --client-accent-hover-contrast: #FFFFFF;
+  --client-accent-active-contrast: #FFFFFF;
+
+  /* Acento cálido */
+  --client-highlight:      #F59E0B;
+  --client-highlight-hover:#D97706;
+  --client-highlight-soft: rgba(245, 158, 11, 0.15);
+
+  /* Estados */
+  --client-success:        #22C55E;
+  --client-success-soft:   rgba(34, 197, 94, 0.15);
+
+  --client-warning:        #F59E0B;
+  --client-warning-soft:   rgba(245, 158, 11, 0.15);
+
+  --client-danger:         #EF4444;
+  --client-danger-soft:    rgba(239, 68, 68, 0.15);
+
+  --client-info:           #00A8E8;
+  --client-info-soft:      rgba(0, 168, 232, 0.15);
+
+  /* Mapeos legacy (fallback para st-bg, st-surface, etc.) */
+  --color-bg-app: #000000;
+  --color-bg-surface: #111111;
+  --color-border: #222222;
+  --color-brand-primary: #00A8E8;
+  --color-brand-primary-hover: #38BDF8;
+  --color-brand-primary-active: #0284C7;
+  --color-brand-primary-soft: rgba(0, 168, 232, 0.35);
+  --color-brand-primary-border: rgba(0, 168, 232, 0.45);
+  --color-text-primary: #FFFFFF;
+  --color-text-secondary: #F1F5F9;
+  --color-text-muted: #94A3B8;
+
+  color-scheme: dark;
+  color: #FFFFFF;
+}
+
 :root {
-  /* CLIENTE Fixed Corporate Light Theme Neutral Tokens */
-  --color-bg-app: #F5F6F8;
-  --color-bg-surface: #FFFFFF;
-  --color-bg-subtle: #F1F3F5;
-  --color-border: #D9DEE5;
-
-  --color-text-primary: #111827;
-  --color-text-secondary: #4B5563;
-  --color-text-muted: #6B7280;
-
-  /* Tenant Branding Tokens (Fallbacks) */
-  --color-brand-primary: #00382B;
-  --color-brand-primary-hover: #004D3B;
-  --color-brand-primary-active: #00231B;
-  --color-brand-primary-soft: rgba(0, 56, 43, 0.15);
-  --color-brand-primary-border: rgba(0, 56, 43, 0.35);
-  --color-brand-primary-contrast: #FFFFFF;
-
-  --color-brand-secondary: #D99B26;
-  --color-brand-secondary-hover: #EBB242;
-  --color-brand-secondary-active: #B87F18;
-  --color-brand-secondary-soft: rgba(217, 155, 38, 0.15);
-  --color-brand-secondary-border: rgba(217, 155, 38, 0.35);
-  --color-brand-secondary-contrast: #111827;
-
-  /* Semantic Status Tokens */
-  --color-status-success: #10B981;
-  --color-status-warning: #F59E0B;
-  --color-status-danger: #EF4444;
-  --color-status-info: #3B82F6;
-}
-
-.bg-brand-primary {
-  background-color: var(--color-brand-primary) !important;
-}
-.bg-brand-primary-hover:hover {
-  background-color: var(--color-brand-primary-hover) !important;
-}
-.text-brand-primary {
-  color: var(--color-brand-primary) !important;
-}
-.border-brand-primary {
-  border-color: var(--color-brand-primary-border) !important;
-}
-.bg-brand-primary-soft {
-  background-color: var(--color-brand-primary-soft) !important;
-}
-
-.bg-brand-secondary {
-  background-color: var(--color-brand-secondary) !important;
-}
-.text-brand-secondary {
-  color: var(--color-brand-secondary) !important;
-}
-.border-brand-secondary {
-  border-color: var(--color-brand-secondary-border) !important;
-}
-.bg-brand-secondary-soft {
-  background-color: var(--color-brand-secondary-soft) !important;
-}
-
-.btn-brand-primary {
-  background-color: var(--color-brand-primary) !important;
-  color: var(--color-brand-primary-contrast) !important;
-  transition: all 0.15s ease-in-out;
-}
-.btn-brand-primary *,
-.btn-brand-primary svg {
-  color: inherit !important;
-  fill: currentColor;
-}
-.btn-brand-primary:hover {
-  background-color: var(--color-brand-primary-hover) !important;
-  color: var(--color-brand-primary-hover-contrast) !important;
-}
-.btn-brand-primary:active {
-  background-color: var(--color-brand-primary-active) !important;
-  color: var(--color-brand-primary-active-contrast) !important;
-}
-
-.btn-brand-secondary {
-  background-color: var(--color-brand-secondary) !important;
-  color: var(--color-brand-secondary-contrast) !important;
-  transition: all 0.15s ease-in-out;
-}
-.btn-brand-secondary *,
-.btn-brand-secondary svg {
-  color: inherit !important;
-  fill: currentColor;
-}
-.btn-brand-secondary:hover {
-  background-color: var(--color-brand-secondary-hover) !important;
-  color: var(--color-brand-secondary-hover-contrast) !important;
-}
-.btn-brand-secondary:active {
-  background-color: var(--color-brand-secondary-active) !important;
-  color: var(--color-brand-secondary-active-contrast) !important;
+  --shadow-sm: 0 1px 2px rgba(15,23,42,.04);
+  --shadow-card: 0 1px 2px rgba(15,23,42,.04), 0 8px 24px rgba(15,23,42,.05);
+  --shadow-modal: 0 20px 50px rgba(15,23,42,.18);
 }
 
 @tailwind base;
@@ -111,13 +83,42 @@
 
   body {
     @apply font-sans text-base leading-relaxed;
+    background-color: var(--color-bg-app, #000000);
+    color: var(--color-text-primary, #FFFFFF);
+  }
+
+  [data-theme-scope="cliente"] {
     background-color: var(--color-bg-app);
     color: var(--color-text-primary);
   }
 
   ::selection {
-    background-color: var(--color-brand-primary-soft);
-    color: var(--color-text-primary);
+    background-color: #0284C7 !important;
+    color: #FFFFFF !important;
+  }
+
+  ::-moz-selection {
+    background-color: #0284C7 !important;
+    color: #FFFFFF !important;
+  }
+
+  input, textarea {
+    user-select: text !important;
+    -webkit-user-select: text !important;
+    caret-color: #38BDF8;
+  }
+
+  input::selection,
+  textarea::selection {
+    background-color: #0284C7 !important;
+    color: #FFFFFF !important;
+    -webkit-text-fill-color: #FFFFFF !important;
+  }
+
+  input::-moz-selection,
+  textarea::-moz-selection {
+    background-color: #0284C7 !important;
+    color: #FFFFFF !important;
   }
   
   /* Custom scrollbar */
@@ -131,8 +132,8 @@
   }
   
   ::-webkit-scrollbar-thumb {
-    background: #CBD5E1;
-    border-radius: 3px;
+    background: rgba(255, 255, 255, 0.20);
+    border-radius: 4px;
   }
   
   ::-webkit-scrollbar-thumb:hover {
@@ -141,20 +142,24 @@
 }
 
 .glassmorphism {
-  background: rgba(255, 255, 255, 0.85);
+  background: rgba(17, 17, 17, 0.85);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
 }
 
 .custom-scrollbar::-webkit-scrollbar {
   width: 5px;
+  height: 5px;
 }
 .custom-scrollbar::-webkit-scrollbar-track {
   background: transparent;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.2);
+  background: rgba(255, 255, 255, 0.20);
   border-radius: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #94A3B8;
 }
 
 /* ==========================================================================
@@ -163,17 +168,27 @@
 
 
 /* ==========================================================================
-   RESELLER Scope Theme Overrides (Dark / Light Modes)
+   RESELLER Scope: Strict High-Contrast Typography & Dynamic Surface Rules
+   - Dark backgrounds (Dark mode / Dark surfaces): Text is Crisp White (#FFFFFF).
+   - Light backgrounds (Light mode / Light surfaces): Text is Navy Blue (#0F172A).
    ========================================================================== */
+
+[data-theme-scope="reseller"],
 [data-theme-scope="reseller"][data-reseller-theme="dark"] {
   --color-bg-app: #000000;
   --color-bg-surface: #111111;
   --color-bg-subtle: #1A1A1A;
   --color-border: #222222;
 
+  --color-brand-primary: #00A8E8;
+  --color-brand-primary-hover: #38BDF8;
+  --color-brand-primary-active: #0284C7;
+  --color-brand-primary-soft: rgba(0, 168, 232, 0.15);
+  --color-brand-primary-border: rgba(0, 168, 232, 0.35);
+
   --color-text-primary: #FFFFFF;
-  --color-text-secondary: #D1D5DB;
-  --color-text-muted: #9CA3AF;
+  --color-text-secondary: #F1F5F9;
+  --color-text-muted: #94A3B8;
 
   color-scheme: dark;
 }
@@ -184,36 +199,101 @@
   --color-bg-subtle: #F1F5F9;
   --color-border: #E2E8F0;
 
+  --color-brand-primary: #0284C7;
+  --color-brand-primary-hover: #0369A1;
+  --color-brand-primary-active: #075985;
+  --color-brand-primary-soft: rgba(2, 132, 199, 0.12);
+  --color-brand-primary-border: rgba(2, 132, 199, 0.3);
+
   --color-text-primary: #0F172A;
-  --color-text-secondary: #334155;
-  --color-text-muted: #64748B;
+  --color-text-secondary: #1E293B;
+  --color-text-muted: #475569;
 
   color-scheme: light;
 }
 
-[data-reseller-theme="light"] body {
-  background-color: var(--color-bg-app) !important;
-  color: var(--color-text-primary) !important;
+/* Base text contrast rule for Reseller */
+[data-theme-scope="reseller"] {
+  color: var(--color-text-primary, #FFFFFF);
 }
 
-[data-reseller-theme="light"] .bg-st-bg {
-  background-color: var(--color-bg-app) !important;
-}
-
+/* Light Surface Contrast Rules (Background claro -> Letra Azul Marino #0F172A) */
+[data-theme-scope="reseller"] .bg-white,
+[data-theme-scope="reseller"] .bg-slate-50,
+[data-theme-scope="reseller"] .bg-slate-100,
+[data-theme-scope="reseller"] .bg-gray-50,
+[data-theme-scope="reseller"] .bg-gray-100,
+[data-reseller-theme="light"] body,
+[data-reseller-theme="light"] .bg-st-bg,
 [data-reseller-theme="light"] .bg-st-surface {
-  background-color: var(--color-bg-surface) !important;
-  border-color: var(--color-border) !important;
+  color: #0F172A;
 }
 
-[data-reseller-theme="light"] .border-st-border {
-  border-color: var(--color-border) !important;
+/* Dark Surface Contrast Rules (Background oscuro -> Letra Blanca #FFFFFF) */
+[data-theme-scope="reseller"]:not([data-reseller-theme="light"]) .bg-st-bg,
+[data-theme-scope="reseller"]:not([data-reseller-theme="light"]) .bg-st-surface,
+[data-theme-scope="reseller"]:not([data-reseller-theme="light"]) .bg-black,
+[data-theme-scope="reseller"]:not([data-reseller-theme="light"]) body {
+  color: #FFFFFF;
 }
 
-[data-reseller-theme="light"] .text-st-primary {
-  color: var(--color-text-primary) !important;
+/* Badges / Chips / Code / Monospace in Reseller Dark Mode */
+[data-theme-scope="reseller"]:not([data-reseller-theme="light"]) .badge-mono,
+[data-theme-scope="reseller"]:not([data-reseller-theme="light"]) code {
+  color: #FFFFFF !important;
 }
 
-[data-reseller-theme="light"] .text-st-muted {
-  color: var(--color-text-muted) !important;
+/* Explicit text-white class must ALWAYS be pure white */
+.text-white,
+[class*="text-white"] {
+  color: #FFFFFF !important;
 }
 
+/* ====== GLOBAL CONTRAST FIXES ====== */
+/* Dark Backgrounds */
+.bg-gray-800, .bg-gray-900, .bg-black, .bg-blue-900, .bg-slate-800, .bg-slate-900, .bg-zinc-800, .bg-zinc-900, .bg-neutral-800, .bg-neutral-900 {
+  color: #FFFFFF !important;
+}
+.bg-gray-800 *, .bg-gray-900 *, .bg-black *, .bg-blue-900 *, .bg-slate-800 *, .bg-slate-900 *, .bg-zinc-800 *, .bg-zinc-900 *, .bg-neutral-800 *, .bg-neutral-900 * {
+  color: #FFFFFF !important;
+}
+
+/* Light Backgrounds */
+.bg-white, .bg-gray-50, .bg-gray-100, .bg-slate-50, .bg-slate-100, .bg-zinc-50, .bg-zinc-100, .bg-neutral-50, .bg-neutral-100 {
+  color: #0F172A;
+}
+
+/* Dark input styling and password inputs - pure crisp white text */
+.dark-input,
+input.dark-input,
+input.dark-input[type="password"],
+input.dark-input[type="text"] {
+  background-color: #1e2024 !important;
+  color: #FFFFFF !important;
+  -webkit-text-fill-color: #FFFFFF !important;
+  caret-color: #FFFFFF !important;
+}
+
+/* Webkit autofill fix for dark inputs */
+input.dark-input:-webkit-autofill,
+input.dark-input:-webkit-autofill:hover, 
+input.dark-input:-webkit-autofill:focus, 
+input.dark-input:-webkit-autofill:active,
+.dark-input:-webkit-autofill {
+  -webkit-box-shadow: 0 0 0 1000px #1e2024 inset !important;
+  -webkit-text-fill-color: #FFFFFF !important;
+  color: #FFFFFF !important;
+  caret-color: #FFFFFF !important;
+}
+
+input.dark-input::placeholder,
+.dark-input::placeholder {
+  color: #94A3B8 !important;
+  -webkit-text-fill-color: #94A3B8 !important;
+  opacity: 1 !important;
+}
+
+/* Fix specific Tailwind text classes on light/dark backgrounds */
+.bg-white .text-gray-200, .bg-white .text-gray-300, .bg-white .text-gray-400 {
+  color: #475569;
+}
