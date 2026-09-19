@@ -131,7 +131,7 @@ export const ClienteDashboard: React.FC = () => {
       </div>
 
       {/* KPIs Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
         <div className="bg-st-surface border border-st-border rounded-xl p-4 flex flex-col items-center justify-center text-center">
            <Satellite className="w-6 h-6 text-emerald-500 mb-2" />
            <p className="text-xs text-st-muted uppercase font-semibold">Servicios Activos</p>

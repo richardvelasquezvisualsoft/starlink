@@ -336,8 +336,8 @@ export default function UsuariosAccesos() {
   };
 
   return (
-    <div className="p-8 space-y-6 h-full flex flex-col">
-      <div className="flex justify-between items-center">
+    <div className="space-y-6 h-full flex flex-col">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-white uppercase tracking-wider">Usuarios y Accesos</h1>
           <p className="text-sm text-st-muted mt-1">Gestión detallada de identidades, sesiones, bloqueos y auditoría individual.</p>
@@ -345,8 +345,8 @@ export default function UsuariosAccesos() {
       </div>
 
       <div className="bg-st-surface border border-st-border rounded-xl flex flex-col flex-1 overflow-hidden">
-        <div className="p-4 border-b border-st-border flex items-center justify-between bg-black/20">
-          <div className="relative w-64">
+        <div className="p-4 border-b border-st-border flex flex-col sm:flex-row gap-3 sm:items-center justify-between bg-black/20">
+          <div className="relative w-full sm:w-64">
             <Search className="w-4 h-4 text-st-muted absolute left-3 top-1/2 -translate-y-1/2" />
             <input 
               type="text" 
@@ -356,12 +356,12 @@ export default function UsuariosAccesos() {
               className="w-full bg-st-bg border border-st-border rounded-lg pl-9 pr-4 py-2 text-sm text-white focus:border-st-accent focus:outline-none transition-colors"
             />
           </div>
-          <div className="text-st-muted text-sm font-semibold">
+          <div className="text-st-muted text-sm font-semibold self-start sm:self-auto">
             {filtered.length} Usuarios listados
           </div>
         </div>
 
-        <div className="overflow-auto flex-1">
+        <div className="overflow-auto flex-1 custom-scrollbar">
           <table className="w-full text-left text-sm text-st-muted">
             <thead className="text-xs uppercase bg-black/40 border-b border-st-border sticky top-0 z-10">
               <tr>

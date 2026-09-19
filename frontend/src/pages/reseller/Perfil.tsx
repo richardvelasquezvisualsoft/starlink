@@ -188,7 +188,7 @@ const Perfil: React.FC = () => {
   const roleLabel = isCliente ? 'Cliente' : 'Administrador';
 
   return (
-      <div className="max-w-4xl mx-auto py-6 px-4">
+      <div className="max-w-4xl mx-auto py-4 sm:py-6 px-2 sm:px-4">
         <AlertPopup 
           isOpen={alertData.isOpen} 
           type={alertData.type} 
@@ -201,15 +201,15 @@ const Perfil: React.FC = () => {
           
           <button 
             onClick={() => navigate(dashboardPath)}
-            className="absolute top-4 right-4 p-2 hover:bg-gray-100 rounded-lg transition-colors z-10"
+            className="absolute top-4 right-4 p-2 hover:bg-gray-100 rounded-lg transition-colors z-10 cursor-pointer"
             title="Cerrar y volver al Dashboard"
           >
             <X className="w-5 h-5 text-gray-500 hover:text-gray-800" />
           </button>
           
-          <div className="p-8 flex flex-col md:flex-row gap-10">
+          <div className="p-4 sm:p-6 md:p-8 flex flex-col md:flex-row gap-6 md:gap-10">
             {/* Left Column: Photo & Info */}
-            <div className="flex flex-col items-center shrink-0 w-64">
+            <div className="flex flex-col items-center shrink-0 w-full md:w-64">
               <div className="w-40 h-40 rounded-full border-4 border-amber-500/80 mb-6 flex items-center justify-center overflow-hidden bg-gray-100">
                 {formData.foto_url && !imageHasError ? (
                   <img 

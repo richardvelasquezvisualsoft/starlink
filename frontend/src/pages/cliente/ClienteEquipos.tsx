@@ -133,7 +133,7 @@ export const ClienteEquipos: React.FC = () => {
       </div>
 
       {/* Tabs */}
-      <div className="flex border-b border-client-border">
+      <div className="flex border-b border-client-border overflow-x-auto no-scrollbar">
         <button
           onClick={() => setActiveTab('terminales')}
           className={`flex items-center gap-2 px-6 py-3 text-[13px] font-bold uppercase tracking-wider transition-colors border-b-2 ${activeTab === 'terminales' ? 'border-client-primary text-client-primary bg-client-primary/5' : 'border-transparent text-client-text-secondary hover:text-client-text-primary hover:bg-client-bg-subtle'}`}
